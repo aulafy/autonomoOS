@@ -1,0 +1,19 @@
+{
+  "name": "@agent-world/recovery",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node --import tsx --test tests/*.test.ts"
+  },
+  "dependencies": {
+    "@agent-world/budgets": "0.1.0",
+    "@agent-world/effects": "0.1.0",
+    "@agent-world/observation": "0.1.0",
+    "@agent-world/reconciliation": "0.1.0",
+    "@agent-world/resources": "0.1.0",
+    "@agent-world/supervision": "0.1.0"
+  }
+}

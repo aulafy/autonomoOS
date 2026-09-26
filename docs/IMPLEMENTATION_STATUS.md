@@ -14,5 +14,5 @@ The repository and its tests are authoritative. Counts below are workspace total
 | C8 CompositionPolicy | Complete | `composition-policy` | See tag | `c8-composition-policy` | 139 | Package only | In-memory history; C11 integration pending |
 | C9 InformationFlowPolicy | Complete | `information-flow` | See tag | `c9-information-flow` | 151 | Package only | In-memory data/working-set stores; C11 integration pending |
 | C10 Supervisor | Complete | `supervision` | See tag | `c10-supervisor` | 159 | Package only | In-memory control state |
-| C11 GovernedActionRunner | Complete | `control-plane`, M5 runtime | See tag | `c11-governed-runner` | 174 | Live M5 demo | In-memory authority/effects; weak speech evidence |
-| C12 Crash Recovery | Planned | — | — | — | — | — | — |
+| C11 GovernedActionRunner | Complete | `control-plane`, M5 runtime | `f59cb25` | `c11-governed-runner` | 174 | Live M5 demo | In-memory authority/effects; weak speech evidence |
+| C12 Crash Recovery | Complete (storage-interface semantics) | `recovery`, M5 startup | See tag | `c12-crash-recovery` | 186 | Recovering mode gates demo runtime | In-memory stores do not survive a real process crash |

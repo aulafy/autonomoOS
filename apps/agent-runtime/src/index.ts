@@ -171,6 +171,7 @@ type IntentOutcome =
       executionId?: string; reason?: string };
 
 const governance = createDemoControlPlane(world, emit);
+governance.recoverOnStartup();
 
 async function processIntent(raw: unknown, options?: { taskId?: string;
   planId?: string; correlationId?: string }): Promise<IntentOutcome> {

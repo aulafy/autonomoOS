@@ -148,6 +148,18 @@ export class EffectCoordinator {
     return next;
   }
 
+  /** Recovery-only transition. A persisted dispatch boundary may have reached the executor. */
+  markDispatchingUnknownAfterCrash(id: string, expectedVersion: number): EffectTransaction {
+    const current = this.requireEffect(id, expectedVersion);
+    this.requireStatus(current, "dispatching");
+    const next = this.effects.update({ ...current, status: "unknown",
+      unknownReasonCode: "CRASH_DURING_DISPATCH", settledAt: this.clock.now(),
+      version: current.version + 1 }, expectedVersion);
+    this.emit("effect.unknown", next, current.status,
+      { reason: "CRASH_DURING_DISPATCH" });
+    return next;
+  }
+
   settleFromObservation(id: string, expectedVersion: number, observationId: string,
     options: ObservationSettlementOptions): EffectTransaction {
     const current = this.requireEffect(id, expectedVersion);

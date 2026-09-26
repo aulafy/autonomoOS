@@ -24,6 +24,7 @@ export interface CommitGateDependencies {
   supervisor: SupervisorEngine;
   snapshot(): RuntimeSnapshot;
   tasks: TaskStatusPort;
+  runtimeMode?: { allowsConsequentialDispatch(): boolean };
   now(): number;
 }
 
@@ -36,6 +37,9 @@ export class LiveCommitGate {
     definition: GovernedActionDefinition, resourceId: ResourceId,
     expectedGeneration: number, expectedSinkGeneration?: number): Promise<PrerequisiteResult> {
     if (!this.deps.tasks.isRunnable(request.taskId)) throw new ControlPlaneError("TASK_NOT_RUNNABLE");
+    if (this.deps.runtimeMode && !this.deps.runtimeMode.allowsConsequentialDispatch()) {
+      throw new ControlPlaneError("RUNTIME_READ_ONLY");
+    }
     const contract = await this.deps.contracts.get(request.contractId);
     if (!contract || contract.taskId !== request.taskId ||
       contract.ownerPrincipalId !== request.principalId) {

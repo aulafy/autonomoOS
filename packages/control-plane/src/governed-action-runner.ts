@@ -94,7 +94,9 @@ export class GovernedActionRunner {
           { [resource.id]: String(request.fencingToken) },
         authorityLeaseIds: [request.authorityLeaseId],
         resourceLeaseIds: request.resourceLeaseId ? [request.resourceLeaseId] : [],
-        budgetReservationIds: [reservation.id], metadata: { planId: request.planId ?? null } });
+        budgetReservationIds: [reservation.id], metadata: { planId: request.planId ?? null,
+          budgetActualAmount: structuredClone(definition.budgetAmount),
+          riskClass: definition.risk, observationMaxAgeMs: this.deps.observationMaxAgeMs } });
       this.deps.coordinator.prepare(created.id, created.version);
     } catch (error) {
       this.deps.budgets.releaseReservation(reservation.id,

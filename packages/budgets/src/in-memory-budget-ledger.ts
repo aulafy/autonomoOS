@@ -170,6 +170,10 @@ export class InMemoryBudgetLedger implements BudgetLedgerStore {
     return reservation ? structuredClone(reservation) : null;
   }
 
+  listReservations(): readonly BudgetReservation[] {
+    return [...this.reservations.values()].map(reservation => structuredClone(reservation));
+  }
+
   commitReservation(id: string, identity: SettlementIdentity, actual: BudgetVector,
     expectedReservationVersion: number): BudgetReservation {
     const reservation = this.requireReservation(id);

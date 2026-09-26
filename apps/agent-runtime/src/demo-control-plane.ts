@@ -15,6 +15,7 @@ import { InMemoryObservationStore, InMemoryObserverRegistry, ObservationPolicy,
   ObservationService, postconditionHash } from "@agent-world/observation";
 import type { ActionIntent, RuntimeEvent } from "@agent-world/protocol";
 import { InMemoryReconciliationQueue, ReconciliationService } from "@agent-world/reconciliation";
+import { RecoveryManager, RuntimeModeController } from "@agent-world/recovery";
 import { createDemoResources, InMemoryResourceRegistry, mintResourceId,
   ResourceResolver } from "@agent-world/resources";
 import { InMemoryEmergencyStopStore, InMemoryQuarantineStore, SupervisorEngine,
@@ -63,24 +64,30 @@ export function createDemoControlPlane(world: WorldRuntime, emit: Emit) {
     new SinkRegistry(resources), new InMemoryReleaseApprovalStore(), defaultFlowRules(), clock.now);
   const facts = new FactCompiler(history, effects, observations, observers,
     observationPolicy, compositionActions, {});
-  const reconciliation = new ReconciliationService(effects, new InMemoryReconciliationQueue(),
+  const reconciliationQueue = new InMemoryReconciliationQueue();
+  const reconciliation = new ReconciliationService(effects, reconciliationQueue,
     observations, observers, observationPolicy, [], clock.now);
   const supervisor = new SupervisorEngine({ stalledTaskMs: 60000, preparingMs: 60000,
     dispatchingMs: 60000, maxUnknownBacklog: 10, highUnknownRate: 1 });
   const emergencyStop = new InMemoryEmergencyStopStore();
   const quarantines = new InMemoryQuarantineStore();
+  const runtimeMode = new RuntimeModeController();
   const stoppedTasks = new Set<string>();
   const snapshot = (): RuntimeSnapshot => ({ now: clock.now(), tasks: [], authorityLeases: [],
     resourceLeases: [], budgets: [], effects: effects.list().map(effect => ({
       id: effect.id, taskId: effect.taskId, executorId: effect.executorId,
       status: effect.status, createdAt: effect.createdAt, preparedAt: effect.preparedAt,
       dispatchStartedAt: effect.dispatchStartedAt, observationIds: effect.observationIds,
-      required: true })), reconciliations: [], components: [],
+      required: true })), reconciliations: reconciliationQueue.list().map(job => ({
+        id: job.id, effectId: job.effectId, status: job.status,
+        nextAttemptAt: job.nextAttemptAt, attempts: job.attempts,
+        maxAttempts: job.maxAttempts })), components: [],
     quarantines: quarantines.list(), emergencyStop: emergencyStop.get(), policyAvailable: true,
     eventStoreAvailable: true, unknownRateByExecutor: {} });
   const gate = new LiveCommitGate({ contracts, contractValidator: new ContractValidator(),
     resources, leases: leaseGate, resourceLeases, budgets, effects, composition, flow,
-    supervisor, snapshot, tasks: { isRunnable: id => !stoppedTasks.has(id) }, now: clock.now });
+    supervisor, snapshot, tasks: { isRunnable: id => !stoppedTasks.has(id) },
+    runtimeMode, now: clock.now });
   const actions = new GovernedActionRegistry();
   actions.register({ action: "goto", executorId: "demo-world", observerId: "demo-world-observer",
     risk: "R1", resourceKinds: ["world_place"], requiresResourceLease: true,
@@ -162,6 +169,22 @@ export function createDemoControlPlane(world: WorldRuntime, emit: Emit) {
     ids: { next: () => crypto.randomUUID() }, now: clock.now, observationMaxAgeMs: 30000 });
   const completion = new TaskCompletionEvaluator(contracts, effects, observations,
     observers, observationPolicy);
+  const recovery = new RecoveryManager({ effects, coordinator, observations,
+    observers, observationPolicy, budgets,
+    queue: reconciliationQueue, reconciliation, emergencyStop, quarantines,
+    mode: runtimeMode, now: clock.now,
+    criticalStoresHealthy: () => true, policyHealthy: () => true,
+    resourcesHealthy: () => true, authorityReadable: () => true,
+    startupSupervisorHealthy: () => {
+      const state = snapshot();
+      const decision = supervisor.tick(state);
+      return supervisor.mayStart(state, "consequential") &&
+        !decision.actions.some(action => action.kind === "stop_before_dispatch" ||
+          action.kind === "mark_runtime_degraded");
+    },
+    events: { append: event => emit({ id: crypto.randomUUID(), timestamp: event.at,
+      type: "control.event", payload: { controlEventType: event.type,
+        planId: event.planId, actionId: event.actionId, reason: event.reason } }) } });
   const taskEffects = new Map<string, string[]>();
 
   async function ensureTask(taskId: string, principalId: string): Promise<void> {
@@ -239,7 +262,8 @@ export function createDemoControlPlane(world: WorldRuntime, emit: Emit) {
       requiredEffectIds, acceptanceEvidence, maxObservationAgeMs: 30000,
       pendingApprovalCount: 0 })).complete;
   }
-  return { run, mayComplete, stopTask: (id: string) => stoppedTasks.add(id),
+  return { run, mayComplete, recoverOnStartup: () => recovery.run(),
+    runtimeMode, stopTask: (id: string) => stoppedTasks.add(id),
     activateEmergencyStop: (reason: string) => emergencyStop.activate(reason, clock.now()),
     quarantineExecutor: (executorId: string, reason: string) => quarantines.add({
       id: crypto.randomUUID(), executorId, reason, createdAt: clock.now(), active: true }) };

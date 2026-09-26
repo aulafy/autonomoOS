@@ -13,6 +13,7 @@ export interface BudgetLedgerStore {
   closeBudget(id: string, expectedVersion: number): BudgetAccount;
   reserve(input: ReserveInput, expectedBudgetVersion: number): BudgetReservation;
   getReservation(id: string): BudgetReservation | null;
+  listReservations(): readonly BudgetReservation[];
   commitReservation(id: string, identity: SettlementIdentity, actual: BudgetVector,
     expectedReservationVersion: number): BudgetReservation;
   releaseReservation(id: string, identity: SettlementIdentity,

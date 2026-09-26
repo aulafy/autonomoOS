@@ -22,6 +22,7 @@
     "@agent-world/policy-engine": "0.1.0",
     "@agent-world/protocol": "0.1.0",
     "@agent-world/reconciliation": "0.1.0",
+    "@agent-world/recovery": "0.1.0",
     "@agent-world/resources": "0.1.0",
     "@agent-world/supervision": "0.1.0",
     "@agent-world/world-core": "0.1.0",
