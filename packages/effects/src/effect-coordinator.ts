@@ -137,6 +137,17 @@ export class EffectCoordinator {
     return next;
   }
 
+  recordObservationError(id: string, expectedVersion: number): EffectTransaction {
+    const current = this.requireEffect(id, expectedVersion);
+    this.requireStatus(current, "dispatching");
+    const next = this.effects.update({ ...current, status: "unknown",
+      unknownReasonCode: "OBSERVATION_ERROR_AFTER_DISPATCH", settledAt: this.clock.now(),
+      version: current.version + 1 }, expectedVersion);
+    this.emit("effect.unknown", next, current.status,
+      { reason: "OBSERVATION_ERROR_AFTER_DISPATCH" });
+    return next;
+  }
+
   settleFromObservation(id: string, expectedVersion: number, observationId: string,
     options: ObservationSettlementOptions): EffectTransaction {
     const current = this.requireEffect(id, expectedVersion);

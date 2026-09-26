@@ -6,6 +6,7 @@ export const RuntimeEventSchema = z.object({
 
   type: z.enum([
     "runtime.started",
+    "control.event",
 
     "task.created",
     "task.completed",

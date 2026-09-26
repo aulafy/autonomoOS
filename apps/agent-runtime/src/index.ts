@@ -1,4 +1,5 @@
 import { WebSocketServer, WebSocket } from "ws";
+import { createDemoControlPlane } from "./demo-control-plane.js";
 
 import {
   ActionIntentSchema,
@@ -9,10 +10,6 @@ import {
 import {
   WorldRuntime
 } from "@agent-world/world-core";
-
-import {
-  authorize
-} from "@agent-world/policy-engine";
 
 import {
   JsonlEventStore
@@ -168,438 +165,59 @@ function emit(
   );
 }
 
-function wait(
-  ms: number,
-  signal: AbortSignal
-): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const timer =
-      setTimeout(resolve, ms);
-
-    const abort = () => {
-      clearTimeout(timer);
-      reject(
-        new Error("REVOKED")
-      );
-    };
-
-    if (signal.aborted) {
-      abort();
-      return;
-    }
-
-    signal.addEventListener(
-      "abort",
-      abort,
-      {
-        once: true
-      }
-    );
-  });
-}
-
 type IntentOutcome =
-  | {
-      status: "observed";
-      intentId: string;
-      executionId: string;
-    }
-  | {
-      status:
-        | "denied"
-        | "failed"
-        | "revoked";
-      intentId: string;
-      executionId?: string;
-      reason?: string;
-    };
+  | { status: "observed"; intentId: string; executionId: string }
+  | { status: "denied" | "failed" | "revoked"; intentId: string;
+      executionId?: string; reason?: string };
 
-async function processIntent(
-  raw: unknown,
-  options?: {
-    taskId?: string;
-    planId?: string;
-    correlationId?: string;
-  }
-): Promise<IntentOutcome> {
-  const intent =
-    ActionIntentSchema.parse(raw);
+const governance = createDemoControlPlane(world, emit);
 
-  const taskId =
-    options?.taskId;
-
-  const planId =
-    options?.planId;
-
-  const correlationId =
-    options?.correlationId;
-
-  emit(
-    runtimeEvent(
-      "action.proposed",
-      {
-        taskId,
-        planId,
-        correlationId,
-
-        intentId:
-          intent.id,
-
-        actorId:
-          intent.actorId,
-
-        payload: {
-          action:
-            intent.action,
-
-          targetId:
-            intent.targetId ?? null,
-
-          parameters:
-            intent.parameters ?? {},
-
-          provenance:
-            intent.provenance
-        }
-      }
-    )
-  );
-
-  const decision =
-    authorize(intent);
-
-  if (!decision.allowed) {
-    emit(
-      runtimeEvent(
-        "policy.denied",
-        {
-          taskId,
-          planId,
-          correlationId,
-
-          intentId:
-            intent.id,
-
-          actorId:
-            intent.actorId,
-
-          payload: {
-            risk:
-              decision.risk,
-
-            reason:
-              decision.reason
-          }
-        }
-      )
-    );
-
-    return {
-      status: "denied",
-      intentId: intent.id,
-      reason: decision.reason
-    };
-  }
-
-  emit(
-    runtimeEvent(
-      "policy.authorized",
-      {
-        taskId,
-        planId,
-        correlationId,
-
-        intentId:
-          intent.id,
-
-        actorId:
-          intent.actorId,
-
-        payload: {
-          risk:
-            decision.risk,
-
-          reason:
-            decision.reason
-        }
-      }
-    )
-  );
-
-  const executionId =
-    crypto.randomUUID();
-
-  const controller =
-    new AbortController();
-
-  runningExecutions.set(
-    intent.id,
-    controller
-  );
-
-  emit(
-    runtimeEvent(
-      "execution.started",
-      {
-        taskId,
-        planId,
-        correlationId,
-
-        intentId:
-          intent.id,
-
-        executionId,
-
-        actorId:
-          intent.actorId,
-
-        payload: {
-          action:
-            intent.action
-        }
-      }
-    )
-  );
-
+async function processIntent(raw: unknown, options?: { taskId?: string;
+  planId?: string; correlationId?: string }): Promise<IntentOutcome> {
+  const intent = ActionIntentSchema.parse(raw);
+  const taskId = options?.taskId ?? crypto.randomUUID();
+  const correlationId = options?.correlationId ?? taskId;
+  const planId = options?.planId;
+  emit(runtimeEvent("action.proposed", { taskId, planId, correlationId,
+    intentId: intent.id, actorId: intent.actorId, payload: {
+      action: intent.action, targetId: intent.targetId ?? null,
+      parameters: intent.parameters ?? {}, provenance: intent.provenance } }));
+  const controller = new AbortController();
+  runningExecutions.set(intent.id, controller);
   try {
-    // Demo-only revocable execution retained from M3.
-    if (
-      intent.action === "use_tool" &&
-      intent.parameters?.tool === "demo.slow"
-    ) {
-      await wait(
-        5000,
-        controller.signal
-      );
-
-      emit(
-        runtimeEvent(
-          "execution.succeeded",
-          {
-            taskId,
-            planId,
-            correlationId,
-
-            intentId:
-              intent.id,
-
-            executionId,
-
-            actorId:
-              intent.actorId,
-
-            payload: {
-              tool:
-                "demo.slow",
-
-              executorResult:
-                "finished"
-            }
-          }
-        )
-      );
-
-      emit(
-        runtimeEvent(
-          "observation.confirmed",
-          {
-            taskId,
-            planId,
-            correlationId,
-
-            intentId:
-              intent.id,
-
-            executionId,
-
-            actorId:
-              intent.actorId,
-
-            payload: {
-              observed:
-                true,
-
-              tool:
-                "demo.slow"
-            }
-          }
-        )
-      );
-
-      return {
-        status: "observed",
-        intentId: intent.id,
-        executionId
-      };
+    const result = await governance.run(intent, taskId, correlationId, planId,
+      controller.signal);
+    const executionId = result.effectId;
+    if (result.status === "completed") {
+      emit(runtimeEvent("policy.authorized", { taskId, planId, correlationId,
+        intentId: intent.id, actorId: intent.actorId,
+        payload: { effectId: result.effectId, reason: result.reasonCode } }));
+      emit(runtimeEvent("execution.succeeded", { taskId, planId, correlationId,
+        intentId: intent.id, executionId, actorId: intent.actorId,
+        payload: { effectId: result.effectId } }));
+      emit(runtimeEvent("observation.confirmed", { taskId, planId, correlationId,
+        intentId: intent.id, executionId, actorId: intent.actorId,
+        payload: { observationIds: result.observationIds } }));
+      return { status: "observed", intentId: intent.id,
+        executionId: executionId ?? "" };
     }
-
-    const worldEvent =
-      world.execute(intent);
-
-    emit(
-      runtimeEvent(
-        "execution.succeeded",
-        {
-          taskId,
-          planId,
-          correlationId,
-
-          intentId:
-            intent.id,
-
-          executionId,
-
-          actorId:
-            intent.actorId,
-
-          entityId:
-            worldEvent.entityId,
-
-          payload: {
-            executorResult:
-              worldEvent.payload
-          }
-        }
-      )
-    );
-
-    emit(
-      runtimeEvent(
-        worldEvent.type as RuntimeEvent["type"],
-        {
-          taskId,
-          planId,
-          correlationId,
-
-          intentId:
-            intent.id,
-
-          executionId,
-
-          actorId:
-            worldEvent.actorId,
-
-          entityId:
-            worldEvent.entityId,
-
-          payload:
-            worldEvent.payload
-        }
-      )
-    );
-
-    emit(
-      runtimeEvent(
-        "observation.confirmed",
-        {
-          taskId,
-          planId,
-          correlationId,
-
-          intentId:
-            intent.id,
-
-          executionId,
-
-          actorId:
-            intent.actorId,
-
-          entityId:
-            worldEvent.entityId,
-
-          payload: {
-            observed:
-              true,
-
-            observedEventType:
-              worldEvent.type
-          }
-        }
-      )
-    );
-
-    return {
-      status: "observed",
-      intentId: intent.id,
-      executionId
-    };
-  } catch (error) {
-    if (
-      error instanceof Error &&
-      error.message === "REVOKED"
-    ) {
-      emit(
-        runtimeEvent(
-          "execution.revoked",
-          {
-            taskId,
-            planId,
-            correlationId,
-
-            intentId:
-              intent.id,
-
-            executionId,
-
-            actorId:
-              intent.actorId,
-
-            payload: {
-              reason:
-                "Revoked before confirmed completion"
-            }
-          }
-        )
-      );
-
-      return {
-        status: "revoked",
-        intentId: intent.id,
-        executionId,
-        reason:
-          "Execution was revoked."
-      };
+    if (result.status === "denied" || result.status === "blocked" ||
+      result.status === "approval_required" ||
+      result.status === "release_approval_required") {
+      emit(runtimeEvent("policy.denied", { taskId, planId, correlationId,
+        intentId: intent.id, actorId: intent.actorId,
+        payload: { reason: result.reasonCode, effectId: result.effectId } }));
+      return { status: "denied", intentId: intent.id, executionId,
+        reason: result.reasonCode };
     }
-
-    const message =
-      error instanceof Error
-        ? error.message
-        : String(error);
-
-    emit(
-      runtimeEvent(
-        "execution.failed",
-        {
-          taskId,
-          planId,
-          correlationId,
-
-          intentId:
-            intent.id,
-
-          executionId,
-
-          actorId:
-            intent.actorId,
-
-          payload: {
-            error:
-              message
-          }
-        }
-      )
-    );
-
-    return {
-      status: "failed",
-      intentId: intent.id,
-      executionId,
-      reason: message
-    };
+    emit(runtimeEvent("execution.failed", { taskId, planId, correlationId,
+      intentId: intent.id, executionId, actorId: intent.actorId,
+      payload: { reason: result.reasonCode, status: result.status } }));
+    return { status: result.status === "unknown" && controller.signal.aborted
+      ? "revoked" : "failed", intentId: intent.id, executionId,
+      reason: result.reasonCode };
   } finally {
-    runningExecutions.delete(
-      intent.id
-    );
+    runningExecutions.delete(intent.id);
   }
 }
 
@@ -1152,6 +770,12 @@ async function runGoal(
           result.status
       };
     }
+  }
+
+  if (!(await governance.mayComplete(taskId))) {
+    emit(runtimeEvent("task.failed", { taskId, planId, correlationId,
+      actorId: DEFAULT_AGENT_ID, payload: { reason: "Acceptance criteria not observed." } }));
+    return { ok: false, taskId, reason: "Acceptance criteria not observed." };
   }
 
   emit(
