@@ -12,7 +12,7 @@ The repository and its tests are authoritative. Counts below are workspace total
 | C6 EffectTransaction | Complete | `effects` | `a9e9b57` | `c6-effect-transaction` | 107 | Package | In-memory effect/event stores |
 | C7 Reconciliation | Complete | `reconciliation` | `e12431a` | `c7-reconciliation` | 121 | Package | Fixture reconciler |
 | C8 CompositionPolicy | Complete | `composition-policy` | See tag | `c8-composition-policy` | 139 | Package only | In-memory history; C11 integration pending |
-| C9 InformationFlowPolicy | Planned | — | — | — | — | — | — |
+| C9 InformationFlowPolicy | Complete | `information-flow` | See tag | `c9-information-flow` | 151 | Package only | In-memory data/working-set stores; C11 integration pending |
 | C10 Supervisor | Planned | — | — | — | — | — | — |
 | C11 GovernedActionRunner | Planned | — | — | — | — | — | — |
 | C12 Crash Recovery | Planned | — | — | — | — | — | — |
