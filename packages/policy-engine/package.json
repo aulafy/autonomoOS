@@ -1,0 +1,9 @@
+{
+  "name": "@agent-world/policy-engine",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "src/index.ts",
+  "dependencies": {
+    "@agent-world/protocol": "0.1.0"
+  }
+}

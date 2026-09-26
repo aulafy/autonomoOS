@@ -1,0 +1,15 @@
+{
+  "name": "agent-world-os",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:world": "npm --workspace apps/world-client run dev",
+    "dev:runtime": "npm --workspace apps/agent-runtime run dev",
+    "test": "npm run test --workspaces --if-present",
+    "build": "npm run build --workspaces --if-present"
+  }
+}

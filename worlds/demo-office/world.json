@@ -1,0 +1,20 @@
+{
+  "id": "demo-office",
+  "name": "Agent World Office",
+  "version": 1,
+  "spawn": [0, 0, 0],
+  "entities": [
+    {
+      "id": "astra",
+      "kind": "agent",
+      "name": "Astra",
+      "position": [0, 0.5, 0]
+    },
+    {
+      "id": "meeting_room",
+      "kind": "space",
+      "name": "Meeting Room",
+      "position": [4, 0.5, -2]
+    }
+  ]
+}

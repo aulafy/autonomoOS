@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agent World OS</title>
+
+  <style>
+    html, body, #app {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #111;
+    }
+
+    body {
+      font-family: system-ui, sans-serif;
+    }
+
+    #hud {
+      position: fixed;
+      top: 14px;
+      left: 14px;
+      z-index: 10;
+      width: 470px;
+      max-height: calc(100vh - 28px);
+      overflow: auto;
+      box-sizing: border-box;
+      padding: 12px;
+      border-radius: 10px;
+      background: rgba(245,245,245,.95);
+      box-shadow: 0 8px 30px rgba(0,0,0,.25);
+    }
+
+    #status {
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .section {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid #ccc;
+    }
+
+    .section-title {
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      opacity: .65;
+      margin-bottom: 6px;
+    }
+
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 7px;
+    }
+
+    button, input {
+      border: 1px solid #bbb;
+      border-radius: 7px;
+      padding: 7px 9px;
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+      background: white;
+    }
+
+    input {
+      flex: 1;
+      min-width: 180px;
+    }
+
+    #current, #plan {
+      margin-top: 8px;
+      padding: 8px;
+      border-radius: 7px;
+      background: white;
+      font-size: 12px;
+      white-space: pre-wrap;
+    }
+
+    #plan {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    #timeline {
+      margin-top: 10px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 11px;
+    }
+
+    .event {
+      padding: 4px 0;
+      border-bottom: 1px solid rgba(0,0,0,.06);
+    }
+  </style>
+</head>
+
+<body>
+  <div id="hud">
+    <div id="status">Connecting…</div>
+
+    <div class="section">
+      <div class="section-title">Manual actions</div>
+
+      <div class="row">
+        <button id="go-room">Go to meeting room</button>
+        <button id="go-home">Go home</button>
+      </div>
+
+      <div class="row">
+        <input id="say-text" value="Hello. I am Astra." />
+        <button id="say">Say</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Local AI — proposal only</div>
+
+      <div class="row">
+        <input
+          id="goal"
+          value="Go to the meeting room and say that you are ready."
+        />
+      </div>
+
+      <div class="row">
+        <button id="health">Check llama.cpp</button>
+        <button id="plan-button">Ask local model</button>
+      </div>
+
+      <div id="plan">No model proposal yet.</div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Provenance tests</div>
+
+      <div class="row">
+        <button id="deny">Test denied purchase</button>
+        <button id="slow">Start revocable action</button>
+        <button id="revoke">Revoke running action</button>
+      </div>
+
+      <div class="row">
+        <button id="replay">Replay last 30 events</button>
+      </div>
+    </div>
+
+    <div id="current">No action yet.</div>
+    <div id="timeline"></div>
+  </div>
+
+  <div id="app"></div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
