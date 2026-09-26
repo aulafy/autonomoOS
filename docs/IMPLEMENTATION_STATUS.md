@@ -13,6 +13,6 @@ The repository and its tests are authoritative. Counts below are workspace total
 | C7 Reconciliation | Complete | `reconciliation` | `e12431a` | `c7-reconciliation` | 121 | Package | Fixture reconciler |
 | C8 CompositionPolicy | Complete | `composition-policy` | See tag | `c8-composition-policy` | 139 | Package only | In-memory history; C11 integration pending |
 | C9 InformationFlowPolicy | Complete | `information-flow` | See tag | `c9-information-flow` | 151 | Package only | In-memory data/working-set stores; C11 integration pending |
-| C10 Supervisor | Planned | — | — | — | — | — | — |
+| C10 Supervisor | Complete | `supervision` | See tag | `c10-supervisor` | 159 | Package only | In-memory control state; C11 snapshot wiring pending |
 | C11 GovernedActionRunner | Planned | — | — | — | — | — | — |
 | C12 Crash Recovery | Planned | — | — | — | — | — | — |
