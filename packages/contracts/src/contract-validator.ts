@@ -1,4 +1,5 @@
 import type { ActionIntent } from "@agent-world/protocol";
+import { isCanonicalResourceId } from "@agent-world/resources";
 import type {
   ContractPrivacy,
   ContractRisk,
@@ -81,7 +82,8 @@ export class ContractValidator {
     if (
       intent.targetId &&
       contract.allowedResourceIds.length > 0 &&
-      !contract.allowedResourceIds.includes(intent.targetId)
+      (!isCanonicalResourceId(intent.targetId) ||
+        !contract.allowedResourceIds.includes(intent.targetId))
     ) {
       return {
         allowed: false,

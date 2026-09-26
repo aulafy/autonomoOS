@@ -1,18 +1,15 @@
 {
-  "name": "@agent-world/contracts",
+  "name": "@agent-world/resources",
   "version": "0.1.0",
+  "private": true,
   "type": "module",
   "main": "src/index.ts",
   "scripts": {
     "test": "node --import tsx --test tests/*.test.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
-  "dependencies": {
-    "@agent-world/protocol": "0.1.0",
-    "@agent-world/resources": "0.1.0",
-    "zod": "^3.23.8"
-  },
   "devDependencies": {
+    "@types/node": "^26.6.3",
     "tsx": "^4.19.0",
     "typescript": "^5.8.3"
   }

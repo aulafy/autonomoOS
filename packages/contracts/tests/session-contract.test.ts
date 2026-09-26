@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { SessionContractSchema } from "../src/contract.js";
 
 import type { ActionIntent } from "@agent-world/protocol";
 import {
@@ -21,7 +22,7 @@ function makeContract(
       "Astra said she is ready."
     ],
     forbiddenEffects: ["purchase_compute"],
-    allowedResourceIds: ["meeting_room", "home_point"],
+    allowedResourceIds: ["place:demo-office/meeting-room", "place:demo-office/home-point"],
     maxRisk: "R2",
     privacyClass: "local_only",
     createdAt: 1_000,
@@ -39,7 +40,7 @@ function makeIntent(
     id: "intent-1",
     actorId: "astra",
     action: "goto",
-    targetId: "meeting_room",
+    targetId: "place:demo-office/meeting-room",
     provenance: {
       source: "model",
       taskId: "task-1"
@@ -57,6 +58,13 @@ test("store binds at most one active contract to a task", async () => {
     () => store.create(makeContract({ id: "contract-2" })),
     /already has active contract/
   );
+});
+
+test("contract scope rejects legacy aliases and stores canonical IDs", () => {
+  assert.equal(SessionContractSchema.safeParse(makeContract()).success, true);
+  assert.equal(SessionContractSchema.safeParse(makeContract({
+    allowedResourceIds: ["meeting_room"]
+  })).success, false);
 });
 
 test("store returns defensive copies", async () => {
@@ -169,7 +177,7 @@ test("compatible replan is accepted", () => {
     objective: contract.objective,
     acceptanceCriteria: [...contract.acceptanceCriteria],
     forbiddenEffects: [...contract.forbiddenEffects, "delegate"],
-    allowedResourceIds: ["meeting_room"],
+    allowedResourceIds: ["place:demo-office/meeting-room"],
     maxRisk: "R1",
     privacyClass: "local_only"
   });

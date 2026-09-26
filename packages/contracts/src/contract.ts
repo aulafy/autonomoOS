@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isCanonicalResourceId } from "@agent-world/resources";
 
 export const ContractRiskSchema = z.enum([
   "R0",
@@ -29,7 +30,9 @@ export const SessionContractSchema = z.object({
   acceptanceCriteria: z.array(z.string().min(1)).min(1),
 
   forbiddenEffects: z.array(z.string().min(1)).default([]),
-  allowedResourceIds: z.array(z.string().min(1)).default([]),
+  allowedResourceIds: z.array(z.string().refine(isCanonicalResourceId, {
+    message: "Contract resource scope requires canonical ResourceIds."
+  })).default([]),
 
   maxRisk: ContractRiskSchema,
   privacyClass: ContractPrivacySchema,
