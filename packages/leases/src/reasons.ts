@@ -1,0 +1,8 @@
+export type LeaseDenialReason =
+  | "LEASE_NOT_FOUND" | "LEASE_NOT_ACTIVE" | "LEASE_EXPIRED" | "LEASE_REVOKED"
+  | "SUBJECT_MISMATCH" | "TASK_MISMATCH" | "RESOURCE_OUT_OF_SCOPE"
+  | "ACTION_OUT_OF_SCOPE" | "GRANT_NOT_FOUND" | "GRANT_REVOKED"
+  | "GRANT_EXPIRED" | "GRANT_CHANGED" | "LEASE_WIDENS_GRANT"
+  | "RESOURCE_LEASE_REQUIRED" | "RESOURCE_LEASE_EXPIRED" | "FENCE_STALE"
+  | "RESOURCE_BUSY";
+export type LeaseDecision = { allowed: true } | { allowed: false; reason: LeaseDenialReason };
