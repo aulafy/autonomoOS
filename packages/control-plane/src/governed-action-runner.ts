@@ -30,6 +30,7 @@ export interface RunnerDependencies {
   ids: RunnerIds;
   now(): number;
   observationMaxAgeMs: number;
+  transaction?<T>(work: () => T): T;
 }
 
 export class GovernedActionRunner {
@@ -78,13 +79,14 @@ export class GovernedActionRunner {
     const effectId = this.deps.ids.next("effect");
     const reservationId = this.deps.ids.next("reservation");
     const expectedPostcondition = definition.expectedPostcondition(resource.id, request.intent);
-    const reservation = this.deps.budgets.reserve({ id: reservationId,
+    const preparedState = (this.deps.transaction ?? ((work) => work()))(() => {
+      const reservation = this.deps.budgets.reserve({ id: reservationId,
       budgetId: budget.id, principalId: request.principalId, taskId: request.taskId,
       effectId, amount: definition.budgetAmount,
       expiresAt: definition.reservationTtlMs === undefined ? undefined :
         this.deps.now() + definition.reservationTtlMs }, budget.version);
-    try {
-      const created = this.deps.coordinator.createEffect({ id: effectId,
+      try {
+        const created = this.deps.coordinator.createEffect({ id: effectId,
         taskId: request.taskId, sessionContractId: request.contractId,
         intentId: request.intent.id, executionId: this.deps.ids.next("execution"),
         executorId: definition.executorId, action: request.intent.action,
@@ -97,13 +99,17 @@ export class GovernedActionRunner {
         budgetReservationIds: [reservation.id], metadata: { planId: request.planId ?? null,
           budgetActualAmount: structuredClone(definition.budgetAmount),
           riskClass: definition.risk, observationMaxAgeMs: this.deps.observationMaxAgeMs } });
-      this.deps.coordinator.prepare(created.id, created.version);
-    } catch (error) {
-      this.deps.budgets.releaseReservation(reservation.id,
-        { principalId: request.principalId, taskId: request.taskId }, reservation.version);
-      throw error;
-    }
-    const preparedEffect = this.deps.effects.get(effectId)!;
+        this.deps.coordinator.prepare(created.id, created.version);
+      } catch (error) {
+        if (!this.deps.transaction) this.deps.budgets.releaseReservation(reservation.id,
+          { principalId: request.principalId, taskId: request.taskId }, reservation.version);
+        throw error;
+      }
+      const effect = this.deps.effects.get(effectId)!;
+      this.deps.events.append({ type: "effect.prepared", taskId: request.taskId,
+        intentId: request.intent.id, effectId, at: this.deps.now() });
+      return { reservation, effect };
+    });
     const currentBudget = this.deps.budgets.getBudget(budget.id)!;
     const prepared: PreparedAction = { request: structuredClone(request),
       definition: { ...definition, resourceKinds: [...definition.resourceKinds],
@@ -114,14 +120,13 @@ export class GovernedActionRunner {
       flowDecision: prerequisites.flow, expectedPostcondition,
       admissionSnapshot: { admittedAt: this.deps.now(), contractVersion: contract.version,
         resourceGeneration: resource.generation, sinkGeneration: sink?.generation,
-        budgetVersion: currentBudget.version, reservationVersion: reservation.version,
-        effectVersion: preparedEffect.version,
+        budgetVersion: currentBudget.version, reservationVersion: preparedState.reservation.version,
+        effectVersion: preparedState.effect.version,
         compositionHistoryVersion: prerequisites.composition.historyVersion,
         flowWorkingSetVersion: prerequisites.flow?.workingSetVersion,
         authorityLeaseId: request.authorityLeaseId,
         resourceLeaseId: request.resourceLeaseId, fencingToken: request.fencingToken } };
     this.pending.set(effectId, prepared);
-    this.emit("effect.prepared", prepared);
     return { ...prepared, request: structuredClone(prepared.request),
       definition: { ...prepared.definition, resourceKinds: [...prepared.definition.resourceKinds],
         budgetAmount: { ...prepared.definition.budgetAmount } },
@@ -153,9 +158,12 @@ export class GovernedActionRunner {
         ? error.code : "COMMIT_GATE_DENIED");
     }
     const effect = this.deps.effects.get(prepared.effectId)!;
-    current = this.deps.coordinator.startDispatch(effect.id, effect.version);
-    this.deps.facts.fromEffectFacts(current.id);
-    this.emit("effect.dispatching", prepared);
+    current = (this.deps.transaction ?? ((work) => work()))(() => {
+      const dispatching = this.deps.coordinator.startDispatch(effect.id, effect.version);
+      this.deps.facts.fromEffectFacts(dispatching.id);
+      this.emit("effect.dispatching", prepared);
+      return dispatching;
+    });
     const executor = this.deps.executors.get(prepared.definition.executorId)!;
     let report;
     try {

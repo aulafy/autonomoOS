@@ -1,5 +1,8 @@
 import { WebSocketServer, WebSocket } from "ws";
+import { resolve } from "node:path";
 import { createDemoControlPlane } from "./demo-control-plane.js";
+import { createDurableDomainStores, JournalKernel, ReplayClock,
+  RuntimeDatabase } from "@agent-world/runtime-store-sqlite";
 
 import {
   ActionIntentSchema,
@@ -10,10 +13,6 @@ import {
 import {
   WorldRuntime
 } from "@agent-world/world-core";
-
-import {
-  JsonlEventStore
-} from "@agent-world/event-store";
 
 import {
   LlamaCppProvider,
@@ -30,10 +29,16 @@ const DEFAULT_AGENT_ID =
 
 const world = new WorldRuntime();
 
-const events = new JsonlEventStore(
-  process.env.EVENT_STORE_PATH ??
-  "../../data/events/world.jsonl"
-);
+const clock = new ReplayClock();
+const database = new RuntimeDatabase(resolve(process.env.AGENT_WORLD_DB_PATH ??
+  "../../data/agent-world-os.db"), clock.now);
+const kernel = new JournalKernel(database, clock);
+const stores = createDurableDomainStores(kernel);
+await kernel.restore();
+const events = {
+  append: (event: RuntimeEvent) => database.appendRuntimeEvent(event),
+  readAll: () => database.runtimeEvents() as unknown as RuntimeEvent[]
+};
 
 const inference = new LlamaCppProvider();
 
@@ -170,7 +175,7 @@ type IntentOutcome =
   | { status: "denied" | "failed" | "revoked"; intentId: string;
       executionId?: string; reason?: string };
 
-const governance = createDemoControlPlane(world, emit);
+const governance = createDemoControlPlane(world, emit, { kernel, stores });
 governance.recoverOnStartup();
 
 async function processIntent(raw: unknown, options?: { taskId?: string;

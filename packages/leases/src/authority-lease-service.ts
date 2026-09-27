@@ -22,7 +22,8 @@ export class AuthorityLeaseService {
     if (input.subjectPrincipalId !== grant.subjectPrincipalId) throw new Error("SUBJECT_MISMATCH");
     if (!input.id || !input.taskId || !input.subjectPrincipalId) throw new Error("INVALID_LEASE_IDENTITY");
     if (!Number.isFinite(input.notBefore) || !Number.isFinite(input.expiresAt) ||
-      input.notBefore < now || input.expiresAt <= input.notBefore) {
+      input.notBefore < grant.issuedAt || input.expiresAt <= now ||
+      input.expiresAt <= input.notBefore) {
       throw new Error("INVALID_LEASE_WINDOW");
     }
     if (grant.expiresAt !== undefined && input.expiresAt > grant.expiresAt) {

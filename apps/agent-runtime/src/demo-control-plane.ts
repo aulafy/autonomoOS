@@ -21,56 +21,61 @@ import { createDemoResources, InMemoryResourceRegistry, mintResourceId,
 import { InMemoryEmergencyStopStore, InMemoryQuarantineStore, SupervisorEngine,
   type RuntimeSnapshot } from "@agent-world/supervision";
 import type { WorldRuntime } from "@agent-world/world-core";
+import type { JournalKernel, createDurableDomainStores } from "@agent-world/runtime-store-sqlite";
 
 type Emit = (event: RuntimeEvent) => void;
 const clock = { now: () => Date.now() };
 
 /** Host-owned demo authority for M5's in-process world. No model may mint grants. */
-export function createDemoControlPlane(world: WorldRuntime, emit: Emit) {
-  const resources = new InMemoryResourceRegistry();
-  createDemoResources(resources);
+export function createDemoControlPlane(world: WorldRuntime, emit: Emit,
+  durable?: { kernel: JournalKernel; stores: ReturnType<typeof createDurableDomainStores> }) {
+  const stores = durable?.stores;
+  const resources = stores?.resources ?? new InMemoryResourceRegistry();
+  if (!resources.list().length) createDemoResources(resources);
   const slowToolId = mintResourceId("tool", "demo.slow");
-  resources.register({ id: slowToolId, kind: "tool", displayName: "Demo Slow Tool",
+  if (!resources.get(slowToolId)) resources.register({ id: slowToolId, kind: "tool", displayName: "Demo Slow Tool",
     aliases: ["demo.slow"], parentId: null, dataLabel: null, exclusivity: "shared",
     sink: null, source: "host" });
   const safeResources = resources.list().filter(item => ["world_place", "agent", "tool"]
     .includes(item.kind)).map(item => item.id);
-  const grants = new Map<string, AuthorityGrantView>();
-  const authoritySource = { getGrant: (id: string) => grants.get(id) ?? null };
-  const authorityStore = new InMemoryAuthorityLeaseStore();
+  const grants = stores?.grants ?? new Map<string, AuthorityGrantView>();
+  const authoritySource = stores?.grants ?? { getGrant: (id: string) =>
+    (grants as Map<string, AuthorityGrantView>).get(id) ?? null };
+  const authorityStore = stores?.authorityLeases ?? new InMemoryAuthorityLeaseStore();
   const authorityService = new AuthorityLeaseService(authoritySource, authorityStore, clock);
-  const resourceLeases = new InMemoryResourceLeaseStore(clock);
+  const resourceLeases = stores?.resourceLeases ?? new InMemoryResourceLeaseStore(clock);
   const leaseGate = new LeaseCommitGate(new AuthorityLeaseValidator(
     authoritySource, authorityStore, clock), resourceLeases, clock);
-  const contracts = new InMemoryContractStore();
-  const budgets = new InMemoryBudgetLedger(clock);
-  const observations = new InMemoryObservationStore();
+  const contracts = stores?.contracts ?? new InMemoryContractStore();
+  const budgets = stores?.budgets ?? new InMemoryBudgetLedger(clock);
+  const observations = stores?.observations ?? new InMemoryObservationStore();
   const observers = new InMemoryObserverRegistry();
   const observationPolicy = new ObservationPolicy(clock, resources);
   const observationService = new ObservationService(observers, observations,
     observationPolicy, clock);
-  const effects = new InMemoryEffectStore();
+  const effects = stores?.effects ?? new InMemoryEffectStore();
   const coordinator = new EffectCoordinator(effects, observations, observers,
-    observationPolicy, new InMemoryEffectEventSink(), clock);
+    observationPolicy, stores?.effectEvents ?? new InMemoryEffectEventSink(), clock);
   const compositionActions = new CompositionActions();
   for (const actionType of ["goto", "say", "use_tool"]) {
     compositionActions.register({ actionType, actionClass: "safe" });
   }
-  const history = new InMemoryHistoryStore();
+  const history = stores?.history ?? new InMemoryHistoryStore();
   const composition = new CompositionEngine(new CandidateCompiler(compositionActions, resources),
-    history, new InMemoryApprovalStore(), defaultCompositionRules(), clock);
-  const objects = new InMemoryDataFlowStore();
-  const flow = new FlowEngine(objects, new InMemoryTaskWorkingSetStore(objects),
-    new SinkRegistry(resources), new InMemoryReleaseApprovalStore(), defaultFlowRules(), clock.now);
+    history, stores?.compositionApprovals ?? new InMemoryApprovalStore(), defaultCompositionRules(), clock);
+  const objects = stores?.dataObjects ?? new InMemoryDataFlowStore();
+  const flow = new FlowEngine(objects, stores?.workingSets ?? new InMemoryTaskWorkingSetStore(objects),
+    stores?.sinks ?? new SinkRegistry(resources), stores?.releaseApprovals ??
+      new InMemoryReleaseApprovalStore(), defaultFlowRules(), clock.now);
   const facts = new FactCompiler(history, effects, observations, observers,
     observationPolicy, compositionActions, {});
-  const reconciliationQueue = new InMemoryReconciliationQueue();
+  const reconciliationQueue = stores?.reconciliations ?? new InMemoryReconciliationQueue();
   const reconciliation = new ReconciliationService(effects, reconciliationQueue,
     observations, observers, observationPolicy, [], clock.now);
   const supervisor = new SupervisorEngine({ stalledTaskMs: 60000, preparingMs: 60000,
     dispatchingMs: 60000, maxUnknownBacklog: 10, highUnknownRate: 1 });
-  const emergencyStop = new InMemoryEmergencyStopStore();
-  const quarantines = new InMemoryQuarantineStore();
+  const emergencyStop = stores?.emergencyStop ?? new InMemoryEmergencyStopStore();
+  const quarantines = stores?.quarantines ?? new InMemoryQuarantineStore();
   const runtimeMode = new RuntimeModeController();
   const stoppedTasks = new Set<string>();
   const snapshot = (): RuntimeSnapshot => ({ now: clock.now(), tasks: [], authorityLeases: [],
@@ -83,10 +88,11 @@ export function createDemoControlPlane(world: WorldRuntime, emit: Emit) {
         nextAttemptAt: job.nextAttemptAt, attempts: job.attempts,
         maxAttempts: job.maxAttempts })), components: [],
     quarantines: quarantines.list(), emergencyStop: emergencyStop.get(), policyAvailable: true,
-    eventStoreAvailable: true, unknownRateByExecutor: {} });
+    eventStoreAvailable: durable?.kernel.isHealthy() ?? true, unknownRateByExecutor: {} });
   const gate = new LiveCommitGate({ contracts, contractValidator: new ContractValidator(),
     resources, leases: leaseGate, resourceLeases, budgets, effects, composition, flow,
-    supervisor, snapshot, tasks: { isRunnable: id => !stoppedTasks.has(id) },
+    supervisor, snapshot, tasks: { isRunnable: id => !stoppedTasks.has(id) &&
+      (stores?.tasks.isRunnable(id) ?? true) && (durable?.kernel.isHealthy() ?? true) },
     runtimeMode, now: clock.now });
   const actions = new GovernedActionRegistry();
   actions.register({ action: "goto", executorId: "demo-world", observerId: "demo-world-observer",
@@ -166,15 +172,18 @@ export function createDemoControlPlane(world: WorldRuntime, emit: Emit) {
       timestamp: event.at, type: "control.event", taskId: event.taskId,
       intentId: event.intentId, payload: { controlEventType: event.type,
         effectId: event.effectId, detail: event.detail } }) },
-    ids: { next: () => crypto.randomUUID() }, now: clock.now, observationMaxAgeMs: 30000 });
+    ids: { next: () => crypto.randomUUID() }, now: clock.now, observationMaxAgeMs: 30000,
+    transaction: durable ? work => durable.kernel.transaction(work) : undefined });
   const completion = new TaskCompletionEvaluator(contracts, effects, observations,
     observers, observationPolicy);
   const recovery = new RecoveryManager({ effects, coordinator, observations,
     observers, observationPolicy, budgets,
     queue: reconciliationQueue, reconciliation, emergencyStop, quarantines,
     mode: runtimeMode, now: clock.now,
-    criticalStoresHealthy: () => true, policyHealthy: () => true,
-    resourcesHealthy: () => true, authorityReadable: () => true,
+    criticalStoresHealthy: () => durable?.kernel.isHealthy() ?? true,
+    policyHealthy: () => true,
+    resourcesHealthy: () => durable?.kernel.isHealthy() ?? true,
+    authorityReadable: () => durable?.kernel.isHealthy() ?? true,
     startupSupervisorHealthy: () => {
       const state = snapshot();
       const decision = supervisor.tick(state);
@@ -190,14 +199,19 @@ export function createDemoControlPlane(world: WorldRuntime, emit: Emit) {
   async function ensureTask(taskId: string, principalId: string): Promise<void> {
     if (await contracts.getForTask(taskId)) return;
     const now = clock.now();
+    if (stores && !stores.tasks.get(taskId)) stores.tasks.create({ id: taskId,
+      principalId, createdAt: now });
     const grantId = `grant:${taskId}`;
-    grants.set(grantId, { id: grantId, version: 1, subjectPrincipalId: principalId,
+    const grant: AuthorityGrantView = { id: grantId, version: 1, subjectPrincipalId: principalId,
       resourceIds: safeResources, actions: ["goto", "say", "use_tool"],
-      issuedAt: now, expiresAt: now + 3600000 });
-    authorityService.issue({ id: `authority:${taskId}`, grantId,
+      issuedAt: now, expiresAt: now + 3600000 };
+    if (stores) {
+      if (!stores.grants.getGrant(grantId)) stores.grants.create(grant);
+    } else (grants as Map<string, AuthorityGrantView>).set(grantId, grant);
+    if (!authorityStore.get(`authority:${taskId}`)) authorityService.issue({ id: `authority:${taskId}`, grantId,
       subjectPrincipalId: principalId, taskId, resourceIds: safeResources,
       actions: ["goto", "say", "use_tool"], notBefore: now, expiresAt: now + 3600000 });
-    budgets.createBudget({ id: `budget:${taskId}`, ownerPrincipalId: principalId,
+    if (!budgets.getBudget(`budget:${taskId}`)) budgets.createBudget({ id: `budget:${taskId}`, ownerPrincipalId: principalId,
       taskId, ceiling: { actions: "100" }, expiresAt: now + 3600000 });
     await contracts.create({ id: `contract:${taskId}`, ownerPrincipalId: principalId, taskId,
       objective: "Execute authorized M5 demo actions", acceptanceCriteria: ["required actions observed"],
@@ -209,6 +223,10 @@ export function createDemoControlPlane(world: WorldRuntime, emit: Emit) {
 
   async function run(intent: ActionIntent, taskId: string, correlationId: string,
     planId?: string, signal?: AbortSignal): Promise<GovernedResult> {
+    if (durable && (runtimeMode.mode !== "normal" || !durable.kernel.isHealthy())) {
+      return { status: "blocked", taskId, intentId: intent.id, observationIds: [],
+        reasonCode: "RUNTIME_READ_ONLY" };
+    }
     if (intent.actorId !== "astra" || !["goto", "say", "use_tool"].includes(intent.action) ||
       (intent.action === "use_tool" && intent.parameters?.tool !== "demo.slow")) {
       return { status: "denied", taskId, intentId: intent.id, observationIds: [],
@@ -240,7 +258,10 @@ export function createDemoControlPlane(world: WorldRuntime, emit: Emit) {
       return { status: "denied", taskId, intentId: intent.id, observationIds: [],
         reasonCode: error instanceof Error ? error.message : "GOVERNANCE_ERROR" };
     }
-    taskEffects.set(taskId, [...(taskEffects.get(taskId) ?? []), prepared.effectId]);
+    if (stores) {
+      const task = stores.tasks.get(taskId)!;
+      stores.tasks.addRequiredEffect(taskId, prepared.effectId, task.version);
+    } else taskEffects.set(taskId, [...(taskEffects.get(taskId) ?? []), prepared.effectId]);
     try {
       const result = await runner.dispatchPrepared(prepared, signal);
       if (held && result.status !== "unknown") resourceLeases.release(held.id, held.version);
@@ -253,17 +274,27 @@ export function createDemoControlPlane(world: WorldRuntime, emit: Emit) {
   }
 
   async function mayComplete(taskId: string): Promise<boolean> {
-    const requiredEffectIds = taskEffects.get(taskId) ?? [];
+    const requiredEffectIds = stores?.tasks.get(taskId)?.requiredEffectIds ??
+      taskEffects.get(taskId) ?? [];
     const last = requiredEffectIds.at(-1);
     if (!last) return false;
     const acceptanceEvidence: TaskAcceptanceEvidence[] = [{ criterion: "required actions observed",
       effectId: last, riskClass: "R1" }];
-    return (await completion.evaluate({ taskId, contractId: `contract:${taskId}`,
+    const complete = (await completion.evaluate({ taskId, contractId: `contract:${taskId}`,
       requiredEffectIds, acceptanceEvidence, maxObservationAgeMs: 30000,
       pendingApprovalCount: 0 })).complete;
+    if (complete && stores) {
+      const task = stores.tasks.get(taskId);
+      if (task?.status === "running") stores.tasks.setStatus(taskId, "completed", task.version);
+    }
+    return complete;
   }
   return { run, mayComplete, recoverOnStartup: () => recovery.run(),
-    runtimeMode, stopTask: (id: string) => stoppedTasks.add(id),
+    runtimeMode, stopTask: (id: string) => {
+      stoppedTasks.add(id);
+      const task = stores?.tasks.get(id);
+      if (task?.status === "running") stores?.tasks.setStatus(id, "cancelled", task.version);
+    },
     activateEmergencyStop: (reason: string) => emergencyStop.activate(reason, clock.now()),
     quarantineExecutor: (executorId: string, reason: string) => quarantines.add({
       id: crypto.randomUUID(), executorId, reason, createdAt: clock.now(), active: true }) };

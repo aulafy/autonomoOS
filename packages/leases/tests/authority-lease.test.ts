@@ -69,6 +69,14 @@ test("future notBefore and exact expiry boundary are denied", () => {
   assert.deepEqual(f.validator.validate(f.check), { allowed: false, reason: "LEASE_EXPIRED" });
 });
 
+test("lease issuance accepts an already active boundary after clock advances", () => {
+  const f = fixture();
+  f.setNow(101);
+  const issued = f.service.issue(f.input);
+  assert.equal(issued.notBefore, 100);
+  assert.deepEqual(f.validator.validate(f.check), { allowed: true });
+});
+
 test("revoked lease and stale caller copy cannot override current store", () => {
   const f = fixture();
   const callerCopy = f.service.issue(f.input);
