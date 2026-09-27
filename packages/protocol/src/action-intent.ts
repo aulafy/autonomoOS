@@ -31,7 +31,12 @@ export const ActionIntentSchema = z.object({
   provenance: z.object({
     source: z.enum(["human", "model", "rule", "agent"]),
     sourceId: z.string().optional(),
-    taskId: z.string().optional()
+    taskId: z.string().optional(),
+    provider: z.string().optional(),
+    model: z.string().optional(),
+    inferenceRequestId: z.string().optional(),
+    promptHash: z.string().optional(),
+    responseHash: z.string().optional()
   })
 });
 
