@@ -115,3 +115,21 @@ test("failed multi-store transaction leaves durable log empty and fails closed l
     reopened.database.close();
   });
 });
+
+test("one operation timestamp is used even when the wall clock advances on every read", async () => {
+  await temporary(async path => {
+    let tick = 100;
+    const first = open(path, () => tick++);
+    await first.kernel.restore();
+    const resourceId = mintResourceId("world_place", "clock/room");
+    const registered = first.resources.register({ id: resourceId, kind: "world_place",
+      displayName: "Room", aliases: [], parentId: null, dataLabel: null,
+      exclusivity: "shared", sink: null, source: "host" });
+    assert.equal(first.database.commands()[0]?.occurredAt, registered.registeredAt);
+    first.database.close();
+    const second = open(path, () => 1000);
+    await second.kernel.restore();
+    assert.equal(second.resources.get(resourceId)?.registeredAt, registered.registeredAt);
+    second.database.close();
+  });
+});

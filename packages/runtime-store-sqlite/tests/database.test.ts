@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
@@ -30,6 +30,9 @@ test("new database initializes WAL/FULL/foreign keys and reopens at stable migra
     assert.equal(reopened.commands().length, 1);
     assert.equal((reopened.commands()[0]!.args[0] as { optional?: unknown }).optional, undefined);
     assert.equal(reopened.runtimeEvents().length, 1);
+    assert.equal(reopened.exportRuntimeEventsJsonl(join(path, "../events.jsonl")), 1);
+    assert.deepEqual(readFileSync(join(path, "../events.jsonl"), "utf8").trim().split("\n")
+      .map(line => JSON.parse(line)), reopened.runtimeEvents());
     assert.equal((reopened.db.prepare("SELECT count(*) AS count FROM schema_migrations")
       .get() as { count: number }).count, 1);
     reopened.close();

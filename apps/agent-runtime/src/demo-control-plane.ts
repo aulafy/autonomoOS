@@ -24,11 +24,12 @@ import type { WorldRuntime } from "@agent-world/world-core";
 import type { JournalKernel, createDurableDomainStores } from "@agent-world/runtime-store-sqlite";
 
 type Emit = (event: RuntimeEvent) => void;
-const clock = { now: () => Date.now() };
 
 /** Host-owned demo authority for M5's in-process world. No model may mint grants. */
 export function createDemoControlPlane(world: WorldRuntime, emit: Emit,
-  durable?: { kernel: JournalKernel; stores: ReturnType<typeof createDurableDomainStores> }) {
+  durable?: { kernel: JournalKernel; stores: ReturnType<typeof createDurableDomainStores>;
+    beforeExecutorDispatch?(): void }) {
+  const clock = durable?.kernel.clock ?? { now: () => Date.now() };
   const stores = durable?.stores;
   const resources = stores?.resources ?? new InMemoryResourceRegistry();
   if (!resources.list().length) createDemoResources(resources);
@@ -173,7 +174,8 @@ export function createDemoControlPlane(world: WorldRuntime, emit: Emit,
       intentId: event.intentId, payload: { controlEventType: event.type,
         effectId: event.effectId, detail: event.detail } }) },
     ids: { next: () => crypto.randomUUID() }, now: clock.now, observationMaxAgeMs: 30000,
-    transaction: durable ? work => durable.kernel.transaction(work) : undefined });
+    transaction: durable ? work => durable.kernel.transaction(work) : undefined,
+    beforeExecutorDispatch: durable?.beforeExecutorDispatch });
   const completion = new TaskCompletionEvaluator(contracts, effects, observations,
     observers, observationPolicy);
   const recovery = new RecoveryManager({ effects, coordinator, observations,
@@ -274,6 +276,7 @@ export function createDemoControlPlane(world: WorldRuntime, emit: Emit,
   }
 
   async function mayComplete(taskId: string): Promise<boolean> {
+    if (stores?.tasks.get(taskId)?.status === "completed") return true;
     const requiredEffectIds = stores?.tasks.get(taskId)?.requiredEffectIds ??
       taskEffects.get(taskId) ?? [];
     const last = requiredEffectIds.at(-1);

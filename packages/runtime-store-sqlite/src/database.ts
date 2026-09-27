@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { mkdirSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { deserialize, serialize } from "node:v8";
@@ -75,14 +75,14 @@ export class RuntimeDatabase {
   }
 
   appendCommand(storeName: string, methodName: string, args: unknown[],
-    result: unknown): number {
+    result: unknown, occurredAt: number = this.now()): number {
     if (!storeName || !methodName || !Array.isArray(args)) {
       throw new Error("INVALID_STORE_COMMAND");
     }
     const write = () => {
       const info = this.db.prepare(`INSERT INTO store_commands
         (store_name, method_name, occurred_at, args, result_digest)
-        VALUES (?, ?, ?, ?, ?)`).run(storeName, methodName, this.now(),
+        VALUES (?, ?, ?, ?, ?)`).run(storeName, methodName, occurredAt,
         serialize(args), digest(result));
       return Number(info.lastInsertRowid);
     };
@@ -114,6 +114,15 @@ export class RuntimeDatabase {
     const rows = this.db.prepare("SELECT event_json FROM runtime_events ORDER BY sequence")
       .all() as { event_json: string }[];
     return rows.map(row => JSON.parse(row.event_json) as Record<string, unknown>);
+  }
+
+  /** Compatibility snapshot for the original JSONL replay/debug format. */
+  exportRuntimeEventsJsonl(outputPath: string): number {
+    const events = this.runtimeEvents();
+    mkdirSync(dirname(outputPath), { recursive: true });
+    writeFileSync(outputPath, events.map(event => JSON.stringify(event)).join("\n") +
+      (events.length ? "\n" : ""), "utf8");
+    return events.length;
   }
 
   setProjectionDigest(name: string, sourceSequence: number, value: string): void {

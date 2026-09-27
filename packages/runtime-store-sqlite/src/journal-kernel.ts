@@ -1,11 +1,14 @@
 import { createHash } from "node:crypto";
+import { AsyncLocalStorage } from "node:async_hooks";
 import { digest, RuntimeDatabase } from "./database.js";
 
 export class ReplayClock {
   private replayAt: number | null = null;
+  private readonly operationAt = new AsyncLocalStorage<number>();
   constructor(private readonly liveNow: () => number = Date.now) {}
-  now = (): number => this.replayAt ?? this.liveNow();
+  now = (): number => this.operationAt.getStore() ?? this.replayAt ?? this.liveNow();
   at(value: number | null): void { this.replayAt = value; }
+  runAt<T>(value: number, work: () => T): T { return this.operationAt.run(value, work); }
 }
 
 interface Entry { name: string; factory: () => object; inner: object;
@@ -44,12 +47,16 @@ export class JournalKernel {
       if (!entry.mutators.has(String(property))) return member.bind(entry.inner);
       return (...args: unknown[]) => {
         if (!this.restored || !this.healthy) throw new Error("DURABLE_KERNEL_NOT_READY");
-        const result = (member as (...args: unknown[]) => unknown).apply(entry.inner, args);
+        const occurredAt = this.clock.now();
+        const current = (entry.inner as Record<PropertyKey, unknown>)[property] as
+          (...args: unknown[]) => unknown;
+        const result = this.clock.runAt(occurredAt, () => current.apply(entry.inner, args));
         if (result instanceof Promise) {
-          return result.then(value => { this.persist(entry.name, String(property), args, value);
+          return result.then(value => { this.persist(entry.name, String(property), args, value,
+            occurredAt);
             return value; });
         }
-        this.persist(entry.name, String(property), args, result);
+        this.persist(entry.name, String(property), args, result, occurredAt);
         return result;
       };
     } });
@@ -71,7 +78,8 @@ export class JournalKernel {
           command.methodName]!;
         const result = await method.apply(entry.inner, command.args);
         if (digest(result) !== command.resultDigest) {
-          throw new Error(`PROJECTION_REPLAY_MISMATCH:${command.sequence}`);
+          throw new Error(`PROJECTION_REPLAY_MISMATCH:${command.sequence}:` +
+            `${command.storeName}.${command.methodName}`);
         }
         const previous = this.hashes.get(entry.name)?.digest ?? "GENESIS";
         this.hashes.set(entry.name, { sequence: command.sequence,
@@ -101,10 +109,11 @@ export class JournalKernel {
 
   isHealthy(): boolean { return this.restored && this.healthy; }
 
-  private persist(name: string, method: string, args: unknown[], result: unknown): void {
+  private persist(name: string, method: string, args: unknown[], result: unknown,
+    occurredAt: number): void {
     try {
       this.database.transaction(() => {
-        const sequence = this.database.appendCommand(name, method, args, result);
+        const sequence = this.database.appendCommand(name, method, args, result, occurredAt);
         const previous = this.hashes.get(name)?.digest ?? "GENESIS";
         const next = chain(previous, sequence, digest(result));
         this.database.setProjectionDigest(name, sequence, next);

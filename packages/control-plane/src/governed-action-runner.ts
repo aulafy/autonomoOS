@@ -31,6 +31,8 @@ export interface RunnerDependencies {
   now(): number;
   observationMaxAgeMs: number;
   transaction?<T>(work: () => T): T;
+  /** Host fault-injection boundary after the dispatch marker commits. */
+  beforeExecutorDispatch?(): void;
 }
 
 export class GovernedActionRunner {
@@ -164,6 +166,7 @@ export class GovernedActionRunner {
       this.emit("effect.dispatching", prepared);
       return dispatching;
     });
+    this.deps.beforeExecutorDispatch?.();
     const executor = this.deps.executors.get(prepared.definition.executorId)!;
     let report;
     try {
@@ -179,7 +182,9 @@ export class GovernedActionRunner {
       current = this.deps.coordinator.recordDispatchResult(current.id, current.version, report);
       this.emit("effect.dispatch_reported", prepared);
     }
+    let factsCaptured = false;
     if (current.status === "dispatching") {
+      let observationId: string | undefined;
       try {
         const observed = await this.deps.observationService.observe({
           observerId: prepared.definition.observerId,
@@ -192,16 +197,24 @@ export class GovernedActionRunner {
           riskClass: prepared.definition.risk,
           maxAgeMs: this.deps.observationMaxAgeMs
         }, signal);
-        current = this.deps.coordinator.settleFromObservation(current.id, current.version,
-          observed.observation.id, { riskClass: prepared.definition.risk,
-            maxAgeMs: this.deps.observationMaxAgeMs });
+        observationId = observed.observation.id;
       } catch {
         current = this.deps.coordinator.recordObservationError(current.id, current.version);
       }
+      if (observationId) {
+        current = (this.deps.transaction ?? ((work) => work()))(() => {
+          const settled = this.deps.coordinator.settleFromObservation(current.id,
+            current.version, observationId, { riskClass: prepared.definition.risk,
+              maxAgeMs: this.deps.observationMaxAgeMs });
+          if (settled.status === "committed") this.commitReservation(prepared);
+          this.deps.facts.fromEffectFacts(settled.id);
+          factsCaptured = true;
+          return settled;
+        });
+      }
     }
-    this.deps.facts.fromEffectFacts(current.id);
+    if (!factsCaptured) this.deps.facts.fromEffectFacts(current.id);
     if (current.status === "committed") {
-      this.commitReservation(prepared);
       this.emit("effect.committed", prepared);
       return this.result(prepared, "completed", "OBSERVATION_CONFIRMED", current.observationIds);
     }

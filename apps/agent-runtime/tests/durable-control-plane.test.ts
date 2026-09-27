@@ -2,7 +2,9 @@ import assert from "node:assert/strict";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { spawnSync } from "node:child_process";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import { WorldRuntime } from "@agent-world/world-core";
 import { createDurableDomainStores, JournalKernel, ReplayClock,
   RuntimeDatabase } from "@agent-world/runtime-store-sqlite";
@@ -48,6 +50,37 @@ test("durable demo control plane reopens task, effect and grant before another a
     assert.ok(second.stores.grants.getGrant("grant:task-1"));
     assert.equal(await second.control.mayComplete("task-1"), true);
     second.database.close();
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test("fresh process recovers an integrated C11 dispatch marker without calling world executor", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "h1-c11-crash-"));
+  const path = join(directory, "runtime.db");
+  try {
+    const fixture = fileURLToPath(new URL("./fixtures/kill-after-dispatch.ts", import.meta.url));
+    const child = spawnSync(process.execPath, ["--import", "tsx", fixture, path], {
+      cwd: fileURLToPath(new URL("../../..", import.meta.url)),
+      encoding: "utf8", timeout: 15000 });
+    assert.equal(child.signal, "SIGKILL", child.stderr);
+    const clock = new ReplayClock();
+    const database = new RuntimeDatabase(path, clock.now);
+    const kernel = new JournalKernel(database, clock);
+    const stores = createDurableDomainStores(kernel);
+    await kernel.restore();
+    assert.equal(stores.effects.list().length, 1);
+    assert.equal(stores.effects.list()[0]?.status, "dispatching");
+    assert.equal(stores.budgets.listReservations()[0]?.status, "active");
+    assert.equal(database.runtimeEvents().filter(event => event.type === "agent.moved").length, 0);
+    const control = createDemoControlPlane(world(), event =>
+      database.appendRuntimeEvent(event), { kernel, stores });
+    control.recoverOnStartup();
+    assert.equal(stores.effects.list()[0]?.status, "unknown");
+    assert.equal(stores.budgets.listReservations()[0]?.status, "active");
+    assert.equal(stores.reconciliations.list().length, 1);
+    assert.equal(database.runtimeEvents().filter(event => event.type === "agent.moved").length, 0);
+    database.close();
   } finally {
     rmSync(directory, { recursive: true, force: true });
   }

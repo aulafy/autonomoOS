@@ -1,5 +1,6 @@
 import { WebSocketServer, WebSocket } from "ws";
 import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { createDemoControlPlane } from "./demo-control-plane.js";
 import { createDurableDomainStores, JournalKernel, ReplayClock,
   RuntimeDatabase } from "@agent-world/runtime-store-sqlite";
@@ -30,8 +31,9 @@ const DEFAULT_AGENT_ID =
 const world = new WorldRuntime();
 
 const clock = new ReplayClock();
-const database = new RuntimeDatabase(resolve(process.env.AGENT_WORLD_DB_PATH ??
-  "../../data/agent-world-os.db"), clock.now);
+const database = new RuntimeDatabase(process.env.AGENT_WORLD_DB_PATH
+  ? resolve(process.env.AGENT_WORLD_DB_PATH)
+  : fileURLToPath(new URL("../../../data/agent-world-os.db", import.meta.url)), clock.now);
 const kernel = new JournalKernel(database, clock);
 const stores = createDurableDomainStores(kernel);
 await kernel.restore();

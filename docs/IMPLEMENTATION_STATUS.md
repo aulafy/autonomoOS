@@ -16,3 +16,4 @@ The repository and its tests are authoritative. Counts below are workspace total
 | C10 Supervisor | Complete | `supervision` | See tag | `c10-supervisor` | 159 | Package only | In-memory control state |
 | C11 GovernedActionRunner | Complete | `control-plane`, M5 runtime | `f59cb25` | `c11-governed-runner` | 174 | Live M5 demo | In-memory authority/effects; weak speech evidence |
 | C12 Crash Recovery | Complete (storage-interface semantics) | `recovery`, M5 startup | See tag | `c12-crash-recovery` | 186 | Recovering mode gates demo runtime | In-memory stores do not survive a real process crash |
+| H1 Durable Runtime | Complete | `runtime-store-sqlite`, M5 runtime | See tag | `h1-durable-runtime` | 199 | SQLite command journal, projection replay, fresh-process SIGKILL A–H and C11 restart | Three.js world state is still an in-process demo; see [H1 details](H1_DURABLE_RUNTIME.md) |
