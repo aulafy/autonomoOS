@@ -80,11 +80,19 @@ export class FilesystemWorkspace {
   }
 
   pathForResource(id: ResourceId, affordance: "read" | "write"): string {
+    return this.boundPath(id, affordance);
+  }
+
+  pathForObservation(id: ResourceId): string {
+    return this.boundPath(id);
+  }
+
+  private boundPath(id: ResourceId, affordance?: "read" | "write"): string {
     const record = this.resources.get(id);
     if (!record || record.kind !== "file" || record.source !== "filesystem_resolver" ||
       record.parentId !== this.directoryId ||
       record.metadata.rootBinding !== this.rootBinding ||
-      record.metadata[affordance === "read" ? "readable" : "writable"] !== true ||
+      (affordance && record.metadata[affordance === "read" ? "readable" : "writable"] !== true) ||
       typeof record.metadata.relativePath !== "string") {
       throw new FilesystemBoundaryError("FILE_RESOURCE_NOT_AUTHORIZED");
     }
@@ -92,7 +100,7 @@ export class FilesystemWorkspace {
     if (record.id !== mintResourceId("file", `workspace/${relativePath}`)) {
       throw new FilesystemBoundaryError("FILE_RESOURCE_MISMATCH");
     }
-    return this.pathForRelative(relativePath, affordance === "write");
+    return this.pathForRelative(relativePath, affordance !== "read");
   }
 
   private pathForRelative(relativePath: string, allowMissing: boolean): string {
