@@ -25,7 +25,7 @@ export class FilesystemObserver implements Observer {
       observerId: this.descriptor.id, source: "filesystem" as const,
       observedAt: this.now(), expectedPostcondition: structuredClone(expected),
       expectedPostconditionHash: postconditionHash(expected),
-      observedResourceGenerations: id && this.resources.get(id)
+      observedResourceGenerations: expected.kind === "filesystem_read" && id && this.resources.get(id)
         ? { [id]: this.resources.get(id)!.generation } : {}, metadata: {} };
     if (signal.aborted || !id || request.subject.resourceIds.length !== 1 ||
       expected.resourceIds.length !== 1 || expected.resourceIds[0] !== id ||

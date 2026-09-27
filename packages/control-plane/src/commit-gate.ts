@@ -110,6 +110,11 @@ export class LiveCommitGate {
   async check(prepared: PreparedAction): Promise<PrerequisiteResult> {
     const current = await this.checkPrerequisites(prepared.request, prepared.definition,
       prepared.canonicalResourceId, prepared.resourceGeneration, prepared.sinkGeneration);
+    if (prepared.definition.strictDecisionVersions &&
+      (current.composition.historyVersion !== prepared.admissionSnapshot.compositionHistoryVersion ||
+        current.flow?.workingSetVersion !== prepared.admissionSnapshot.flowWorkingSetVersion)) {
+      throw new ControlPlaneError("DECISION_VERSION_CHANGED");
+    }
     const effect = this.deps.effects.get(prepared.effectId);
     if (!effect || effect.status !== "prepared") throw new ControlPlaneError("EFFECT_NOT_PREPARED");
     const reservation = this.deps.budgets.getReservation(prepared.reservationId);

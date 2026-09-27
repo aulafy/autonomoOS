@@ -33,6 +33,9 @@ export interface RunnerDependencies {
   transaction?<T>(work: () => T): T;
   /** Host fault-injection boundary after the dispatch marker commits. */
   beforeExecutorDispatch?(): void;
+  beforeCommitGate?(): void;
+  afterExecutorResponse?(): void;
+  afterObservationPersisted?(): void;
 }
 
 export class GovernedActionRunner {
@@ -80,11 +83,12 @@ export class GovernedActionRunner {
     }
     const effectId = this.deps.ids.next("effect");
     const reservationId = this.deps.ids.next("reservation");
+    const budgetAmount = definition.budgetForIntent?.(request.intent) ?? definition.budgetAmount;
     const expectedPostcondition = definition.expectedPostcondition(resource.id, request.intent);
     const preparedState = (this.deps.transaction ?? ((work) => work()))(() => {
       const reservation = this.deps.budgets.reserve({ id: reservationId,
       budgetId: budget.id, principalId: request.principalId, taskId: request.taskId,
-      effectId, amount: definition.budgetAmount,
+      effectId, amount: budgetAmount,
       expiresAt: definition.reservationTtlMs === undefined ? undefined :
         this.deps.now() + definition.reservationTtlMs }, budget.version);
       try {
@@ -99,7 +103,7 @@ export class GovernedActionRunner {
         authorityLeaseIds: [request.authorityLeaseId],
         resourceLeaseIds: request.resourceLeaseId ? [request.resourceLeaseId] : [],
         budgetReservationIds: [reservation.id], metadata: { planId: request.planId ?? null,
-          budgetActualAmount: structuredClone(definition.budgetAmount),
+          budgetActualAmount: structuredClone(budgetAmount),
           riskClass: definition.risk, observationMaxAgeMs: this.deps.observationMaxAgeMs } });
         this.deps.coordinator.prepare(created.id, created.version);
       } catch (error) {
@@ -118,7 +122,8 @@ export class GovernedActionRunner {
         budgetAmount: { ...definition.budgetAmount } },
       canonicalResourceId: resource.id, resourceGeneration: resource.generation,
       sinkGeneration: sink?.generation,
-      effectId, reservationId, compositionDecision: prerequisites.composition,
+      effectId, reservationId, reservedBudgetAmount: structuredClone(budgetAmount),
+      compositionDecision: prerequisites.composition,
       flowDecision: prerequisites.flow, expectedPostcondition,
       admissionSnapshot: { admittedAt: this.deps.now(), contractVersion: contract.version,
         resourceGeneration: resource.generation, sinkGeneration: sink?.generation,
@@ -143,6 +148,7 @@ export class GovernedActionRunner {
     this.pending.delete(candidate.effectId);
     let current: EffectTransaction;
     try {
+      this.deps.beforeCommitGate?.();
       await this.deps.gate.check(prepared);
     } catch (error) {
       this.deps.events.append({ type: "action.commit_denied",
@@ -179,6 +185,7 @@ export class GovernedActionRunner {
       current = this.deps.coordinator.recordExecutorError(current.id, current.version);
     }
     if (report) {
+      this.deps.afterExecutorResponse?.();
       current = this.deps.coordinator.recordDispatchResult(current.id, current.version, report);
       this.emit("effect.dispatch_reported", prepared);
     }
@@ -198,6 +205,7 @@ export class GovernedActionRunner {
           maxAgeMs: this.deps.observationMaxAgeMs
         }, signal);
         observationId = observed.observation.id;
+        this.deps.afterObservationPersisted?.();
       } catch {
         current = this.deps.coordinator.recordObservationError(current.id, current.version);
       }
@@ -235,7 +243,7 @@ export class GovernedActionRunner {
     const reservation = this.deps.budgets.getReservation(prepared.reservationId)!;
     this.deps.budgets.commitHeldReservation(reservation.id,
       { principalId: prepared.request.principalId, taskId: prepared.request.taskId },
-      prepared.definition.budgetAmount, reservation.version);
+      prepared.reservedBudgetAmount, reservation.version);
   }
   private releaseReservation(prepared: PreparedAction): void {
     const reservation = this.deps.budgets.getReservation(prepared.reservationId);

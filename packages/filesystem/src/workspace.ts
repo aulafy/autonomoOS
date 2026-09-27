@@ -74,7 +74,9 @@ export class FilesystemWorkspace {
       displayName: input.displayName ?? basename(relativePath),
       aliases: [relativePath], parentId: this.directoryId,
       dataLabel: input.label ?? null, exclusivity: "single_writer",
-      sink: input.sink ?? null, source: "filesystem_resolver",
+      sink: input.sink ?? { external: false, trustClass: "local",
+        allowedSensitivity: ["public", "internal", "confidential", "restricted", "secret"] },
+      source: "filesystem_resolver",
       metadata: { rootBinding: this.rootBinding, relativePath,
         readable: input.readable !== false, writable: input.writable !== false } });
   }

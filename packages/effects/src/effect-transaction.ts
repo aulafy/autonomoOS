@@ -29,6 +29,7 @@ export interface EffectTransaction {
   externalReference?: string;
   dispatchResult?: DispatchResult;
   settlementEvaluation?: ObservationEvaluation;
+  reconciliationDecisionId?: string;
   unknownReasonCode?: string;
   createdAt: number;
   preparedAt?: number;

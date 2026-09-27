@@ -43,7 +43,8 @@ function regularFile(path: string): boolean {
 /** Receives only a canonical resource after C11 admission and commit gate. */
 export class FilesystemWriteExecutor implements SideEffectExecutor {
   readonly id = "filesystem-write";
-  constructor(private readonly workspace: FilesystemWorkspace) {}
+  constructor(private readonly workspace: FilesystemWorkspace,
+    private readonly afterTargetMutation?: () => void) {}
 
   async dispatch(context: ExecutorContext, signal: AbortSignal): Promise<DispatchResult> {
     let target: string;
@@ -88,6 +89,7 @@ export class FilesystemWriteExecutor implements SideEffectExecutor {
         renameSync(temporary, target); // Atomic replacement on the same filesystem.
         tempExists = false;
       }
+      this.afterTargetMutation?.();
       fsyncParent(target);
       return { kind: "reported_success", metadata: { sha256, byteLength: bytes.length } };
     } catch (error) {

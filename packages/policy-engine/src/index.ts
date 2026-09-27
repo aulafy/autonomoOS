@@ -17,7 +17,8 @@ export function authorize(intent: ActionIntent): PolicyDecision {
     use_tool: "R2",
     delegate: "R2",
     ask_human: "R0",
-    purchase_compute: "R4"
+    purchase_compute: "R4",
+    "file.read": "R1", "file.write": "R2"
   };
 
   const risk = riskByAction[intent.action];

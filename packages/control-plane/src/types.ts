@@ -15,7 +15,9 @@ export interface GovernedActionDefinition {
   resourceKinds: ResourceKind[];
   requiresResourceLease: boolean;
   requiresFlow: boolean;
+  strictDecisionVersions?: boolean;
   budgetAmount: BudgetVector;
+  budgetForIntent?(intent: ActionIntent): BudgetVector;
   reservationTtlMs?: number;
   expectedPostcondition(resourceId: ResourceId, intent: ActionIntent): ExpectedPostcondition;
 }
@@ -79,6 +81,7 @@ export interface PreparedAction {
   sinkGeneration?: number;
   effectId: string;
   reservationId: string;
+  reservedBudgetAmount: BudgetVector;
   compositionDecision: CompositionDecision;
   flowDecision?: FlowDecision;
   expectedPostcondition: ExpectedPostcondition;

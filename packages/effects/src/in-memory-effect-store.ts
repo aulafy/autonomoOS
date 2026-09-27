@@ -68,6 +68,10 @@ export class InMemoryEffectStore implements EffectStore {
         next.settlementEvaluation.effectiveStatus !== "confirmed")) {
       throw new EffectError("INVALID_EFFECT_TRANSITION", "commit_requires_accepted_observation");
     }
+    if (current.status === "unknown" && next.status === "committed" &&
+      !next.reconciliationDecisionId) {
+      throw new EffectError("INVALID_EFFECT_TRANSITION", "reconciliation_decision_required");
+    }
     if (next.status === "prepared" && !Number.isFinite(next.preparedAt)) {
       throw new EffectError("INVALID_EFFECT_TRANSITION", "prepare_timestamp_missing");
     }

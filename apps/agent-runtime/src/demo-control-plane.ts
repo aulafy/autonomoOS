@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { InMemoryBudgetLedger } from "@agent-world/budgets";
 import { ActionRegistry as CompositionActions, CandidateCompiler, CompositionEngine,
   defaultCompositionRules, FactCompiler, InMemoryApprovalStore,
@@ -6,9 +7,15 @@ import { GovernedActionRegistry, ExecutorRegistry, GovernedActionRunner,
   LiveCommitGate, TaskCompletionEvaluator, type TaskAcceptanceEvidence,
   type GovernedResult } from "@agent-world/control-plane";
 import { ContractValidator, InMemoryContractStore } from "@agent-world/contracts";
+import type { ContractRisk } from "@agent-world/contracts";
 import { EffectCoordinator, InMemoryEffectEventSink, InMemoryEffectStore } from "@agent-world/effects";
+import { expectedBytes, FilesystemObserver, FilesystemReadExecutor,
+  FilesystemReconciler, FilesystemWriteExecutor, validateLogicalPath,
+  type FilesystemWorkspace } from
+  "@agent-world/filesystem";
 import { defaultFlowRules, FlowEngine, InMemoryDataFlowStore,
   InMemoryReleaseApprovalStore, InMemoryTaskWorkingSetStore, SinkRegistry } from "@agent-world/information-flow";
+import type { DataLabel } from "@agent-world/information-flow";
 import { AuthorityLeaseService, AuthorityLeaseValidator, InMemoryAuthorityLeaseStore,
   InMemoryResourceLeaseStore, LeaseCommitGate, type AuthorityGrantView } from "@agent-world/leases";
 import { InMemoryObservationStore, InMemoryObserverRegistry, ObservationPolicy,
@@ -28,8 +35,12 @@ type Emit = (event: RuntimeEvent) => void;
 /** Host-owned demo authority for M5's in-process world. No model may mint grants. */
 export function createDemoControlPlane(world: WorldRuntime, emit: Emit,
   durable?: { kernel: JournalKernel; stores: ReturnType<typeof createDurableDomainStores>;
-    beforeExecutorDispatch?(): void }) {
+    beforeExecutorDispatch?(): void; beforeCommitGate?(): void;
+    beforePreparedDispatch?(): void; afterExecutorResponse?(): void;
+    afterObservationPersisted?(): void; afterFilesystemMutation?(): void;
+    filesystem?: FilesystemWorkspace }) {
   const clock = durable?.kernel.clock ?? { now: () => Date.now() };
+  const filesystem = durable?.filesystem;
   const stores = durable?.stores;
   const resources = stores?.resources ?? new InMemoryResourceRegistry();
   if (!resources.list().length) createDemoResources(resources);
@@ -37,7 +48,7 @@ export function createDemoControlPlane(world: WorldRuntime, emit: Emit,
   if (!resources.get(slowToolId)) resources.register({ id: slowToolId, kind: "tool", displayName: "Demo Slow Tool",
     aliases: ["demo.slow"], parentId: null, dataLabel: null, exclusivity: "shared",
     sink: null, source: "host" });
-  const safeResources = resources.list().filter(item => ["world_place", "agent", "tool"]
+  const safeResources = resources.list().filter(item => ["world_place", "agent", "tool", "file"]
     .includes(item.kind)).map(item => item.id);
   const grants = stores?.grants ?? new Map<string, AuthorityGrantView>();
   const authoritySource = stores?.grants ?? { getGrant: (id: string) =>
@@ -61,18 +72,30 @@ export function createDemoControlPlane(world: WorldRuntime, emit: Emit,
   for (const actionType of ["goto", "say", "use_tool"]) {
     compositionActions.register({ actionType, actionClass: "safe" });
   }
+  if (filesystem) {
+    compositionActions.register({ actionType: "file.read", actionClass: "sensitive_read" });
+    compositionActions.register({ actionType: "file.write", actionClass: "external_send" });
+  }
   const history = stores?.history ?? new InMemoryHistoryStore();
   const composition = new CompositionEngine(new CandidateCompiler(compositionActions, resources),
     history, stores?.compositionApprovals ?? new InMemoryApprovalStore(), defaultCompositionRules(), clock);
   const objects = stores?.dataObjects ?? new InMemoryDataFlowStore();
-  const flow = new FlowEngine(objects, stores?.workingSets ?? new InMemoryTaskWorkingSetStore(objects),
-    stores?.sinks ?? new SinkRegistry(resources), stores?.releaseApprovals ??
+  const workingSets = stores?.workingSets ?? new InMemoryTaskWorkingSetStore(objects);
+  const sinkRegistry = stores?.sinks ?? new SinkRegistry(resources);
+  if (filesystem) for (const file of resources.listByKind("file")) {
+    if (!sinkRegistry.get(file.id)) sinkRegistry.register({ id: file.id, kind: "file",
+      trust: file.sink?.trustClass ?? "local", hostControlled: true, metadata: {} });
+  }
+  const flow = new FlowEngine(objects, workingSets,
+    sinkRegistry, stores?.releaseApprovals ??
       new InMemoryReleaseApprovalStore(), defaultFlowRules(), clock.now);
   const facts = new FactCompiler(history, effects, observations, observers,
     observationPolicy, compositionActions, {});
   const reconciliationQueue = stores?.reconciliations ?? new InMemoryReconciliationQueue();
+  const filesystemObserver = filesystem ? new FilesystemObserver(filesystem, resources, clock.now) : null;
   const reconciliation = new ReconciliationService(effects, reconciliationQueue,
-    observations, observers, observationPolicy, [], clock.now);
+    observations, observers, observationPolicy,
+    filesystemObserver ? [new FilesystemReconciler(filesystemObserver)] : [], clock.now);
   const supervisor = new SupervisorEngine({ stalledTaskMs: 60000, preparingMs: 60000,
     dispatchingMs: 60000, maxUnknownBacklog: 10, highUnknownRate: 1 });
   const emergencyStop = stores?.emergencyStop ?? new InMemoryEmergencyStopStore();
@@ -113,9 +136,37 @@ export function createDemoControlPlane(world: WorldRuntime, emit: Emit,
     requiresFlow: false, budgetAmount: { actions: "1" }, reservationTtlMs: 30000,
     expectedPostcondition: id => ({ kind: "demo_slow_tool", resourceIds: [id],
       predicate: "state", expected: { finished: true }, metadata: {} }) });
+  if (filesystem) {
+    actions.register({ action: "file.read", executorId: "filesystem-read",
+      observerId: "filesystem-observer", risk: "R1", resourceKinds: ["file"],
+      requiresResourceLease: false, requiresFlow: false,
+      budgetAmount: { actions: "1" }, reservationTtlMs: 30000,
+      expectedPostcondition: id => ({ kind: "filesystem_read", resourceIds: [id],
+        predicate: "exists", expected: { exists: true }, metadata: {} }) });
+    actions.register({ action: "file.write", executorId: "filesystem-write",
+      observerId: "filesystem-observer", risk: "R2", resourceKinds: ["file"],
+      requiresResourceLease: true, requiresFlow: true, strictDecisionVersions: true,
+      budgetAmount: { actions: "1" },
+      budgetForIntent: intent => ({ actions: "1",
+        bytes: String(expectedBytes(intent.parameters ?? {}).bytes.length) }),
+      reservationTtlMs: 30000,
+      expectedPostcondition: (id, intent) => {
+        const expected = expectedBytes(intent.parameters ?? {});
+        return { kind: "filesystem_write", resourceIds: [id], predicate: "hash",
+          expected: { sha256: expected.sha256, byteLength: expected.bytes.length },
+          metadata: { mode: expected.mode } };
+      } });
+  }
   const executed = new Map<string, { type: string; actorId: string; entityId?: string;
     payload: Record<string, unknown> }>();
   const executors = new ExecutorRegistry();
+  const filesystemRead = filesystem ? new FilesystemReadExecutor(filesystem) : null;
+  if (filesystem) {
+    executors.register(new FilesystemWriteExecutor(filesystem,
+      durable?.afterFilesystemMutation));
+    executors.register(filesystemRead!);
+    observers.register(filesystemObserver!);
+  }
   executors.register({ id: "demo-world", dispatch: async context => {
     const effect = effects.get(context.effectId)!;
     const target = resources.get(context.resourceIds[0]!)!;
@@ -175,7 +226,10 @@ export function createDemoControlPlane(world: WorldRuntime, emit: Emit,
         effectId: event.effectId, detail: event.detail } }) },
     ids: { next: () => crypto.randomUUID() }, now: clock.now, observationMaxAgeMs: 30000,
     transaction: durable ? work => durable.kernel.transaction(work) : undefined,
-    beforeExecutorDispatch: durable?.beforeExecutorDispatch });
+    beforeExecutorDispatch: durable?.beforeExecutorDispatch,
+    beforeCommitGate: durable?.beforeCommitGate,
+    afterExecutorResponse: durable?.afterExecutorResponse,
+    afterObservationPersisted: durable?.afterObservationPersisted });
   const completion = new TaskCompletionEvaluator(contracts, effects, observations,
     observers, observationPolicy);
   const recovery = new RecoveryManager({ effects, coordinator, observations,
@@ -204,45 +258,80 @@ export function createDemoControlPlane(world: WorldRuntime, emit: Emit,
     if (stores && !stores.tasks.get(taskId)) stores.tasks.create({ id: taskId,
       principalId, createdAt: now });
     const grantId = `grant:${taskId}`;
+    const allowedActions = filesystem
+      ? ["goto", "say", "use_tool", "file.read", "file.write"]
+      : ["goto", "say", "use_tool"];
     const grant: AuthorityGrantView = { id: grantId, version: 1, subjectPrincipalId: principalId,
-      resourceIds: safeResources, actions: ["goto", "say", "use_tool"],
+      resourceIds: safeResources, actions: allowedActions,
       issuedAt: now, expiresAt: now + 3600000 };
     if (stores) {
       if (!stores.grants.getGrant(grantId)) stores.grants.create(grant);
     } else (grants as Map<string, AuthorityGrantView>).set(grantId, grant);
     if (!authorityStore.get(`authority:${taskId}`)) authorityService.issue({ id: `authority:${taskId}`, grantId,
       subjectPrincipalId: principalId, taskId, resourceIds: safeResources,
-      actions: ["goto", "say", "use_tool"], notBefore: now, expiresAt: now + 3600000 });
+      actions: allowedActions, notBefore: now, expiresAt: now + 3600000 });
     if (!budgets.getBudget(`budget:${taskId}`)) budgets.createBudget({ id: `budget:${taskId}`, ownerPrincipalId: principalId,
-      taskId, ceiling: { actions: "100" }, expiresAt: now + 3600000 });
+      taskId, ceiling: filesystem ? { actions: "100", bytes: "10485760" } :
+        { actions: "100" }, expiresAt: now + 3600000 });
     await contracts.create({ id: `contract:${taskId}`, ownerPrincipalId: principalId, taskId,
       objective: "Execute authorized M5 demo actions", acceptanceCriteria: ["required actions observed"],
       forbiddenEffects: ["external transfer", "payment"], allowedResourceIds: safeResources,
-      maxRisk: "R1", privacyClass: "local_only", budgetId: `budget:${taskId}`,
+      maxRisk: filesystem ? "R2" : "R1", privacyClass: "local_only", budgetId: `budget:${taskId}`,
       authorityLeaseId: `authority:${taskId}`, createdAt: now, version: 1,
       status: "active", metadata: {} });
   }
 
   async function run(intent: ActionIntent, taskId: string, correlationId: string,
-    planId?: string, signal?: AbortSignal): Promise<GovernedResult> {
+    planId?: string, signal?: AbortSignal, options?: { flowObjectIds?: string[];
+      compositionApprovalId?: string; releaseApprovalId?: string }): Promise<GovernedResult> {
+    const fileDenial = (reasonCode: string): GovernedResult => {
+      emit({ id: crypto.randomUUID(), timestamp: clock.now(), type: "control.event",
+        taskId, intentId: intent.id, payload: { controlEventType: "action.admission_denied",
+          reasonCode } });
+      return { status: "denied", taskId, intentId: intent.id, observationIds: [],
+        reasonCode };
+    };
     if (durable && (runtimeMode.mode !== "normal" || !durable.kernel.isHealthy())) {
       return { status: "blocked", taskId, intentId: intent.id, observationIds: [],
         reasonCode: "RUNTIME_READ_ONLY" };
     }
-    if (intent.actorId !== "astra" || !["goto", "say", "use_tool"].includes(intent.action) ||
+    const fileAction = intent.action === "file.read" || intent.action === "file.write";
+    if (intent.actorId !== "astra" ||
+      (!["goto", "say", "use_tool"].includes(intent.action) && !(fileAction && filesystem)) ||
       (intent.action === "use_tool" && intent.parameters?.tool !== "demo.slow")) {
       return { status: "denied", taskId, intentId: intent.id, observationIds: [],
         reasonCode: "DEMO_ACTION_NOT_REGISTERED" };
     }
-    const targetText = intent.action === "say" ? "astra" : intent.action === "use_tool"
+    let targetText = intent.action === "say" ? "astra" : intent.action === "use_tool"
       ? "demo.slow" : intent.targetId ?? "";
+    if (fileAction) {
+      try { targetText = validateLogicalPath(targetText); }
+      catch { return fileDenial("INVALID_LOGICAL_PATH"); }
+    }
     const resolved = new ResourceResolver(resources).resolve(targetText);
-    if (!resolved.ok) return { status: "denied", taskId, intentId: intent.id,
-      observationIds: [], reasonCode: `RESOURCE_${resolved.reason}` };
+    if (!resolved.ok) return fileAction ? fileDenial(`RESOURCE_${resolved.reason}`) :
+      { status: "denied", taskId, intentId: intent.id, observationIds: [],
+        reasonCode: `RESOURCE_${resolved.reason}` };
+    if (fileAction) {
+      try { filesystem!.pathForResource(resolved.resource.id,
+        intent.action === "file.read" ? "read" : "write"); }
+      catch { return fileDenial("FILE_RESOURCE_NOT_AUTHORIZED"); }
+    }
     await ensureTask(taskId, intent.actorId);
+    if (intent.action === "file.write") {
+      let hash: string;
+      try { hash = expectedBytes(intent.parameters ?? {}).sha256; }
+      catch { return fileDenial("INVALID_WRITE_PARAMETERS"); }
+      const ids = options?.flowObjectIds ?? [];
+      const object = ids.length === 1 ? objects.get(ids[0]!) : null;
+      if (!object || object.taskId !== taskId || object.metadata.sha256 !== hash) {
+        return fileDenial("DATA_OBJECT_CONTENT_MISMATCH");
+      }
+    }
     let held = null;
     try {
-      held = intent.action === "goto" ? resourceLeases.acquire({ id: crypto.randomUUID(),
+      held = intent.action === "goto" || intent.action === "file.write"
+        ? resourceLeases.acquire({ id: crypto.randomUUID(),
         resourceId: resolved.resource.id, holderPrincipalId: intent.actorId, taskId,
         expiresAt: clock.now() + 30000 }) : null;
     } catch (error) {
@@ -254,9 +343,16 @@ export function createDemoControlPlane(world: WorldRuntime, emit: Emit,
       prepared = await runner.admit({ taskId, principalId: intent.actorId,
         contractId: `contract:${taskId}`, intent: { ...intent, targetId: targetText },
         authorityLeaseId: `authority:${taskId}`, resourceLeaseId: held?.id,
-        fencingToken: held?.fencingToken, correlationId, planId });
+        fencingToken: held?.fencingToken, correlationId, planId,
+        flowObjectIds: options?.flowObjectIds,
+        flowSinkId: intent.action === "file.write" ? resolved.resource.id : undefined,
+        compositionApprovalId: options?.compositionApprovalId,
+        releaseApprovalId: options?.releaseApprovalId });
     } catch (error) {
-      if (held) resourceLeases.release(held.id, held.version);
+      if (held && resourceLeases.get(held.id)?.status === "active") {
+        const current = resourceLeases.get(held.id)!;
+        resourceLeases.release(current.id, current.version);
+      }
       return { status: "denied", taskId, intentId: intent.id, observationIds: [],
         reasonCode: error instanceof Error ? error.message : "GOVERNANCE_ERROR" };
     }
@@ -264,9 +360,36 @@ export function createDemoControlPlane(world: WorldRuntime, emit: Emit,
       const task = stores.tasks.get(taskId)!;
       stores.tasks.addRequiredEffect(taskId, prepared.effectId, task.version);
     } else taskEffects.set(taskId, [...(taskEffects.get(taskId) ?? []), prepared.effectId]);
+    durable?.beforePreparedDispatch?.();
     try {
       const result = await runner.dispatchPrepared(prepared, signal);
-      if (held && result.status !== "unknown") resourceLeases.release(held.id, held.version);
+      if (held && result.status !== "unknown") {
+        const current = resourceLeases.get(held.id);
+        if (current?.status === "active") resourceLeases.release(current.id, current.version);
+      }
+      if (result.status === "completed" && intent.action === "file.read") {
+        const bytes = filesystemRead?.takeReadResult(prepared.effectId);
+        if (bytes) {
+          const label = resolved.resource.dataLabel;
+          const objectId = `file-read:${prepared.effectId}`;
+          objects.addSource({ id: objectId, taskId,
+            resourceId: resolved.resource.id, origin: "resource", createdAt: clock.now(),
+            label: { confidentiality: label?.sensitivity ?? "secret",
+              categories: [], jurisdictions: [], ownerPrincipalIds: [],
+              releasable: label?.sensitivity === "public", metadata: {} },
+            metadata: { sha256: createHash("sha256").update(bytes).digest("hex"),
+              byteLength: bytes.length } });
+          const version = workingSets.get(taskId).version;
+          workingSets.add(taskId, objectId, version);
+        }
+      }
+      if (result.status === "completed" && intent.action === "file.write") {
+        const current = resources.get(resolved.resource.id)!;
+        resources.update({ ...current, generation: current.generation + 1,
+          metadata: { ...current.metadata,
+            lastObservedSha256: expectedBytes(intent.parameters ?? {}).sha256,
+            lastObservedEffectId: result.effectId } }, current.version);
+      }
       return result;
     } catch (error) {
       return { status: "unknown", taskId, intentId: intent.id, effectId: prepared.effectId,
@@ -281,8 +404,9 @@ export function createDemoControlPlane(world: WorldRuntime, emit: Emit,
       taskEffects.get(taskId) ?? [];
     const last = requiredEffectIds.at(-1);
     if (!last) return false;
+    const riskClass = (effects.get(last)?.metadata.riskClass ?? "R1") as ContractRisk;
     const acceptanceEvidence: TaskAcceptanceEvidence[] = [{ criterion: "required actions observed",
-      effectId: last, riskClass: "R1" }];
+      effectId: last, riskClass }];
     const complete = (await completion.evaluate({ taskId, contractId: `contract:${taskId}`,
       requiredEffectIds, acceptanceEvidence, maxObservationAgeMs: 30000,
       pendingApprovalCount: 0 })).complete;
@@ -292,7 +416,80 @@ export function createDemoControlPlane(world: WorldRuntime, emit: Emit,
     }
     return complete;
   }
-  return { run, mayComplete, recoverOnStartup: () => recovery.run(),
+  async function stageTrustedContent(taskId: string, principalId: string,
+    content: string, label: DataLabel): Promise<string> {
+    if (!filesystem) throw new Error("FILESYSTEM_NOT_CONFIGURED");
+    await ensureTask(taskId, principalId);
+    const bytes = Buffer.from(content, "utf8");
+    const id = `content:${crypto.randomUUID()}`;
+    objects.addSource({ id, taskId, label: structuredClone(label), origin: "human",
+      createdAt: clock.now(), metadata: { sha256: createHash("sha256")
+        .update(bytes).digest("hex"), byteLength: bytes.length } });
+    workingSets.add(taskId, id, workingSets.get(taskId).version);
+    return id;
+  }
+  function repairConfirmedFilesystemEffect(effectId: string): void {
+    const effect = effects.get(effectId);
+    if (!effect || effect.status !== "unknown" ||
+      !["filesystem-write", "filesystem-read"].includes(effect.executorId)) return;
+    const decision = reconciliationQueue.listDecisions(effectId).at(-1);
+    if (decision?.outcome !== "confirmed_effect" || !decision.observationIds.length) return;
+    const riskClass = effect.metadata.riskClass as ContractRisk;
+    const maxAgeMs = effect.metadata.observationMaxAgeMs as number;
+    const settle = () => {
+      const committed = coordinator.confirmUnknownFromReconciliation(effect.id,
+        effect.version, decision.observationIds[0]!, decision.id,
+        { riskClass, maxAgeMs });
+      for (const id of committed.budgetReservationIds) {
+        const reservation = budgets.getReservation(id);
+        if (reservation?.status === "active") budgets.commitHeldReservation(id,
+          { principalId: reservation.principalId, taskId: reservation.taskId },
+          committed.metadata.budgetActualAmount as Record<string, string>,
+          reservation.version);
+      }
+      facts.fromEffectFacts(committed.id);
+      repairFilesystemGeneration(committed.id);
+    };
+    if (durable) durable.kernel.transaction(settle);
+    else settle();
+  }
+
+  function repairFilesystemGeneration(effectId: string): void {
+    const effect = effects.get(effectId);
+    if (effect?.status !== "committed" || effect.executorId !== "filesystem-write") return;
+    const id = effect.resourceIds[0]!;
+    const resource = resources.get(id);
+    if (!resource || resource.metadata.lastObservedEffectId === effect.id) return;
+    resources.update({ ...resource, generation: resource.generation + 1,
+      metadata: { ...resource.metadata, lastObservedEffectId: effect.id,
+        lastObservedSha256: (effect.expectedPostcondition.expected as
+          { sha256?: string }).sha256 } }, resource.version);
+  }
+
+  async function reconcilePendingFilesystem(): Promise<void> {
+    for (const job of reconciliationQueue.list()) {
+      const effect = effects.get(job.effectId);
+      if (!effect || effect.status !== "unknown" ||
+        !["filesystem-write", "filesystem-read"].includes(effect.executorId) ||
+        job.status !== "queued" || job.nextAttemptAt > clock.now()) continue;
+      await reconciliation.run(job.id, { riskClass: effect.metadata.riskClass as ContractRisk,
+        maxAgeMs: effect.metadata.observationMaxAgeMs as number });
+      repairConfirmedFilesystemEffect(effect.id);
+    }
+  }
+
+  function recoverOnStartup() {
+    const result = recovery.run();
+    if (filesystem && (durable?.kernel.isHealthy() ?? true)) {
+      for (const effect of effects.list()) {
+        repairConfirmedFilesystemEffect(effect.id);
+        repairFilesystemGeneration(effect.id);
+      }
+    }
+    return result;
+  }
+  return { run, mayComplete, recoverOnStartup, reconcilePendingFilesystem,
+    stageTrustedContent,
     runtimeMode, stopTask: (id: string) => {
       stoppedTasks.add(id);
       const task = stores?.tasks.get(id);

@@ -193,6 +193,40 @@ export class EffectCoordinator {
     return next;
   }
 
+  /** Recovery-only: a durable C7 decision and accepted observation confirm an UNKNOWN effect. */
+  confirmUnknownFromReconciliation(id: string, expectedVersion: number,
+    observationId: string, decisionId: string,
+    options: ObservationSettlementOptions): EffectTransaction {
+    const current = this.requireEffect(id, expectedVersion);
+    this.requireStatus(current, "unknown");
+    if (!decisionId) throw new EffectError("INVALID_EFFECT_INPUT");
+    const observation = this.observations.get(observationId);
+    if (!observation) throw new EffectError("OBSERVATION_NOT_FOUND", observationId);
+    this.checkObservationBinding(current, observation);
+    const observer = this.observers.get(observation.observerId);
+    if (!observer) throw new EffectError("OBSERVER_NOT_FOUND", observation.observerId);
+    const evaluation = this.policy.evaluate(observation, observer.descriptor, {
+      subject: { taskId: current.taskId, intentId: current.intentId,
+        executionId: current.executionId, effectId: current.id,
+        resourceIds: current.resourceIds },
+      expectedPostcondition: current.expectedPostcondition,
+      riskClass: options.riskClass, maxAgeMs: options.maxAgeMs,
+      requireGenerationBinding: options.requireGenerationBinding
+    });
+    if (!evaluation.accepted || evaluation.effectiveStatus !== "confirmed") {
+      throw new EffectError("OBSERVATION_NOT_ACCEPTED");
+    }
+    const next = this.effects.update({ ...current, status: "committed",
+      observationIds: [...new Set([...current.observationIds, observation.id])],
+      settlementEvaluation: evaluation, unknownReasonCode: undefined,
+      settledAt: this.clock.now(), version: current.version + 1,
+      reconciliationDecisionId: decisionId },
+    expectedVersion);
+    this.emit("effect.committed", next, current.status,
+      { reconciliationDecisionId: decisionId });
+    return next;
+  }
+
   private requireEffect(id: string, expectedVersion: number): EffectTransaction {
     const effect = this.effects.get(id);
     if (!effect) throw new EffectError("EFFECT_NOT_FOUND", id);

@@ -2,6 +2,8 @@ import { WebSocketServer, WebSocket } from "ws";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createDemoControlPlane } from "./demo-control-plane.js";
+import { FilesystemWorkspace, validateLogicalPath } from "@agent-world/filesystem";
+import { mintResourceId } from "@agent-world/resources";
 import { createDurableDomainStores, DurableRuntimeEventPublisher, JournalKernel, ReplayClock,
   RuntimeDatabase } from "@agent-world/runtime-store-sqlite";
 
@@ -37,6 +39,19 @@ const database = new RuntimeDatabase(process.env.AGENT_WORLD_DB_PATH
 const kernel = new JournalKernel(database, clock);
 const stores = createDurableDomainStores(kernel);
 await kernel.restore();
+const filesystem = process.env.AGENT_WORLD_WORKSPACE_ROOT
+  ? new FilesystemWorkspace(resolve(process.env.AGENT_WORLD_WORKSPACE_ROOT), stores.resources)
+  : undefined;
+if (filesystem) {
+  filesystem.registerRoot();
+  for (const raw of (process.env.AGENT_WORLD_REGISTERED_FILES ?? "")
+    .split(",").filter(Boolean)) {
+    const relativePath = validateLogicalPath(raw);
+    if (!stores.resources.has(mintResourceId("file", `workspace/${relativePath}`))) {
+      filesystem.registerFile({ relativePath });
+    }
+  }
+}
 const runtimePublisher = new DurableRuntimeEventPublisher<RuntimeEvent>(database,
   publishRuntimeEvent);
 const events = {
@@ -182,7 +197,7 @@ type IntentOutcome =
   | { status: "denied" | "failed" | "revoked"; intentId: string;
       executionId?: string; reason?: string };
 
-const governance = createDemoControlPlane(world, emit, { kernel, stores });
+const governance = createDemoControlPlane(world, emit, { kernel, stores, filesystem });
 governance.recoverOnStartup();
 
 async function processIntent(raw: unknown, options?: { taskId?: string;
