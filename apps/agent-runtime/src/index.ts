@@ -199,6 +199,7 @@ type IntentOutcome =
 
 const governance = createDemoControlPlane(world, emit, { kernel, stores, filesystem });
 governance.recoverOnStartup();
+if (filesystem) await governance.reconcilePendingFilesystem();
 
 async function processIntent(raw: unknown, options?: { taskId?: string;
   planId?: string; correlationId?: string }): Promise<IntentOutcome> {

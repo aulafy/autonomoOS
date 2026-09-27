@@ -64,3 +64,23 @@ test("read keeps bytes host-side and symlink destinations never change outside f
     assert.equal(readFileSync(outside, "utf8"), "outside");
   } finally { rmSync(directory, { recursive: true, force: true }); }
 });
+
+test("parent swapped to a symlink after registration cannot redirect a write", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "h2-parent-symlink-"));
+  const root = join(directory, "root");
+  const outside = join(directory, "outside");
+  mkdirSync(root);
+  mkdirSync(outside);
+  mkdirSync(join(root, "notes"));
+  try {
+    const workspace = new FilesystemWorkspace(root, new InMemoryResourceRegistry());
+    const file = workspace.registerFile({ relativePath: "notes/hello.txt" });
+    rmSync(join(root, "notes"), { recursive: true });
+    symlinkSync(outside, join(root, "notes"));
+    const result = await new FilesystemWriteExecutor(workspace).dispatch({ taskId: "t1",
+      intentId: "i1", effectId: "e1", idempotencyKey: "key", resourceIds: [file.id],
+      parameters: { mode: "create", content: "attack" } }, new AbortController().signal);
+    assert.equal(result.kind, "reported_failure");
+    assert.throws(() => readFileSync(join(outside, "hello.txt")), /ENOENT/);
+  } finally { rmSync(directory, { recursive: true, force: true }); }
+});

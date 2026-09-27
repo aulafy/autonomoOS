@@ -10,13 +10,18 @@ import { WorldRuntime } from "@agent-world/world-core";
 import { createDemoControlPlane } from "../src/demo-control-plane.js";
 
 type Stores = ReturnType<typeof createDurableDomainStores>;
-const mutations: Record<string, (stores: Stores, fileId: ReturnType<FilesystemWorkspace["registerFile"]>["id"]) => void> = {
+type FileId = ReturnType<FilesystemWorkspace["registerFile"]>["id"];
+const mutations: Record<string, (stores: Stores, fileId: FileId,
+  advance: (milliseconds: number) => void) => void> = {
   revoked_grant(stores) {
     stores.grants.revoke("grant:t1", 1, Date.now());
   },
   revoked_authority_lease(stores) {
     const lease = stores.authorityLeases.get("authority:t1")!;
     stores.authorityLeases.setStatus(lease.id, "revoked", lease.version);
+  },
+  expired_authority(_stores, _fileId, advance) {
+    advance(3600001);
   },
   stale_fence(stores, fileId) {
     const lease = stores.resourceLeases.getCurrent(fileId)!;
@@ -54,9 +59,10 @@ for (const [name, mutate] of Object.entries(mutations)) {
     const directory = mkdtempSync(join(tmpdir(), `h2-gate-${name}-`));
     const root = join(directory, "workspace");
     mkdirSync(root);
-    const database = new RuntimeDatabase(join(directory, "runtime.db"));
+    let now = Date.now();
+    const clock = new ReplayClock(() => now);
+    const database = new RuntimeDatabase(join(directory, "runtime.db"), clock.now);
     try {
-      const clock = new ReplayClock();
       const kernel = new JournalKernel(database, clock);
       const stores = createDurableDomainStores(kernel);
       await kernel.restore();
@@ -64,7 +70,7 @@ for (const [name, mutate] of Object.entries(mutations)) {
       const file = filesystem.registerFile({ relativePath: "hello.txt" });
       const control = createDemoControlPlane(new WorldRuntime(), event =>
         database.appendRuntimeEvent(event), { kernel, stores, filesystem,
-          beforeCommitGate: () => mutate(stores, file.id) });
+          beforeCommitGate: () => mutate(stores, file.id, milliseconds => { now += milliseconds; }) });
       control.recoverOnStartup();
       const content = "Hello from Agent World OS";
       const objectId = await control.stageTrustedContent("t1", "astra", content,
@@ -80,3 +86,37 @@ for (const [name, mutate] of Object.entries(mutations)) {
     } finally { database.close(); rmSync(directory, { recursive: true, force: true }); }
   });
 }
+
+test("expired file release approval blocks a public write before disk mutation", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "h2-release-expiry-"));
+  const root = join(directory, "workspace");
+  mkdirSync(root);
+  let now = 1000;
+  const clock = new ReplayClock(() => now);
+  const database = new RuntimeDatabase(join(directory, "runtime.db"), clock.now);
+  try {
+    const kernel = new JournalKernel(database, clock);
+    const stores = createDurableDomainStores(kernel);
+    await kernel.restore();
+    const filesystem = new FilesystemWorkspace(root, stores.resources);
+    const file = filesystem.registerFile({ relativePath: "public.txt", sink: {
+      external: true, trustClass: "public", allowedSensitivity: ["public", "confidential"] } });
+    const control = createDemoControlPlane(new WorldRuntime(), event =>
+      database.appendRuntimeEvent(event), { kernel, stores, filesystem,
+        beforeCommitGate: () => { now = 1100; } });
+    control.recoverOnStartup();
+    const content = "approved confidential summary";
+    const objectId = await control.stageTrustedContent("t1", "astra", content,
+      { confidentiality: "confidential", categories: [], jurisdictions: [],
+        ownerPrincipalIds: [], releasable: true, metadata: {} });
+    stores.releaseApprovals.append({ id: "approval", taskId: "t1", intentId: "i1",
+      objectIds: [objectId], sinkId: file.id, workingSetVersion: 1,
+      issuedAt: 1000, expiresAt: 1050, issuerId: "human" });
+    const result = await control.run({ id: "i1", actorId: "astra", action: "file.write",
+      targetId: "public.txt", parameters: { mode: "create", content },
+      provenance: { source: "human" } }, "t1", "t1", undefined, undefined,
+    { flowObjectIds: [objectId], releaseApprovalId: "approval" });
+    assert.equal(result.reasonCode, "RELEASE_APPROVAL_REQUIRED");
+    assert.equal(existsSync(join(root, "public.txt")), false);
+  } finally { database.close(); rmSync(directory, { recursive: true, force: true }); }
+});

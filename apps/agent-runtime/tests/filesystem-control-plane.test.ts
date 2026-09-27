@@ -94,6 +94,15 @@ test("unregistered target and secret-to-public flow deny without changing bytes"
       (event.payload as { controlEventType?: string; reasonCode?: string })
         .reasonCode === "RESOURCE_NOT_FOUND"));
     assert.throws(() => readFileSync(join(workspaceRoot, "invented.txt")), /ENOENT/);
+    for (const targetId of ["../outside.txt", "/etc/passwd", "public.txt/../outside.txt"]) {
+      const invalid = await control.run({ id: `invalid:${targetId}`, actorId: "astra",
+        action: "file.write", targetId,
+        parameters: { mode: "create", content: secret },
+        provenance: { source: "model" } }, "task-secret", "task-secret", undefined,
+      undefined, { flowObjectIds: [objectId] });
+      assert.equal(invalid.reasonCode, "INVALID_LOGICAL_PATH");
+    }
+    assert.equal(stores.effects.list().length, 0);
   } finally { database.close(); rmSync(directory, { recursive: true, force: true }); }
 });
 

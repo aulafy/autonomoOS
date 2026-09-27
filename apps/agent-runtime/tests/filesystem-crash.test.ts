@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { FilesystemWorkspace } from "@agent-world/filesystem";
+import { mintResourceId } from "@agent-world/resources";
 import { createDurableDomainStores, JournalKernel, ReplayClock,
   RuntimeDatabase } from "@agent-world/runtime-store-sqlite";
 import { WorldRuntime } from "@agent-world/world-core";
@@ -13,8 +14,8 @@ import { createDemoControlPlane } from "../src/demo-control-plane.js";
 
 const fixture = fileURLToPath(new URL("./fixtures/kill-filesystem-write.ts", import.meta.url));
 
-test("real filesystem SIGKILL windows A-E reconcile disk without rewriting", async () => {
-  for (const window of "ABCDE") {
+test("real filesystem SIGKILL windows A-F reconcile disk without rewriting", async () => {
+  for (const window of "ABCDEF") {
     const directory = mkdtempSync(join(tmpdir(), `h2-crash-${window}-`));
     const root = join(directory, "workspace");
     mkdirSync(root);
@@ -27,6 +28,7 @@ test("real filesystem SIGKILL windows A-E reconcile disk without rewriting", asy
           encoding: "utf8", timeout: 15000 });
       assert.equal(child.signal, "SIGKILL", `${window}: ${child.stderr}`);
       const before = existsSync(target) ? readFileSync(target) : null;
+      const inodeBefore = before ? statSync(target).ino : null;
       const clock = new ReplayClock();
       const database = new RuntimeDatabase(path, clock.now);
       const kernel = new JournalKernel(database, clock);
@@ -39,7 +41,7 @@ test("real filesystem SIGKILL windows A-E reconcile disk without rewriting", asy
       if (window === "A") {
         assert.equal(stores.effects.list()[0]?.status, "failed");
         assert.equal(before, null);
-      } else if (window === "E") {
+      } else if (window === "E" || window === "F") {
         assert.equal(stores.effects.list()[0]?.status, "committed");
         assert.equal(stores.budgets.listReservations()[0]?.status, "committed");
       } else {
@@ -56,7 +58,17 @@ test("real filesystem SIGKILL windows A-E reconcile disk without rewriting", asy
       }
       assert.deepEqual(existsSync(target) ? readFileSync(target) : null, before,
         `window ${window} rewrote file during recovery`);
+      if (inodeBefore !== null) assert.equal(statSync(target).ino, inodeBefore,
+        `window ${window} replaced the inode during recovery`);
+      const consumed = stores.budgets.listReservations()[0]?.status;
+      await control.reconcilePendingFilesystem();
+      assert.equal(stores.budgets.listReservations()[0]?.status, consumed);
+      assert.deepEqual(existsSync(target) ? readFileSync(target) : null, before,
+        `window ${window} rewrote file on repeat reconciliation`);
+      if (inodeBefore !== null) assert.equal(statSync(target).ino, inodeBefore);
       if (before) assert.equal(before.toString("utf8"), "Hello from Agent World OS");
+      if (before) assert.equal(stores.resources.get(mintResourceId("file", "workspace/hello.txt"))
+        ?.generation, 2);
       database.close();
     } finally { rmSync(directory, { recursive: true, force: true }); }
   }

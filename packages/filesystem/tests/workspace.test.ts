@@ -39,5 +39,12 @@ test("registered file is bound to root and symlink escapes are denied", () => {
       /SYMLINK_DENIED/);
     assert.throws(() => new FilesystemWorkspace(outside, resources).registerRoot(),
       /WORKSPACE_BINDING_CHANGED/);
+    const forged = mintResourceId("file", "workspace/forged.txt");
+    resources.register({ id: forged, kind: "file", displayName: "Forged",
+      aliases: ["forged.txt"], parentId: workspace.directoryId, dataLabel: null,
+      exclusivity: "single_writer", source: "filesystem_resolver", sink: null,
+      metadata: { rootBinding: workspace.rootBinding, relativePath: "../outside/secret.txt",
+        readable: true, writable: true } });
+    assert.throws(() => workspace.pathForResource(forged, "write"), /INVALID_LOGICAL_PATH/);
   } finally { rmSync(directory, { recursive: true, force: true }); }
 });

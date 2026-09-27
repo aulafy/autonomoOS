@@ -73,9 +73,8 @@ the M5 world executor, then reopens SQLite in a fresh process and verifies
 - A validated observation and its subsequent settlement have separate durable
   boundaries by design, with C12 repair between them. The observer or provider
   is never part of a SQLite transaction.
-- WebSocket event notification can happen before the surrounding SQLite
-  transaction commits. SQLite remains authoritative after restart; consumers
-  needing durable confirmation should replay from the database.
+- H1.1 schedules live WebSocket notification after the outer SQLite commit.
+  A crash after commit but before delivery leaves the event in replay.
 - The existing demo observer is same-process evidence, and the local
   `llama.cpp` provider still depends on a separately running service. H1 does
   not add an external executor or inference integration.
