@@ -116,6 +116,23 @@ export class RuntimeDatabase {
     return rows.map(row => JSON.parse(row.event_json) as Record<string, unknown>);
   }
 
+  setProjectionDigest(name: string, sourceSequence: number, value: string): void {
+    this.db.prepare(`INSERT INTO projection_digests
+      (projection_name, source_sequence, digest, updated_at) VALUES (?, ?, ?, ?)
+      ON CONFLICT(projection_name) DO UPDATE SET
+        source_sequence = excluded.source_sequence,
+        digest = excluded.digest,
+        updated_at = excluded.updated_at`).run(name, sourceSequence, value, this.now());
+  }
+
+  projectionDigests(): Map<string, { sequence: number; digest: string }> {
+    const rows = this.db.prepare(`SELECT projection_name, source_sequence, digest
+      FROM projection_digests`).all() as { projection_name: string;
+      source_sequence: number; digest: string }[];
+    return new Map(rows.map(row => [row.projection_name,
+      { sequence: row.source_sequence, digest: row.digest }]));
+  }
+
   verifySchema(): void {
     const expected = ["projection_digests", "runtime_events", "schema_migrations", "store_commands"];
     const rows = this.db.prepare(`SELECT name FROM sqlite_schema

@@ -12,11 +12,12 @@ export class InMemoryResourceRegistry implements ResourceRegistry {
   private readonly byId = new Map<ResourceId, ResourceRecord>();
   private readonly aliasIndex = new Map<string, Set<ResourceId>>();
   private mutationGeneration = 0;
+  constructor(private readonly now: () => number = Date.now) {}
 
   register(input: RegisterResourceInput): ResourceRecord {
     this.validate(input);
     if (this.byId.has(input.id)) throw new Error(`resource_already_registered:${input.id}`);
-    const now = Date.now();
+    const now = this.now();
     const record: ResourceRecord = {
       ...this.copyInput(input), aliases: uniqueAliases([input.displayName, ...input.aliases]),
       version: 1, generation: input.generation ?? 1,
@@ -39,7 +40,7 @@ export class InMemoryResourceRegistry implements ResourceRegistry {
     const next: ResourceRecord = {
       ...this.copyInput(input), aliases: uniqueAliases([input.displayName, ...input.aliases]),
       version: current.version + 1, generation: input.generation ?? current.generation,
-      registeredAt: current.registeredAt, updatedAt: input.updatedAt ?? Date.now()
+      registeredAt: current.registeredAt, updatedAt: input.updatedAt ?? this.now()
     };
     this.unindexAliases(current);
     this.byId.set(next.id, next);

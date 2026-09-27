@@ -8,6 +8,18 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --import tsx --test tests/*.test.ts"
   },
+  "dependencies": {
+    "@agent-world/budgets": "0.1.0",
+    "@agent-world/composition-policy": "0.1.0",
+    "@agent-world/contracts": "0.1.0",
+    "@agent-world/effects": "0.1.0",
+    "@agent-world/information-flow": "0.1.0",
+    "@agent-world/leases": "0.1.0",
+    "@agent-world/observation": "0.1.0",
+    "@agent-world/reconciliation": "0.1.0",
+    "@agent-world/resources": "0.1.0",
+    "@agent-world/supervision": "0.1.0"
+  },
   "devDependencies": {
     "@types/node": "^24.0.0",
     "tsx": "^4.19.0",
