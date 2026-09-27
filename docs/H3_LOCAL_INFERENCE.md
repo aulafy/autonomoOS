@@ -18,7 +18,7 @@ One format retry is permitted before execution. Provider failures and timeouts s
 
 `inference.requested`, `inference.completed`, `inference.failed`, `plan.proposed`, `action.proposed`, denials and task outcomes are durable runtime events. The H1.1 publisher notifies WebSocket clients only after SQLite commit. Events retain task/request IDs, provider, model, latency, token usage when available, and SHA-256 hashes of prompt and raw response. They do not persist full prompt or response text by default. The `ActionIntent` carries the corresponding hashes and IDs.
 
-Each attempt reserves 16,384 inference tokens from the task's 32,768-token C4 ceiling. If both usage counts are returned, the exact sum is committed; if unavailable, the reservation is released and usage remains explicitly unknown in provenance. The budget is a bounded seam, not a claim that llama.cpp always reports usage. The demo records inference latency; detailed admission/executor/observation timing is not separately instrumented yet.
+Each attempt reserves 16,384 inference tokens from the task's 32,768-token C4 ceiling. If both usage counts are returned, the exact sum is committed; if unavailable, the reservation is released and usage remains explicitly unknown in provenance. The budget is a bounded seam, not a claim that llama.cpp always reports usage. The demo reports inference, combined control-plane and total task latency. Admission, executor and observation times are not separately instrumented yet.
 
 ## Run the live demo
 

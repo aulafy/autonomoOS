@@ -69,6 +69,7 @@ test("natural language uses local proposal, narrow contract, C11 and real observ
       expectedContent: hello });
     assert.equal(result.status, "completed", result.reason ?? "unknown failure");
     assert.equal(result.acceptanceConfirmed, true);
+    assert.ok((result.totalLatencyMs ?? -1) >= (result.controlLatencyMs ?? 0));
     assert.equal(result.plan?.[0]?.action, "file.write");
     assert.equal(readFileSync(join(f.root, "hello.txt"), "utf8"), hello);
     assert.equal(f.stores.effects.get(result.effectId!)?.status, "committed");

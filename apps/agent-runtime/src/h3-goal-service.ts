@@ -32,6 +32,8 @@ export interface H3GoalResult {
   observationIds: string[];
   model?: string;
   latencyMs?: number;
+  controlLatencyMs?: number;
+  totalLatencyMs?: number;
   usage?: { inputTokens?: number; outputTokens?: number };
   plan?: Array<{ action: string; targetId: string | null; parametersHash: string }>;
   acceptanceConfirmed?: boolean;
@@ -45,6 +47,7 @@ export class H3GoalService {
     afterTaskPrepared?: (taskId: string) => void | Promise<void> }) {}
 
   async submitGoal(input: H3GoalInput): Promise<H3GoalResult> {
+    const started = performance.now();
     const { provider, control, resources, emit, actorId } = this.dependencies;
     const taskId = randomUUID();
     const planId = randomUUID();
@@ -60,7 +63,8 @@ export class H3GoalService {
         { reason, requestId, provider: provider.id });
       event("task.failed", { reason });
       return { ...base, ok: false, status, reason, plan: planSummary,
-        acceptanceConfirmed: false };
+        acceptanceConfirmed: false,
+        totalLatencyMs: Math.round(performance.now() - started) };
     };
     if (input.principalId !== actorId || !input.goal.trim() ||
       input.goal.length > 8192 || typeof input.targetId !== "string" ||
@@ -180,17 +184,20 @@ export class H3GoalService {
       return deny("failed", error instanceof Error ? error.message : String(error));
     }
     let result: Awaited<ReturnType<Control["run"]>>;
+    const controlStarted = performance.now();
     try {
       result = await control.run(intent, taskId, taskId, planId, input.signal,
         { flowObjectIds: [objectId] });
     } catch (error) {
       return deny("failed", error instanceof Error ? error.message : String(error));
     }
+    const controlLatencyMs = Math.round(performance.now() - controlStarted);
     if (result.status !== "completed") {
       return { ...deny(result.status === "denied" ? "denied" : "failed",
         result.reasonCode ?? result.status), intentId: intent.id,
         effectId: result.effectId, observationIds: result.observationIds,
-        model: proposal.model, latencyMs: proposal.latencyMs, usage: proposal.usage };
+        model: proposal.model, latencyMs: proposal.latencyMs, usage: proposal.usage,
+        controlLatencyMs };
     }
     if (!(await control.mayComplete(taskId))) return deny("failed", "ACCEPTANCE_NOT_CONFIRMED");
     event("observation.confirmed", { effectId: result.effectId,
@@ -199,6 +206,7 @@ export class H3GoalService {
     return { ...base, ok: true, status: "completed", intentId: intent.id,
       effectId: result.effectId, observationIds: result.observationIds,
       model: proposal.model, latencyMs: proposal.latencyMs, usage: proposal.usage,
-      plan: planSummary, acceptanceConfirmed: true };
+      plan: planSummary, acceptanceConfirmed: true, controlLatencyMs,
+      totalLatencyMs: Math.round(performance.now() - started) };
   }
 }
