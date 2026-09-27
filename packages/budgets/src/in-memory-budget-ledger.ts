@@ -176,6 +176,16 @@ export class InMemoryBudgetLedger implements BudgetLedgerStore {
 
   commitReservation(id: string, identity: SettlementIdentity, actual: BudgetVector,
     expectedReservationVersion: number): BudgetReservation {
+    return this.commitReservationCore(id, identity, actual, expectedReservationVersion, false);
+  }
+
+  commitHeldReservation(id: string, identity: SettlementIdentity, actual: BudgetVector,
+    expectedReservationVersion: number): BudgetReservation {
+    return this.commitReservationCore(id, identity, actual, expectedReservationVersion, true);
+  }
+
+  private commitReservationCore(id: string, identity: SettlementIdentity, actual: BudgetVector,
+    expectedReservationVersion: number, allowExpired: boolean): BudgetReservation {
     const reservation = this.requireReservation(id);
     this.checkIdentity(reservation, identity);
     const normalizedActual = normalizeVector(actual);
@@ -189,10 +199,10 @@ export class InMemoryBudgetLedger implements BudgetLedgerStore {
     this.assertNoActiveChildForReservation(id);
     this.checkVersion(reservation.version, expectedReservationVersion);
     const now = this.clock.now();
-    if (reservation.expiresAt !== undefined && now >= reservation.expiresAt) {
+    if (!allowExpired && reservation.expiresAt !== undefined && now >= reservation.expiresAt) {
       throw new BudgetError("RESERVATION_EXPIRED");
     }
-    if (account.expiresAt !== undefined && now >= account.expiresAt) {
+    if (!allowExpired && account.expiresAt !== undefined && now >= account.expiresAt) {
       throw new BudgetError("BUDGET_EXPIRED");
     }
     if (!fitsWithin(normalizedActual, reservation.amount)) {

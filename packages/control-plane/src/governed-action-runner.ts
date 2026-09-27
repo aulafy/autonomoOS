@@ -220,7 +220,7 @@ export class GovernedActionRunner {
 
   private commitReservation(prepared: PreparedAction): void {
     const reservation = this.deps.budgets.getReservation(prepared.reservationId)!;
-    this.deps.budgets.commitReservation(reservation.id,
+    this.deps.budgets.commitHeldReservation(reservation.id,
       { principalId: prepared.request.principalId, taskId: prepared.request.taskId },
       prepared.definition.budgetAmount, reservation.version);
   }

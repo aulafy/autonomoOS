@@ -16,6 +16,9 @@ export interface BudgetLedgerStore {
   listReservations(): readonly BudgetReservation[];
   commitReservation(id: string, identity: SettlementIdentity, actual: BudgetVector,
     expectedReservationVersion: number): BudgetReservation;
+  /** Settle a still-held reservation after expiry when a trusted effect is already committed. */
+  commitHeldReservation(id: string, identity: SettlementIdentity, actual: BudgetVector,
+    expectedReservationVersion: number): BudgetReservation;
   releaseReservation(id: string, identity: SettlementIdentity,
     expectedReservationVersion: number): BudgetReservation;
   expireReservation(id: string, expectedReservationVersion: number): BudgetReservation;

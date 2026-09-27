@@ -75,6 +75,22 @@ test("commit uses actual amount and returns unused capacity", () => {
     consumed: { "money:EUR:minor": "750", api_calls: "1", gpu_ms: "0" } });
 });
 
+test("trusted post-dispatch settlement consumes a held reservation after expiry", () => {
+  const f = fixture();
+  f.create({ expiresAt: 150 });
+  f.ledger.reserve({ id: "r1", budgetId: "budget-1", principalId: "astra",
+    taskId: "task-1", effectId: "e1", amount: { api_calls: "2" },
+    expiresAt: 120 }, 1);
+  f.setNow(150);
+  assert.throws(() => f.ledger.commitReservation("r1",
+    { principalId: "astra", taskId: "task-1" }, { api_calls: "1" }, 1),
+  /RESERVATION_EXPIRED/);
+  f.ledger.commitHeldReservation("r1", { principalId: "astra", taskId: "task-1" },
+    { api_calls: "1" }, 1);
+  assert.equal(f.ledger.getBudget("budget-1")?.consumed.api_calls, "1");
+  assertBudgetInvariant(f.ledger.getBudget("budget-1")!);
+});
+
 test("actual above reservation rejects without top-up or state change", () => {
   const f = fixture();
   f.create();

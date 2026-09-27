@@ -178,7 +178,7 @@ export class RecoveryManager {
       if (!actual || typeof actual !== "object" || Array.isArray(actual)) {
         throw new Error("ACTUAL_BUDGET_UNKNOWN");
       }
-      this.deps.budgets.commitReservation(id, { principalId: reservation.principalId,
+      this.deps.budgets.commitHeldReservation(id, { principalId: reservation.principalId,
         taskId: reservation.taskId }, actual as BudgetVector, reservation.version);
     }
   }

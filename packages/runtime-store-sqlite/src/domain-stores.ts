@@ -29,6 +29,7 @@ export function createDurableDomainStores(kernel: JournalKernel) {
   const budgets = kernel.register("budgets",
     () => new InMemoryBudgetLedger(clock), ["createBudget", "createChildBudget",
       "freezeBudget", "unfreezeBudget", "closeBudget", "reserve", "commitReservation",
+      "commitHeldReservation",
       "releaseReservation", "expireReservation"]);
   const observations = kernel.register("observations",
     () => new InMemoryObservationStore(), ["append"]);
