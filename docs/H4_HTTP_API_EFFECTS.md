@@ -86,3 +86,11 @@ fake inference and does not require a model download.
 
 The runtime WebSocket listener remains loopback-only. Authenticated remote
 control-plane access remains future work.
+
+For a visible failure demonstration, run `npm run demo:h4:lost-response`.
+It starts the external fixture in a separate process, makes one governed POST,
+prints the persisted `UNKNOWN` checkpoint after the provider drops its response,
+reopens the runtime database, performs a read-only lookup, and prints the final
+`committed` checkpoint. Both SQLite paths are printed and retained for review.
+This demo uses a host-supplied action, so it does not require Qwen; `demo:h4`
+is the separate live model demonstration.

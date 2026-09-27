@@ -1,16 +1,22 @@
-# Next Milestone
+# Next work after H4
 
-Once the starter works, implement this sequence:
+The verified baseline is C1–C12 and H1–H4. The immediate product question is
+which complete human or business workflow should be supported end to end.
+Choose one workflow and define its authority owner, resource boundaries,
+acceptance evidence, failure recovery, and user review points before adding a
+general capability.
 
-1. Send `ActionIntent` from the browser manually.
-2. Validate it in the runtime.
-3. Execute it through `WorldRuntime`.
-4. Persist every resulting `WorldEvent`.
-5. Add a replay endpoint.
-6. Add `say`.
-7. Add an actual VRM avatar.
-8. Only then connect a local LLM.
-9. Force the model to emit structured `ActionIntent`.
-10. Add one real external tool.
+Near-term engineering work:
 
-Do not add a city, economy, blockchain, marketplace, or cloud orchestration before this loop works.
+1. Make the existing governed action timeline visible beside Astra: proposal,
+   policy decisions, durable effect status, observation, and reconciliation.
+   Render authoritative events rather than inferred UI state.
+2. Add authenticated control-plane access and an operator review surface before
+   exposing the runtime beyond loopback.
+3. Evaluate the first real provider integration for idempotency, reliable
+   lookup, credentials, sensitive data flow, and ambiguous failure behavior.
+4. Measure correctness and recovery across crashes, timeouts, malformed
+   provider responses, and conflicting observations.
+
+H5 browser/computer use is intentionally deferred until a concrete workflow
+needs it and its authority and observation boundaries are specified.

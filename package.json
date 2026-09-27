@@ -11,6 +11,7 @@
     "dev:runtime": "npm --workspace apps/agent-runtime run dev",
     "demo:h3": "tsx apps/agent-runtime/src/h3-demo.ts",
     "demo:h4": "tsx apps/agent-runtime/src/h4-demo.ts",
+    "demo:h4:lost-response": "tsx apps/agent-runtime/src/h4-lost-response-demo.ts",
     "test": "npm run test --workspaces --if-present",
     "build": "npm run build --workspaces --if-present"
   }
