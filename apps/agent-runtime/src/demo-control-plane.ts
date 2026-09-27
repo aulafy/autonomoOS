@@ -25,6 +25,7 @@ import { InMemoryReconciliationQueue, ReconciliationService } from "@agent-world
 import { RecoveryManager, RuntimeModeController } from "@agent-world/recovery";
 import { createDemoResources, InMemoryResourceRegistry, mintResourceId,
   ResourceResolver } from "@agent-world/resources";
+import type { ResourceId } from "@agent-world/resources";
 import { InMemoryEmergencyStopStore, InMemoryQuarantineStore, SupervisorEngine,
   type RuntimeSnapshot } from "@agent-world/supervision";
 import type { WorldRuntime } from "@agent-world/world-core";
@@ -82,6 +83,14 @@ export function createDemoControlPlane(world: WorldRuntime, emit: Emit,
   const objects = stores?.dataObjects ?? new InMemoryDataFlowStore();
   const workingSets = stores?.workingSets ?? new InMemoryTaskWorkingSetStore(objects);
   const sinkRegistry = stores?.sinks ?? new SinkRegistry(resources);
+  const inferenceSinkId = mintResourceId("tool", "local.inference");
+  if (!resources.has(inferenceSinkId)) resources.register({ id: inferenceSinkId,
+    kind: "tool", displayName: "Local inference", aliases: [], parentId: null,
+    dataLabel: null, exclusivity: "shared", sink: { external: false,
+      trustClass: "local", allowedSensitivity: ["public", "internal",
+        "confidential", "restricted", "secret"] }, source: "host" });
+  if (!sinkRegistry.get(inferenceSinkId)) sinkRegistry.register({ id: inferenceSinkId,
+    kind: "model_provider", trust: "local", hostControlled: true, metadata: {} });
   if (filesystem) for (const file of resources.listByKind("file")) {
     if (!sinkRegistry.get(file.id)) sinkRegistry.register({ id: file.id, kind: "file",
       trust: file.sink?.trustClass ?? "local", hostControlled: true, metadata: {} });
@@ -252,7 +261,9 @@ export function createDemoControlPlane(world: WorldRuntime, emit: Emit,
         planId: event.planId, actionId: event.actionId, reason: event.reason } }) } });
   const taskEffects = new Map<string, string[]>();
 
-  async function ensureTask(taskId: string, principalId: string): Promise<void> {
+  async function ensureTask(taskId: string, principalId: string, scope?: {
+    resourceIds: ResourceId[]; actions: string[]; objective: string;
+    metadata?: Record<string, unknown> }): Promise<void> {
     if (await contracts.getForTask(taskId)) return;
     const now = clock.now();
     if (stores && !stores.tasks.get(taskId)) stores.tasks.create({ id: taskId,
@@ -261,24 +272,78 @@ export function createDemoControlPlane(world: WorldRuntime, emit: Emit,
     const allowedActions = filesystem
       ? ["goto", "say", "use_tool", "file.read", "file.write"]
       : ["goto", "say", "use_tool"];
+    const resourceIds = scope?.resourceIds ?? safeResources;
+    const taskActions = scope?.actions ?? allowedActions;
     const grant: AuthorityGrantView = { id: grantId, version: 1, subjectPrincipalId: principalId,
-      resourceIds: safeResources, actions: allowedActions,
+      resourceIds, actions: taskActions,
       issuedAt: now, expiresAt: now + 3600000 };
     if (stores) {
       if (!stores.grants.getGrant(grantId)) stores.grants.create(grant);
     } else (grants as Map<string, AuthorityGrantView>).set(grantId, grant);
     if (!authorityStore.get(`authority:${taskId}`)) authorityService.issue({ id: `authority:${taskId}`, grantId,
-      subjectPrincipalId: principalId, taskId, resourceIds: safeResources,
-      actions: allowedActions, notBefore: now, expiresAt: now + 3600000 });
+      subjectPrincipalId: principalId, taskId, resourceIds,
+      actions: taskActions, notBefore: now, expiresAt: now + 3600000 });
     if (!budgets.getBudget(`budget:${taskId}`)) budgets.createBudget({ id: `budget:${taskId}`, ownerPrincipalId: principalId,
-      taskId, ceiling: filesystem ? { actions: "100", bytes: "10485760" } :
+      taskId, ceiling: scope ? { actions: "100", bytes: "10485760",
+        inference_tokens: "32768" } : filesystem ? { actions: "100", bytes: "10485760" } :
         { actions: "100" }, expiresAt: now + 3600000 });
     await contracts.create({ id: `contract:${taskId}`, ownerPrincipalId: principalId, taskId,
-      objective: "Execute authorized M5 demo actions", acceptanceCriteria: ["required actions observed"],
-      forbiddenEffects: ["external transfer", "payment"], allowedResourceIds: safeResources,
+      objective: scope?.objective ?? "Execute authorized M5 demo actions",
+      acceptanceCriteria: ["required actions observed"],
+      forbiddenEffects: ["external transfer", "payment"], allowedResourceIds: resourceIds,
       maxRisk: filesystem ? "R2" : "R1", privacyClass: "local_only", budgetId: `budget:${taskId}`,
       authorityLeaseId: `authority:${taskId}`, createdAt: now, version: 1,
-      status: "active", metadata: {} });
+      status: "active", metadata: scope?.metadata ?? {} });
+  }
+
+  async function prepareGoalTask(input: { taskId: string; principalId: string;
+    targetId: string; action: "file.write" | "file.read"; objective: string;
+    expectedSha256?: string }): Promise<void> {
+    if (!filesystem || input.principalId !== "astra") throw new Error("GOAL_HOST_SCOPE_DENIED");
+    const resolved = new ResourceResolver(resources).resolve(input.targetId,
+      { expectedKinds: ["file"] });
+    if (!resolved.ok) throw new Error(`RESOURCE_${resolved.reason}`);
+    filesystem.pathForResource(resolved.resource.id,
+      input.action === "file.read" ? "read" : "write");
+    await ensureTask(input.taskId, input.principalId, {
+      resourceIds: [resolved.resource.id], actions: [input.action],
+      objective: input.objective,
+      metadata: { source: "human_goal", expectedSha256: input.expectedSha256 ?? null }
+    });
+  }
+
+  function authorizeInference(taskId: string, objectId: string): boolean {
+    return flow.evaluate({ taskId, intentId: `inference:${taskId}`,
+      objectIds: [objectId], sinkId: inferenceSinkId }).verdict === "allow";
+  }
+  function pauseGoalTask(taskId: string): void {
+    const task = stores?.tasks.get(taskId);
+    if (task?.status === "running") stores?.tasks.setStatus(taskId, "paused", task.version);
+  }
+  function reserveInference(taskId: string, principalId: string,
+    requestId: string, attempt: number): string {
+    const budget = budgets.getBudget(`budget:${taskId}`);
+    if (!budget || budget.ownerPrincipalId !== principalId) {
+      throw new Error("INFERENCE_BUDGET_UNAVAILABLE");
+    }
+    const id = `inference:${requestId}:${attempt}`;
+    budgets.reserve({ id, budgetId: budget.id, principalId, taskId,
+      amount: { inference_tokens: "16384" },
+      metadata: { kind: "local_inference", requestId, attempt } }, budget.version);
+    return id;
+  }
+  function settleInference(id: string, principalId: string, taskId: string,
+    usage?: { inputTokens?: number; outputTokens?: number }): void {
+    const reservation = budgets.getReservation(id);
+    if (!reservation || reservation.status !== "active") return;
+    const identity = { principalId, taskId };
+    if (Number.isSafeInteger(usage?.inputTokens) &&
+      Number.isSafeInteger(usage?.outputTokens) &&
+      usage!.inputTokens! >= 0 && usage!.outputTokens! >= 0) {
+      budgets.commitReservation(id, identity,
+        { inference_tokens: String(usage!.inputTokens! + usage!.outputTokens!) },
+        reservation.version);
+    } else budgets.releaseReservation(id, identity, reservation.version);
   }
 
   async function run(intent: ActionIntent, taskId: string, correlationId: string,
@@ -489,7 +554,8 @@ export function createDemoControlPlane(world: WorldRuntime, emit: Emit,
     return result;
   }
   return { run, mayComplete, recoverOnStartup, reconcilePendingFilesystem,
-    stageTrustedContent,
+    stageTrustedContent, prepareGoalTask, authorizeInference, pauseGoalTask,
+    reserveInference, settleInference,
     runtimeMode, stopTask: (id: string) => {
       stoppedTasks.add(id);
       const task = stores?.tasks.get(id);
