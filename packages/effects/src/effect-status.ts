@@ -5,5 +5,5 @@ export const EFFECT_TRANSITIONS: Readonly<Record<EffectStatus, readonly EffectSt
   preparing: ["prepared", "failed"],
   prepared: ["dispatching", "failed"],
   dispatching: ["committed", "failed", "unknown"],
-  committed: [], failed: [], unknown: ["committed"]
+  committed: [], failed: [], unknown: ["committed", "failed"]
 };

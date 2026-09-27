@@ -13,6 +13,9 @@ import { expectedBytes, FilesystemObserver, FilesystemReadExecutor,
   FilesystemReconciler, FilesystemWriteExecutor, validateLogicalPath,
   type FilesystemWorkspace } from
   "@agent-world/filesystem";
+import { ApiEndpointRegistry, CreateRecordSchema, HttpApiExecutor,
+  HttpApiObserver, HttpApiReconciler, type CredentialProvider } from
+  "@agent-world/http-api";
 import { defaultFlowRules, FlowEngine, InMemoryDataFlowStore,
   InMemoryReleaseApprovalStore, InMemoryTaskWorkingSetStore, SinkRegistry } from "@agent-world/information-flow";
 import type { DataLabel } from "@agent-world/information-flow";
@@ -39,9 +42,12 @@ export function createDemoControlPlane(world: WorldRuntime, emit: Emit,
     beforeExecutorDispatch?(): void; beforeCommitGate?(): void;
     beforePreparedDispatch?(): void; afterExecutorResponse?(): void;
     afterObservationPersisted?(): void; afterFilesystemMutation?(): void;
-    filesystem?: FilesystemWorkspace }) {
+    filesystem?: FilesystemWorkspace;
+    httpApi?: { endpoints: ApiEndpointRegistry; credentials: CredentialProvider;
+      afterRequest?(): void } }) {
   const clock = durable?.kernel.clock ?? { now: () => Date.now() };
   const filesystem = durable?.filesystem;
+  const httpApi = durable?.httpApi;
   const stores = durable?.stores;
   const resources = stores?.resources ?? new InMemoryResourceRegistry();
   if (!resources.list().length) createDemoResources(resources);
@@ -49,7 +55,7 @@ export function createDemoControlPlane(world: WorldRuntime, emit: Emit,
   if (!resources.get(slowToolId)) resources.register({ id: slowToolId, kind: "tool", displayName: "Demo Slow Tool",
     aliases: ["demo.slow"], parentId: null, dataLabel: null, exclusivity: "shared",
     sink: null, source: "host" });
-  const safeResources = resources.list().filter(item => ["world_place", "agent", "tool", "file"]
+  const safeResources = resources.list().filter(item => ["world_place", "agent", "tool", "file", "endpoint"]
     .includes(item.kind)).map(item => item.id);
   const grants = stores?.grants ?? new Map<string, AuthorityGrantView>();
   const authoritySource = stores?.grants ?? { getGrant: (id: string) =>
@@ -77,6 +83,8 @@ export function createDemoControlPlane(world: WorldRuntime, emit: Emit,
     compositionActions.register({ actionType: "file.read", actionClass: "sensitive_read" });
     compositionActions.register({ actionType: "file.write", actionClass: "external_send" });
   }
+  if (httpApi) compositionActions.register({ actionType: "api.create_record",
+    actionClass: "external_send" });
   const history = stores?.history ?? new InMemoryHistoryStore();
   const composition = new CompositionEngine(new CandidateCompiler(compositionActions, resources),
     history, stores?.compositionApprovals ?? new InMemoryApprovalStore(), defaultCompositionRules(), clock);
@@ -95,6 +103,10 @@ export function createDemoControlPlane(world: WorldRuntime, emit: Emit,
     if (!sinkRegistry.get(file.id)) sinkRegistry.register({ id: file.id, kind: "file",
       trust: file.sink?.trustClass ?? "local", hostControlled: true, metadata: {} });
   }
+  if (httpApi) for (const endpoint of resources.listByKind("endpoint")) {
+    if (!sinkRegistry.get(endpoint.id)) sinkRegistry.register({ id: endpoint.id,
+      kind: "api", trust: "external", hostControlled: true, metadata: {} });
+  }
   const flow = new FlowEngine(objects, workingSets,
     sinkRegistry, stores?.releaseApprovals ??
       new InMemoryReleaseApprovalStore(), defaultFlowRules(), clock.now);
@@ -102,9 +114,12 @@ export function createDemoControlPlane(world: WorldRuntime, emit: Emit,
     observationPolicy, compositionActions, {});
   const reconciliationQueue = stores?.reconciliations ?? new InMemoryReconciliationQueue();
   const filesystemObserver = filesystem ? new FilesystemObserver(filesystem, resources, clock.now) : null;
+  const httpObserver = httpApi ? new HttpApiObserver(httpApi.endpoints,
+    httpApi.credentials, effects, resources, clock.now) : null;
   const reconciliation = new ReconciliationService(effects, reconciliationQueue,
     observations, observers, observationPolicy,
-    filesystemObserver ? [new FilesystemReconciler(filesystemObserver)] : [], clock.now);
+    [...(filesystemObserver ? [new FilesystemReconciler(filesystemObserver)] : []),
+      ...(httpObserver ? [new HttpApiReconciler(httpObserver)] : [])], clock.now);
   const supervisor = new SupervisorEngine({ stalledTaskMs: 60000, preparingMs: 60000,
     dispatchingMs: 60000, maxUnknownBacklog: 10, highUnknownRate: 1 });
   const emergencyStop = stores?.emergencyStop ?? new InMemoryEmergencyStopStore();
@@ -166,6 +181,17 @@ export function createDemoControlPlane(world: WorldRuntime, emit: Emit,
           metadata: { mode: expected.mode } };
       } });
   }
+  if (httpApi) actions.register({ action: "api.create_record",
+    executorId: "restricted-http-api", observerId: "restricted-http-observer",
+    risk: "R2", resourceKinds: ["endpoint"], requiresResourceLease: false,
+    requiresFlow: true, strictDecisionVersions: true,
+    budgetAmount: { actions: "1" },
+    budgetForIntent: intent => ({ actions: "1", network_bytes:
+      String(Buffer.byteLength(JSON.stringify(CreateRecordSchema.parse(intent.parameters ?? {})))) }),
+    reservationTtlMs: 30000,
+    expectedPostcondition: (id, intent) => ({ kind: "api_create_record",
+      resourceIds: [id], predicate: "provider_status",
+      expected: CreateRecordSchema.parse(intent.parameters ?? {}), metadata: {} }) });
   const executed = new Map<string, { type: string; actorId: string; entityId?: string;
     payload: Record<string, unknown> }>();
   const executors = new ExecutorRegistry();
@@ -175,6 +201,11 @@ export function createDemoControlPlane(world: WorldRuntime, emit: Emit,
       durable?.afterFilesystemMutation));
     executors.register(filesystemRead!);
     observers.register(filesystemObserver!);
+  }
+  if (httpApi) {
+    executors.register(new HttpApiExecutor(httpApi.endpoints,
+      httpApi.credentials, httpApi.afterRequest));
+    observers.register(httpObserver!);
   }
   executors.register({ id: "demo-world", dispatch: async context => {
     const effect = effects.get(context.effectId)!;
@@ -269,9 +300,9 @@ export function createDemoControlPlane(world: WorldRuntime, emit: Emit,
     if (stores && !stores.tasks.get(taskId)) stores.tasks.create({ id: taskId,
       principalId, createdAt: now });
     const grantId = `grant:${taskId}`;
-    const allowedActions = filesystem
-      ? ["goto", "say", "use_tool", "file.read", "file.write"]
-      : ["goto", "say", "use_tool"];
+    const allowedActions = ["goto", "say", "use_tool",
+      ...(filesystem ? ["file.read", "file.write"] : []),
+      ...(httpApi ? ["api.create_record"] : [])];
     const resourceIds = scope?.resourceIds ?? safeResources;
     const taskActions = scope?.actions ?? allowedActions;
     const grant: AuthorityGrantView = { id: grantId, version: 1, subjectPrincipalId: principalId,
@@ -284,26 +315,34 @@ export function createDemoControlPlane(world: WorldRuntime, emit: Emit,
       subjectPrincipalId: principalId, taskId, resourceIds,
       actions: taskActions, notBefore: now, expiresAt: now + 3600000 });
     if (!budgets.getBudget(`budget:${taskId}`)) budgets.createBudget({ id: `budget:${taskId}`, ownerPrincipalId: principalId,
-      taskId, ceiling: scope ? { actions: "100", bytes: "10485760",
-        inference_tokens: "32768" } : filesystem ? { actions: "100", bytes: "10485760" } :
-        { actions: "100" }, expiresAt: now + 3600000 });
+      taskId, ceiling: { actions: "100",
+        ...(filesystem ? { bytes: "10485760" } : {}),
+        ...(httpApi ? { network_bytes: "1048576" } : {}),
+        ...(scope ? { inference_tokens: "32768" } : {}) },
+      expiresAt: now + 3600000 });
     await contracts.create({ id: `contract:${taskId}`, ownerPrincipalId: principalId, taskId,
       objective: scope?.objective ?? "Execute authorized M5 demo actions",
       acceptanceCriteria: ["required actions observed"],
       forbiddenEffects: ["external transfer", "payment"], allowedResourceIds: resourceIds,
-      maxRisk: filesystem ? "R2" : "R1", privacyClass: "local_only", budgetId: `budget:${taskId}`,
+      maxRisk: filesystem || httpApi ? "R2" : "R1", privacyClass: "local_only",
+      budgetId: `budget:${taskId}`,
       authorityLeaseId: `authority:${taskId}`, createdAt: now, version: 1,
       status: "active", metadata: scope?.metadata ?? {} });
   }
 
   async function prepareGoalTask(input: { taskId: string; principalId: string;
-    targetId: string; action: "file.write" | "file.read"; objective: string;
+    targetId: string; action: "file.write" | "file.read" | "api.create_record";
+    objective: string;
     expectedSha256?: string }): Promise<void> {
-    if (!filesystem || input.principalId !== "astra") throw new Error("GOAL_HOST_SCOPE_DENIED");
+    if (input.principalId !== "astra" ||
+      (input.action === "api.create_record" ? !httpApi : !filesystem)) {
+      throw new Error("GOAL_HOST_SCOPE_DENIED");
+    }
     const resolved = new ResourceResolver(resources).resolve(input.targetId,
-      { expectedKinds: ["file"] });
+      { expectedKinds: [input.action === "api.create_record" ? "endpoint" : "file"] });
     if (!resolved.ok) throw new Error(`RESOURCE_${resolved.reason}`);
-    filesystem.pathForResource(resolved.resource.id,
+    if (input.action === "api.create_record") httpApi!.endpoints.get(resolved.resource.id);
+    else filesystem!.pathForResource(resolved.resource.id,
       input.action === "file.read" ? "read" : "write");
     await ensureTask(input.taskId, input.principalId, {
       resourceIds: [resolved.resource.id], actions: [input.action],
@@ -361,8 +400,10 @@ export function createDemoControlPlane(world: WorldRuntime, emit: Emit,
         reasonCode: "RUNTIME_READ_ONLY" };
     }
     const fileAction = intent.action === "file.read" || intent.action === "file.write";
+    const apiAction = intent.action === "api.create_record";
     if (intent.actorId !== "astra" ||
-      (!["goto", "say", "use_tool"].includes(intent.action) && !(fileAction && filesystem)) ||
+      (!["goto", "say", "use_tool"].includes(intent.action) &&
+        !(fileAction && filesystem) && !(apiAction && httpApi)) ||
       (intent.action === "use_tool" && intent.parameters?.tool !== "demo.slow")) {
       return { status: "denied", taskId, intentId: intent.id, observationIds: [],
         reasonCode: "DEMO_ACTION_NOT_REGISTERED" };
@@ -374,7 +415,7 @@ export function createDemoControlPlane(world: WorldRuntime, emit: Emit,
       catch { return fileDenial("INVALID_LOGICAL_PATH"); }
     }
     const resolved = new ResourceResolver(resources).resolve(targetText);
-    if (!resolved.ok) return fileAction ? fileDenial(`RESOURCE_${resolved.reason}`) :
+    if (!resolved.ok) return fileAction || apiAction ? fileDenial(`RESOURCE_${resolved.reason}`) :
       { status: "denied", taskId, intentId: intent.id, observationIds: [],
         reasonCode: `RESOURCE_${resolved.reason}` };
     if (fileAction) {
@@ -382,11 +423,20 @@ export function createDemoControlPlane(world: WorldRuntime, emit: Emit,
         intent.action === "file.read" ? "read" : "write"); }
       catch { return fileDenial("FILE_RESOURCE_NOT_AUTHORIZED"); }
     }
+    if (apiAction) {
+      try {
+        httpApi!.endpoints.get(resolved.resource.id);
+        CreateRecordSchema.parse(intent.parameters ?? {});
+      } catch { return fileDenial("INVALID_API_REQUEST"); }
+    }
     await ensureTask(taskId, intent.actorId);
-    if (intent.action === "file.write") {
+    if (intent.action === "file.write" || apiAction) {
       let hash: string;
-      try { hash = expectedBytes(intent.parameters ?? {}).sha256; }
-      catch { return fileDenial("INVALID_WRITE_PARAMETERS"); }
+      try { hash = intent.action === "file.write"
+        ? expectedBytes(intent.parameters ?? {}).sha256
+        : createHash("sha256").update(JSON.stringify(
+          CreateRecordSchema.parse(intent.parameters ?? {}))).digest("hex"); }
+      catch { return fileDenial("INVALID_EFFECT_PARAMETERS"); }
       const ids = options?.flowObjectIds ?? [];
       const object = ids.length === 1 ? objects.get(ids[0]!) : null;
       if (!object || object.taskId !== taskId || object.metadata.sha256 !== hash) {
@@ -410,7 +460,8 @@ export function createDemoControlPlane(world: WorldRuntime, emit: Emit,
         authorityLeaseId: `authority:${taskId}`, resourceLeaseId: held?.id,
         fencingToken: held?.fencingToken, correlationId, planId,
         flowObjectIds: options?.flowObjectIds,
-        flowSinkId: intent.action === "file.write" ? resolved.resource.id : undefined,
+        flowSinkId: intent.action === "file.write" || apiAction
+          ? resolved.resource.id : undefined,
         compositionApprovalId: options?.compositionApprovalId,
         releaseApprovalId: options?.releaseApprovalId });
     } catch (error) {
@@ -483,7 +534,7 @@ export function createDemoControlPlane(world: WorldRuntime, emit: Emit,
   }
   async function stageTrustedContent(taskId: string, principalId: string,
     content: string, label: DataLabel): Promise<string> {
-    if (!filesystem) throw new Error("FILESYSTEM_NOT_CONFIGURED");
+    if (!filesystem && !httpApi) throw new Error("EFFECT_NOT_CONFIGURED");
     await ensureTask(taskId, principalId);
     const bytes = Buffer.from(content, "utf8");
     const id = `content:${crypto.randomUUID()}`;
@@ -493,15 +544,32 @@ export function createDemoControlPlane(world: WorldRuntime, emit: Emit,
     workingSets.add(taskId, id, workingSets.get(taskId).version);
     return id;
   }
-  function repairConfirmedFilesystemEffect(effectId: string): void {
+  function repairConfirmedExternalEffect(effectId: string): void {
     const effect = effects.get(effectId);
     if (!effect || effect.status !== "unknown" ||
-      !["filesystem-write", "filesystem-read"].includes(effect.executorId)) return;
+      !["filesystem-write", "filesystem-read", "restricted-http-api"]
+        .includes(effect.executorId)) return;
     const decision = reconciliationQueue.listDecisions(effectId).at(-1);
-    if (decision?.outcome !== "confirmed_effect" || !decision.observationIds.length) return;
+    if (!decision || !decision.observationIds.length ||
+      !["confirmed_effect", "confirmed_no_effect"].includes(decision.outcome)) return;
     const riskClass = effect.metadata.riskClass as ContractRisk;
     const maxAgeMs = effect.metadata.observationMaxAgeMs as number;
     const settle = () => {
+      if (decision.outcome === "confirmed_no_effect") {
+        if (effect.executorId !== "restricted-http-api" ||
+          !decision.noEffectCertificate) return;
+        const failed = coordinator.failUnknownFromNoEffectCertificate(effect.id,
+          effect.version, decision.observationIds[0]!, decision.id,
+          decision.noEffectCertificate,
+          { riskClass, maxAgeMs });
+        for (const id of failed.budgetReservationIds) {
+          const reservation = budgets.getReservation(id);
+          if (reservation?.status === "active") budgets.releaseReservation(id,
+            { principalId: reservation.principalId, taskId: reservation.taskId },
+            reservation.version);
+        }
+        return;
+      }
       const committed = coordinator.confirmUnknownFromReconciliation(effect.id,
         effect.version, decision.observationIds[0]!, decision.id,
         { riskClass, maxAgeMs });
@@ -539,21 +607,34 @@ export function createDemoControlPlane(world: WorldRuntime, emit: Emit,
         job.status !== "queued" || job.nextAttemptAt > clock.now()) continue;
       await reconciliation.run(job.id, { riskClass: effect.metadata.riskClass as ContractRisk,
         maxAgeMs: effect.metadata.observationMaxAgeMs as number });
-      repairConfirmedFilesystemEffect(effect.id);
+      repairConfirmedExternalEffect(effect.id);
+    }
+  }
+
+  async function reconcilePendingHttpApi(): Promise<void> {
+    for (const job of reconciliationQueue.list()) {
+      const effect = effects.get(job.effectId);
+      if (!effect || effect.status !== "unknown" ||
+        effect.executorId !== "restricted-http-api" ||
+        job.status !== "queued" || job.nextAttemptAt > clock.now()) continue;
+      await reconciliation.run(job.id, { riskClass: effect.metadata.riskClass as ContractRisk,
+        maxAgeMs: effect.metadata.observationMaxAgeMs as number });
+      repairConfirmedExternalEffect(effect.id);
     }
   }
 
   function recoverOnStartup() {
     const result = recovery.run();
-    if (filesystem && (durable?.kernel.isHealthy() ?? true)) {
+    if ((filesystem || httpApi) && (durable?.kernel.isHealthy() ?? true)) {
       for (const effect of effects.list()) {
-        repairConfirmedFilesystemEffect(effect.id);
+        repairConfirmedExternalEffect(effect.id);
         repairFilesystemGeneration(effect.id);
       }
     }
     return result;
   }
   return { run, mayComplete, recoverOnStartup, reconcilePendingFilesystem,
+    reconcilePendingHttpApi,
     stageTrustedContent, prepareGoalTask, authorizeInference, pauseGoalTask,
     reserveInference, settleInference,
     runtimeMode, stopTask: (id: string) => {

@@ -16,6 +16,7 @@
     "@agent-world/effects": "0.1.0",
     "@agent-world/event-store": "0.1.0",
     "@agent-world/filesystem": "0.1.0",
+    "@agent-world/http-api": "0.1.0",
     "@agent-world/inference": "0.1.0",
     "@agent-world/information-flow": "0.1.0",
     "@agent-world/leases": "0.1.0",

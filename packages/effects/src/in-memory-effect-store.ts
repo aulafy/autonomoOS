@@ -80,7 +80,12 @@ export class InMemoryEffectStore implements EffectStore {
       throw new EffectError("INVALID_EFFECT_TRANSITION", "dispatch_boundary_missing");
     }
     if (next.status === "failed") {
-      const certified = next.failureCertainty === "certified_not_started";
+      const certified = next.failureCertainty === "certified_not_started" ||
+        next.failureCertainty === "certified_no_effect" &&
+        current.status === "unknown" && !!next.reconciliationDecisionId &&
+        next.settlementEvaluation?.accepted === true &&
+        next.settlementEvaluation.effectiveStatus === "contradicted" &&
+        next.observationIds.length > 0;
       const contradicted = next.settlementEvaluation?.accepted === true &&
         next.settlementEvaluation.effectiveStatus === "contradicted" &&
         next.observationIds.length > 0;

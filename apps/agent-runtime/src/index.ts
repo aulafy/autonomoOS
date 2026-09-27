@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { createDemoControlPlane } from "./demo-control-plane.js";
 import { H3GoalService } from "./h3-goal-service.js";
 import { FilesystemWorkspace, validateLogicalPath } from "@agent-world/filesystem";
+import { ApiEndpointRegistry, EnvironmentCredentialProvider } from "@agent-world/http-api";
 import { mintResourceId } from "@agent-world/resources";
 import { createDurableDomainStores, DurableRuntimeEventPublisher, JournalKernel, ReplayClock,
   RuntimeDatabase } from "@agent-world/runtime-store-sqlite";
@@ -53,6 +54,15 @@ if (filesystem) {
     }
   }
 }
+const httpApi = process.env.AGENT_WORLD_DEMO_API_ORIGIN ? (() => {
+  const endpoints = new ApiEndpointRegistry(stores.resources);
+  const binding = endpoints.register({ serviceName: "demo-api",
+    origin: process.env.AGENT_WORLD_DEMO_API_ORIGIN!,
+    credentialRef: "demo-api-default",
+    allowFixtureLoopback: process.env.AGENT_WORLD_DEMO_API_FIXTURE === "1" });
+  return { endpoints, binding, credentials: new EnvironmentCredentialProvider({
+    "demo-api-default": "DEMO_API_TOKEN" }) };
+})() : undefined;
 const runtimePublisher = new DurableRuntimeEventPublisher<RuntimeEvent>(database,
   publishRuntimeEvent);
 const events = {
@@ -199,14 +209,17 @@ type IntentOutcome =
   | { status: "denied" | "failed" | "revoked"; intentId: string;
       executionId?: string; reason?: string };
 
-const governance = createDemoControlPlane(world, emit, { kernel, stores, filesystem });
+const governance = createDemoControlPlane(world, emit, { kernel, stores, filesystem,
+  httpApi });
 governance.recoverOnStartup();
 if (filesystem) await governance.reconcilePendingFilesystem();
-const h3 = filesystem ? new H3GoalService({ provider: inference, control: governance,
+if (httpApi) await governance.reconcilePendingHttpApi();
+const h3 = filesystem || httpApi ? new H3GoalService({ provider: inference, control: governance,
   resources: stores.resources, emit,
-  allowedTargetIds: (process.env.AGENT_WORLD_H3_TARGETS ??
+  allowedTargetIds: [...(filesystem ? (process.env.AGENT_WORLD_H3_TARGETS ??
     process.env.AGENT_WORLD_REGISTERED_FILES ?? "").split(",").filter(Boolean)
-    .map(path => mintResourceId("file", `workspace/${validateLogicalPath(path)}`)),
+    .map(path => mintResourceId("file", `workspace/${validateLogicalPath(path)}`)) : []),
+    ...(httpApi ? [httpApi.binding.endpointId] : [])],
   actorId: DEFAULT_AGENT_ID }) : null;
 
 async function processIntent(raw: unknown, options?: { taskId?: string;
@@ -1084,7 +1097,10 @@ wss.on(
               const result = await h3.submitGoal({ goal,
                 targetId: message.targetId,
                 principalId: DEFAULT_AGENT_ID,
-                expectedContent: message.expectedContent });
+                expectedContent: message.expectedContent,
+                action: message.action === "api.create_record" ?
+                  "api.create_record" : "file.write",
+                expectedRecord: message.expectedRecord });
               socket.send(JSON.stringify({ type: "agent.goal.result", result }));
               return;
             }

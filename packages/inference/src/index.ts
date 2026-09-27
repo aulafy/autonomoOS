@@ -23,7 +23,8 @@ export interface PlanContext {
 }
 export const ProposedActionSchema = z.object({
   action: z.enum(["say", "goto", "look_at", "pick", "drop", "use", "use_tool",
-    "delegate", "ask_human", "purchase_compute", "file.read", "file.write"]),
+    "delegate", "ask_human", "purchase_compute", "file.read", "file.write",
+    "api.create_record"]),
   targetId: z.string().optional(),
   parameters: z.record(z.unknown()).optional()
 }).strict();
@@ -142,6 +143,9 @@ export class LlamaCppProvider implements InferenceProvider {
       ] : []),
       ...(context.availableActions.includes("file.read") ? [
         "For file.read, use empty parameters."
+      ] : []),
+      ...(context.availableActions.includes("api.create_record") ? [
+        "For api.create_record, use a listed endpoint and parameters name (string), value (integer)."
       ] : []),
       ...(context.availableActions.includes("say") ? [
         "For say, put the exact speech in parameters.text."

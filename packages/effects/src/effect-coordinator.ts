@@ -227,6 +227,51 @@ export class EffectCoordinator {
     return next;
   }
 
+  /** A C7 certificate and accepted external absence close UNKNOWN without another dispatch. */
+  failUnknownFromNoEffectCertificate(id: string, expectedVersion: number,
+    observationId: string, decisionId: string,
+    certificate: { kind: "idempotency_key_never_processed";
+      idempotencyKey: string; authority: string; reference: string },
+    options: ObservationSettlementOptions): EffectTransaction {
+    const current = this.requireEffect(id, expectedVersion);
+    this.requireStatus(current, "unknown");
+    if (!decisionId) throw new EffectError("INVALID_EFFECT_INPUT");
+    const observation = this.observations.get(observationId);
+    if (!observation) throw new EffectError("OBSERVATION_NOT_FOUND", observationId);
+    const observedCertificate = observation.metadata.certificate as
+      typeof certificate | undefined;
+    if (certificate.kind !== "idempotency_key_never_processed" ||
+      certificate.idempotencyKey !== current.idempotencyKey ||
+      !certificate.authority || !certificate.reference ||
+      observedCertificate?.idempotencyKey !== certificate.idempotencyKey ||
+      observedCertificate?.reference !== certificate.reference ||
+      observedCertificate?.authority !== certificate.authority) {
+      throw new EffectError("INVALID_NO_EFFECT_CERTIFICATE");
+    }
+    this.checkObservationBinding(current, observation);
+    const observer = this.observers.get(observation.observerId);
+    if (!observer) throw new EffectError("OBSERVER_NOT_FOUND", observation.observerId);
+    const evaluation = this.policy.evaluate(observation, observer.descriptor, {
+      subject: { taskId: current.taskId, intentId: current.intentId,
+        executionId: current.executionId, effectId: current.id,
+        resourceIds: current.resourceIds },
+      expectedPostcondition: current.expectedPostcondition,
+      riskClass: options.riskClass, maxAgeMs: options.maxAgeMs,
+      requireGenerationBinding: options.requireGenerationBinding
+    });
+    if (!evaluation.accepted || evaluation.effectiveStatus !== "contradicted") {
+      throw new EffectError("OBSERVATION_NOT_ACCEPTED");
+    }
+    const next = this.effects.update({ ...current, status: "failed",
+      observationIds: [...new Set([...current.observationIds, observation.id])],
+      settlementEvaluation: evaluation, failureCertainty: "certified_no_effect",
+      unknownReasonCode: undefined, settledAt: this.clock.now(),
+      reconciliationDecisionId: decisionId, version: current.version + 1 }, expectedVersion);
+    this.emit("effect.failed", next, current.status,
+      { reconciliationDecisionId: decisionId, certainty: "certified_no_effect" });
+    return next;
+  }
+
   private requireEffect(id: string, expectedVersion: number): EffectTransaction {
     const effect = this.effects.get(id);
     if (!effect) throw new EffectError("EFFECT_NOT_FOUND", id);

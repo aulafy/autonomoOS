@@ -5,6 +5,7 @@ import type { DataLabel } from "@agent-world/information-flow";
 import { type ActionIntent, type RuntimeEvent } from "@agent-world/protocol";
 import { ResourceResolver, type ResourceRegistry } from "@agent-world/resources";
 import { expectedBytes } from "@agent-world/filesystem";
+import { CreateRecordSchema } from "@agent-world/http-api";
 import { createDemoControlPlane } from "./demo-control-plane.js";
 
 type Control = ReturnType<typeof createDemoControlPlane>;
@@ -18,7 +19,9 @@ export interface H3GoalInput {
   /** Selected by the host from its registered files, never by the model. */
   targetId: string;
   principalId: string;
-  expectedContent: string;
+  expectedContent?: string;
+  action?: "file.write" | "api.create_record";
+  expectedRecord?: { name: string; value: number };
   signal?: AbortSignal;
 }
 export interface H3GoalResult {
@@ -49,6 +52,7 @@ export class H3GoalService {
   async submitGoal(input: H3GoalInput): Promise<H3GoalResult> {
     const started = performance.now();
     const { provider, control, resources, emit, actorId } = this.dependencies;
+    const actionKind = input.action ?? "file.write";
     const taskId = randomUUID();
     const planId = randomUUID();
     const requestId = randomUUID();
@@ -68,21 +72,27 @@ export class H3GoalService {
     };
     if (input.principalId !== actorId || !input.goal.trim() ||
       input.goal.length > 8192 || typeof input.targetId !== "string" ||
-      typeof input.expectedContent !== "string" ||
-      Buffer.byteLength(input.expectedContent, "utf8") > 1048576) {
+      (actionKind === "file.write" &&
+        (typeof input.expectedContent !== "string" ||
+          Buffer.byteLength(input.expectedContent, "utf8") > 1048576)) ||
+      (actionKind === "api.create_record" &&
+        !CreateRecordSchema.safeParse(input.expectedRecord).success)) {
       return deny("denied", "INVALID_GOAL_REQUEST");
     }
     const resolved = new ResourceResolver(resources).resolve(input.targetId,
-      { expectedKinds: ["file"] });
+      { expectedKinds: [actionKind === "file.write" ? "file" : "endpoint"] });
     if (!resolved.ok) return deny("denied", `RESOURCE_${resolved.reason}`);
     const target = resolved.resource;
     if (!this.dependencies.allowedTargetIds.includes(target.id)) {
       return deny("denied", "TARGET_NOT_HOST_ALLOWED");
     }
-    const expectedSha256 = hash(input.expectedContent);
+    const expectedSha256 = hash(actionKind === "file.write" ? input.expectedContent! :
+      JSON.stringify(CreateRecordSchema.parse(input.expectedRecord)));
     try {
       await control.prepareGoalTask({ taskId, principalId: input.principalId,
-        targetId: target.id, action: "file.write", objective: "Governed local file write",
+        targetId: target.id, action: actionKind,
+        objective: actionKind === "file.write" ? "Governed local file write" :
+          "Governed API record creation",
         expectedSha256 });
       await this.dependencies.afterTaskPrepared?.(taskId);
     } catch (error) {
@@ -102,10 +112,10 @@ export class H3GoalService {
       return deny("denied", error instanceof Error ? error.message : String(error));
     }
     const context = { agentId: actorId, userGoal: input.goal,
-      availableActions: ["file.write"],
-      entities: [{ id: target.id, kind: "file", name: target.displayName,
-        affordances: ["file.write"] }],
-      constraints: ["Only one file.write action for the listed resource."] };
+      availableActions: [actionKind],
+      entities: [{ id: target.id, kind: target.kind, name: target.displayName,
+        affordances: [actionKind] }],
+      constraints: [`Only one ${actionKind} action for the listed resource.`] };
     const promptHash = hash(JSON.stringify(context));
     let proposal: Awaited<ReturnType<InferenceProvider["proposePlan"]>> | undefined;
     for (let attempt = 1; attempt <= 2; attempt++) {
@@ -148,27 +158,37 @@ export class H3GoalService {
     // capability, approval, or arbitrary parameters survive compilation.
     if (proposal.plan.actions.length !== 1) return deny("denied", "PLAN_ACTION_COUNT");
     const action = proposal.plan.actions[0]!;
-    if (action.action !== "file.write") return deny("denied", "ACTION_NOT_EXPOSED");
+    if (action.action !== actionKind) return deny("denied", "ACTION_NOT_EXPOSED");
     const actionTarget = action.targetId ? new ResourceResolver(resources).resolve(
-      action.targetId, { expectedKinds: ["file"] }) : null;
+      action.targetId, { expectedKinds: [target.kind] }) : null;
     if (!actionTarget?.ok || actionTarget.resource.id !== target.id) {
       return deny("denied", "PROPOSAL_TARGET_OUT_OF_SCOPE");
     }
     const params = action.parameters;
-    if (!params || Object.keys(params).sort().join(",") !== "content,mode" ||
-      typeof params.content !== "string" ||
-      (params.mode !== "create" && params.mode !== "replace")) {
-      return deny("denied", "INVALID_WRITE_PARAMETERS");
-    }
     let contentHash: string;
-    try { contentHash = expectedBytes(params).sha256; }
-    catch { return deny("denied", "INVALID_WRITE_PARAMETERS"); }
+    let normalizedParameters: Record<string, unknown>;
+    let flowContent: string;
+    try {
+      if (actionKind === "file.write") {
+        if (!params || Object.keys(params).sort().join(",") !== "content,mode") {
+          throw new Error("INVALID_WRITE_PARAMETERS");
+        }
+        contentHash = expectedBytes(params).sha256;
+        normalizedParameters = { content: params.content, mode: params.mode };
+        flowContent = String(params.content);
+      } else {
+        normalizedParameters = CreateRecordSchema.parse(params ?? {});
+        flowContent = JSON.stringify(normalizedParameters);
+        contentHash = hash(flowContent);
+      }
+    } catch { return deny("denied", "INVALID_EFFECT_PARAMETERS"); }
     if (expectedSha256 !== contentHash) {
       return deny("denied", "EXPECTED_CONTENT_MISMATCH");
     }
-    const intent: ActionIntent = { id: randomUUID(), actorId, action: "file.write",
-      targetId: String(target.metadata.relativePath),
-      parameters: { content: params.content, mode: params.mode },
+    const intent: ActionIntent = { id: randomUUID(), actorId, action: actionKind,
+      targetId: actionKind === "file.write" ?
+        String(target.metadata.relativePath) : target.id,
+      parameters: normalizedParameters,
       provenance: { source: "model", sourceId: planId, taskId, provider: provider.id,
         model: proposal.model, inferenceRequestId: requestId,
         promptHash, responseHash } };
@@ -179,7 +199,9 @@ export class H3GoalService {
     let objectId: string;
     try {
       objectId = await control.stageTrustedContent(taskId, actorId,
-        params.content, secretLabel);
+        flowContent, actionKind === "file.write" ? secretLabel : {
+          confidentiality: "public", categories: [], jurisdictions: [],
+          ownerPrincipalIds: [], releasable: true, metadata: {} });
     } catch (error) {
       return deny("failed", error instanceof Error ? error.message : String(error));
     }

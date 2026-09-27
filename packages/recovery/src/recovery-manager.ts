@@ -156,7 +156,8 @@ export class RecoveryManager {
   private releaseCertified(effect: EffectTransaction): void {
     const current = this.deps.effects.get(effect.id)!;
     if (current.status !== "failed" ||
-      current.failureCertainty !== "certified_not_started") return;
+      current.failureCertainty !== "certified_not_started" &&
+      current.failureCertainty !== "certified_no_effect") return;
     for (const id of current.budgetReservationIds) {
       const reservation = this.deps.budgets.getReservation(id);
       if (reservation?.status === "active") {
