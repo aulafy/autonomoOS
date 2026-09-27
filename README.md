@@ -43,8 +43,12 @@ governed filesystem write instead. These demos require a locally available
 model and `llama-server` executable.
 
 To see the Three.js world, run `npm run dev:runtime` and `npm run dev:world` in
-separate terminals, then open the Vite URL. The WebSocket runtime is currently
-loopback-only; authenticated remote control is future work.
+separate terminals, then open the Vite URL. The panel beside Astra polls a
+read-only projection of SQLite-backed effects, observations, budget settlement,
+and reconciliation decisions. If port 8787 is occupied, start the runtime with
+`AGENT_RUNTIME_PORT=8799` and open the Vite URL with `?runtimePort=8799`.
+The WebSocket runtime is currently loopback-only; authenticated remote control
+is future work.
 
 ## Design boundaries
 

@@ -161,6 +161,35 @@
       font-size: 11px;
     }
 
+    #control-plane {
+      margin-top: 8px;
+      font-size: 12px;
+    }
+
+    .control-effect {
+      margin: 8px 0;
+      padding: 9px;
+      border: 1px solid #d7dce2;
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .control-effect strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .control-fact {
+      margin: 3px 0;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 11px;
+      overflow-wrap: anywhere;
+    }
+
+    .control-effect[data-status="unknown"] { border-color: #d18b19; }
+    .control-effect[data-status="committed"] { border-color: #16884a; }
+    .control-effect[data-status="failed"] { border-color: #b53131; }
+
     .event {
       display: grid;
 
@@ -211,6 +240,12 @@
   <div id="hud">
     <div id="status">
       Connecting…
+    </div>
+
+    <div class="section">
+      <div class="section-title">Durable control plane</div>
+      <div class="muted">Read-only facts from the SQLite-backed runtime</div>
+      <div id="control-plane">Waiting for runtime snapshot…</div>
     </div>
 
     <div class="section">

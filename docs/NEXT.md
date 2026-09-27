@@ -8,9 +8,9 @@ general capability.
 
 Near-term engineering work:
 
-1. Make the existing governed action timeline visible beside Astra: proposal,
-   policy decisions, durable effect status, observation, and reconciliation.
-   Render authoritative events rather than inferred UI state.
+1. Extend Astra's new durable effect timeline with proposal and policy decision
+   details. The current panel reads authoritative effect transitions,
+   observations, budget settlement, and reconciliation from SQLite projections.
 2. Add authenticated control-plane access and an operator review surface before
    exposing the runtime beyond loopback.
 3. Evaluate the first real provider integration for idempotency, reliable

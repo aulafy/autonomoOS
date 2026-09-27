@@ -12,6 +12,7 @@ import type { RuntimeEvent } from "@agent-world/protocol";
 import { WorldRuntime } from "@agent-world/world-core";
 import { createDemoControlPlane } from "../src/demo-control-plane.js";
 import { H3GoalService } from "../src/h3-goal-service.js";
+import { operatorSnapshot } from "../src/operator-snapshot.js";
 
 const token = "DISTINCTIVE_H4_SECRET_DO_NOT_PERSIST";
 const publicLabel: DataLabel = { confidentiality: "public", categories: [],
@@ -114,6 +115,11 @@ test("governed POST requires independent GET before effect commits", async () =>
     assert.equal(f.stores.effects.get(result.effectId!)?.status, "committed");
     assert.equal(f.stores.observations.listByEffect(result.effectId!).at(-1)?.status,
       "confirmed");
+    const view = operatorSnapshot(f.stores);
+    assert.equal(view.effects[0]?.status, "committed");
+    assert.ok(view.effects[0]?.transitions.some(item => item.type === "effect.dispatch_started"));
+    assert.ok(view.effects[0]?.observations.some(item => item.status === "confirmed"));
+    assert.equal(JSON.stringify(view).includes(token), false);
     assert.equal(await f.control.mayComplete("normal"), true);
     assert.equal(f.stores.budgets.getBudget("budget:normal")?.consumed.network_bytes,
       String(Buffer.byteLength(JSON.stringify({ name: "alpha", value: 42 }))));
@@ -162,6 +168,7 @@ test("lost response is UNKNOWN; restart reconciles by GET with exactly one POST"
     await f.fixture.mode("drop_after");
     const result = await create(f.control, f.binding.endpointId, "lost");
     assert.equal(result.status, "unknown", result.reasonCode);
+    assert.equal(operatorSnapshot(f.stores).effects[0]?.status, "unknown");
     assert.equal((await f.fixture.stats()).counts.post, 1);
     assert.equal(f.stores.budgets.getReservation(f.stores.effects.get(result.effectId!)!
       .budgetReservationIds[0]!)?.status, "active");
@@ -169,6 +176,10 @@ test("lost response is UNKNOWN; restart reconciles by GET with exactly one POST"
     const reopened = await f.runtime();
     try {
       await reopened.control.reconcilePendingHttpApi();
+      const view = operatorSnapshot(reopened.stores);
+      assert.equal(view.effects[0]?.status, "committed");
+      assert.ok(view.effects[0]?.reconciliation.decisions.some(item =>
+        item.outcome === "confirmed_effect"));
       assert.equal(reopened.stores.effects.get(result.effectId!)?.status, "committed");
       assert.equal(reopened.stores.budgets.getReservation(reopened.stores.effects
         .get(result.effectId!)!.budgetReservationIds[0]!)?.status, "committed");

@@ -17,6 +17,9 @@ const current =
 const timeline =
   $("#timeline");
 
+const controlPlane =
+  $("#control-plane");
+
 const planBox =
   $("#plan");
 
@@ -266,10 +269,12 @@ function animate() {
 
 animate();
 
-const ws =
-  new WebSocket(
-    "ws://localhost:8787"
-  );
+const requestedRuntimePort = Number(new URLSearchParams(window.location.search)
+  .get("runtimePort") ?? "8787");
+const runtimePort = Number.isInteger(requestedRuntimePort) &&
+  requestedRuntimePort >= 1 && requestedRuntimePort <= 65535
+  ? requestedRuntimePort : 8787;
+const ws = new WebSocket(`ws://127.0.0.1:${runtimePort}`);
 
 function send(
   message: unknown
@@ -376,6 +381,55 @@ function eventClass(
   }
 
   return "";
+}
+
+type ControlSnapshot = {
+  effects: Array<{
+    id: string; taskId: string; action: string; resourceIds: string[];
+    status: string; taskStatus: string | null; reservationStatuses: string[];
+    transitions: Array<{ type: string; status: string; at: number }>;
+    observations: Array<{ status: string; source: string; at: number }>;
+    reconciliation: { jobStatus: string | null;
+      decisions: Array<{ outcome: string; at: number }> };
+  }>;
+};
+
+function renderControlSnapshot(snapshot: ControlSnapshot) {
+  controlPlane.replaceChildren();
+  if (!snapshot.effects.length) {
+    controlPlane.textContent = "No governed effects recorded yet.";
+    return;
+  }
+  const fact = (card: HTMLElement, value: string) => {
+    const line = document.createElement("div");
+    line.className = "control-fact";
+    line.textContent = value;
+    card.appendChild(line);
+  };
+  for (const effect of snapshot.effects) {
+    const card = document.createElement("article");
+    card.className = "control-effect";
+    card.dataset.status = effect.status;
+    const heading = document.createElement("strong");
+    heading.textContent = `${effect.action} · ${effect.status.toUpperCase()}`;
+    card.appendChild(heading);
+    fact(card, `effect ${effect.id.slice(0, 12)} · task ${effect.taskId.slice(0, 12)}`);
+    fact(card, `resource ${effect.resourceIds.join(", ")}`);
+    fact(card, `task ${effect.taskStatus ?? "unknown"} · budget ${effect.reservationStatuses.join(", ") || "none"}`);
+    for (const transition of effect.transitions) {
+      fact(card, `${new Date(transition.at).toLocaleTimeString()}  ${transition.type} → ${transition.status}`);
+    }
+    for (const observation of effect.observations) {
+      fact(card, `${new Date(observation.at).toLocaleTimeString()}  observation ${observation.status} (${observation.source})`);
+    }
+    for (const decision of effect.reconciliation.decisions) {
+      fact(card, `${new Date(decision.at).toLocaleTimeString()}  reconciliation ${decision.outcome}`);
+    }
+    if (effect.status === "unknown") {
+      fact(card, `reconciliation job ${effect.reconciliation.jobStatus ?? "not queued"}`);
+    }
+    controlPlane.appendChild(card);
+  }
 }
 
 function renderEvent(
@@ -710,8 +764,15 @@ ws.addEventListener(
   () => {
     status.textContent =
       "Connected to Agent Runtime";
+    send({ type: "control.snapshot.request" });
   }
 );
+
+window.setInterval(() => {
+  if (ws.readyState === WebSocket.OPEN) {
+    send({ type: "control.snapshot.request" });
+  }
+}, 2000);
 
 ws.addEventListener(
   "message",
@@ -728,6 +789,11 @@ ws.addEventListener(
       status.textContent =
         `Connected · ${message.eventCount ?? 0} event(s) stored`;
 
+      return;
+    }
+
+    if (message.type === "control.snapshot") {
+      renderControlSnapshot(message.snapshot as ControlSnapshot);
       return;
     }
 

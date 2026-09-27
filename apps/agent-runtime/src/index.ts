@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createDemoControlPlane } from "./demo-control-plane.js";
 import { H3GoalService } from "./h3-goal-service.js";
+import { operatorSnapshot } from "./operator-snapshot.js";
 import { FilesystemWorkspace, validateLogicalPath } from "@agent-world/filesystem";
 import { ApiEndpointRegistry, EnvironmentCredentialProvider } from "@agent-world/http-api";
 import { mintResourceId } from "@agent-world/resources";
@@ -989,6 +990,16 @@ wss.on(
               })
             );
 
+            return;
+          }
+
+          if (
+            message.type ===
+            "control.snapshot.request"
+          ) {
+            if (!kernel.isHealthy()) throw new Error("RUNTIME_PROJECTION_UNAVAILABLE");
+            socket.send(JSON.stringify({ type: "control.snapshot",
+              snapshot: operatorSnapshot(stores) }));
             return;
           }
 
