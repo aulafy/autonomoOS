@@ -2,7 +2,7 @@ import { WebSocketServer, WebSocket } from "ws";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createDemoControlPlane } from "./demo-control-plane.js";
-import { createDurableDomainStores, JournalKernel, ReplayClock,
+import { createDurableDomainStores, DurableRuntimeEventPublisher, JournalKernel, ReplayClock,
   RuntimeDatabase } from "@agent-world/runtime-store-sqlite";
 
 import {
@@ -37,8 +37,10 @@ const database = new RuntimeDatabase(process.env.AGENT_WORLD_DB_PATH
 const kernel = new JournalKernel(database, clock);
 const stores = createDurableDomainStores(kernel);
 await kernel.restore();
+const runtimePublisher = new DurableRuntimeEventPublisher<RuntimeEvent>(database,
+  publishRuntimeEvent);
 const events = {
-  append: (event: RuntimeEvent) => database.appendRuntimeEvent(event),
+  append: (event: RuntimeEvent) => runtimePublisher.append(event),
   readAll: () => database.runtimeEvents() as unknown as RuntimeEvent[]
 };
 
@@ -137,6 +139,9 @@ function emit(
   event: RuntimeEvent
 ): void {
   events.append(event as any);
+}
+
+function publishRuntimeEvent(event: RuntimeEvent): void {
 
   const message = JSON.stringify({
     type: "runtime.event",

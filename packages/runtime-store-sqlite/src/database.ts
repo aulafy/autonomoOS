@@ -35,6 +35,7 @@ export class RuntimeDatabase {
   readonly schemaVersion: number;
   private transactionDepth = 0;
   private savepointNumber = 0;
+  private readonly postCommitCallbacks: Array<Array<() => void>> = [];
 
   constructor(readonly path: string, private readonly now: () => number = Date.now) {
     if (!path) throw new Error("SQLITE_PATH_REQUIRED");
@@ -61,17 +62,36 @@ export class RuntimeDatabase {
     const name = `h1_sp_${++this.savepointNumber}`;
     this.db.exec(nested ? `SAVEPOINT ${name}` : "BEGIN IMMEDIATE");
     this.transactionDepth++;
+    this.postCommitCallbacks.push([]);
+    let result!: T;
+    let committed = false;
     try {
-      const result = work();
+      result = work();
       if (result instanceof Promise) throw new Error("ASYNC_SQLITE_TRANSACTION_FORBIDDEN");
       this.db.exec(nested ? `RELEASE SAVEPOINT ${name}` : "COMMIT");
-      return result;
+      committed = true;
     } catch (error) {
       this.db.exec(nested ? `ROLLBACK TO SAVEPOINT ${name}; RELEASE SAVEPOINT ${name}` : "ROLLBACK");
       throw error;
     } finally {
       this.transactionDepth--;
+      const callbacks = this.postCommitCallbacks.pop()!;
+      if (committed) {
+        if (nested) this.postCommitCallbacks.at(-1)!.push(...callbacks);
+        else for (const callback of callbacks) this.publishAfterCommit(callback);
+      }
     }
+    return result;
+  }
+
+  afterCommit(callback: () => void): void {
+    if (this.transactionDepth) this.postCommitCallbacks.at(-1)!.push(callback);
+    else this.publishAfterCommit(callback);
+  }
+
+  private publishAfterCommit(callback: () => void): void {
+    try { callback(); }
+    catch (error) { console.error("POST_COMMIT_NOTIFICATION_FAILED", error); }
   }
 
   appendCommand(storeName: string, methodName: string, args: unknown[],
