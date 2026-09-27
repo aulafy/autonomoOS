@@ -9,6 +9,7 @@
   "scripts": {
     "dev:world": "npm --workspace apps/world-client run dev",
     "dev:runtime": "npm --workspace apps/agent-runtime run dev",
+    "demo:h3": "tsx apps/agent-runtime/src/h3-demo.ts",
     "test": "npm run test --workspaces --if-present",
     "build": "npm run build --workspaces --if-present"
   }

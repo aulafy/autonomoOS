@@ -2,6 +2,7 @@ import { WebSocketServer, WebSocket } from "ws";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createDemoControlPlane } from "./demo-control-plane.js";
+import { H3GoalService } from "./h3-goal-service.js";
 import { FilesystemWorkspace, validateLogicalPath } from "@agent-world/filesystem";
 import { mintResourceId } from "@agent-world/resources";
 import { createDurableDomainStores, DurableRuntimeEventPublisher, JournalKernel, ReplayClock,
@@ -119,7 +120,8 @@ for (const entity of entities) {
 
 const wss =
   new WebSocketServer({
-    port: RUNTIME_PORT
+    port: RUNTIME_PORT,
+    host: process.env.AGENT_RUNTIME_HOST ?? "127.0.0.1"
   });
 
 console.log(
@@ -200,6 +202,12 @@ type IntentOutcome =
 const governance = createDemoControlPlane(world, emit, { kernel, stores, filesystem });
 governance.recoverOnStartup();
 if (filesystem) await governance.reconcilePendingFilesystem();
+const h3 = filesystem ? new H3GoalService({ provider: inference, control: governance,
+  resources: stores.resources, emit,
+  allowedTargetIds: (process.env.AGENT_WORLD_H3_TARGETS ??
+    process.env.AGENT_WORLD_REGISTERED_FILES ?? "").split(",").filter(Boolean)
+    .map(path => mintResourceId("file", `workspace/${validateLogicalPath(path)}`)),
+  actorId: DEFAULT_AGENT_ID }) : null;
 
 async function processIntent(raw: unknown, options?: { taskId?: string;
   planId?: string; correlationId?: string }): Promise<IntentOutcome> {
@@ -1070,6 +1078,15 @@ wss.on(
               throw new Error(
                 "Goal is empty."
               );
+            }
+
+            if (h3 && typeof message.targetId === "string") {
+              const result = await h3.submitGoal({ goal,
+                targetId: message.targetId,
+                principalId: DEFAULT_AGENT_ID,
+                expectedContent: message.expectedContent });
+              socket.send(JSON.stringify({ type: "agent.goal.result", result }));
+              return;
             }
 
             const result =

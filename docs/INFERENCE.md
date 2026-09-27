@@ -29,23 +29,11 @@ Future providers:
 
 ## Current milestone
 
-The local model may propose a structured plan.
+H3 connects a narrow local `file.write` proposal to the governed C11 runtime.
+The model still cannot execute or authorize actions. The host validates the
+complete response, resolves a pre-registered resource, creates an ActionIntent,
+and sends it through C1–C12 and H2. A disk observation determines success.
 
-It may **not execute it**.
-
-Flow:
-
-```text
-Human goal
-  ↓
-LlamaCppProvider
-  ↓
-ProposedPlan
-  ↓
-Zod validation
-  ↓
-UI displays proposal
-```
-
-The next milestone will convert each proposed action into a real ActionIntent and
-send it through the existing policy / execution / observation lifecycle.
+See [H3_LOCAL_INFERENCE.md](H3_LOCAL_INFERENCE.md) for the provider contract,
+security boundary, live Qwen demo and limits. The original M5 plan-preview path
+remains available for the Three.js demo.
