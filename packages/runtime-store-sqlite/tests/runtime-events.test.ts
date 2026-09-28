@@ -94,6 +94,27 @@ test("version one journal upgrades operator indexes without changing events", ()
   } finally { rmSync(directory, { recursive: true, force: true }); }
 });
 
+test("task journal cursor has no duplicate or missing events with equal timestamps", () => {
+  const database = new RuntimeDatabase(":memory:");
+  try {
+    for (let i = 1; i <= 7; i++) database.appendRuntimeEvent({
+      id: `event-${i}`, timestamp: 100, type: "action.proposed",
+      taskId: i === 3 ? "other-task" : "task-a",
+      intentId: i === 5 ? "other-intent" : "intent-a", payload: {} });
+    const collected: string[] = [];
+    let cursor: number | undefined;
+    do {
+      const page = database.runtimeEventPageByTask("task-a", "intent-a", cursor, 2);
+      collected.push(...page.events.map(item => String(item.event.id)));
+      cursor = page.nextCursor ?? undefined;
+      if (page.nextCursor === null) break;
+    } while (true);
+    assert.deepEqual(collected, ["event-7", "event-6", "event-4", "event-2", "event-1"]);
+    assert.throws(() => database.runtimeEventPageByTask("task-a", "intent-a", -1),
+      /INVALID_EVENT_CURSOR/);
+  } finally { database.close(); }
+});
+
 test("SIGKILL between commit and publication leaves the event available for replay", () => {
   const directory = mkdtempSync(join(tmpdir(), "h11-kill-"));
   const path = join(directory, "runtime.db");

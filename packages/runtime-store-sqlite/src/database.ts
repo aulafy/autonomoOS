@@ -144,6 +144,30 @@ export class RuntimeDatabase {
     return rows.reverse().map(row => JSON.parse(row.event_json) as Record<string, unknown>);
   }
 
+  runtimeEventPageByTask(taskId: string, intentId: string,
+    beforeSequence?: number, limit = 30): {
+      events: Array<{ sequence: number; event: Record<string, unknown> }>;
+      nextCursor: number | null;
+    } {
+    if (beforeSequence !== undefined &&
+      (!Number.isSafeInteger(beforeSequence) || beforeSequence < 1)) {
+      throw new Error("INVALID_EVENT_CURSOR");
+    }
+    const cap = Math.max(1, Math.min(100, Math.floor(limit)));
+    const rows = this.db.prepare(`SELECT sequence, event_json FROM runtime_events
+      WHERE json_extract(event_json, '$.taskId') = ?
+        AND (json_extract(event_json, '$.intentId') IS NULL
+          OR json_extract(event_json, '$.intentId') = ?)
+        AND (? IS NULL OR sequence < ?)
+      ORDER BY sequence DESC LIMIT ?`).all(taskId, intentId,
+        beforeSequence ?? null, beforeSequence ?? null, cap + 1) as
+      { sequence: number; event_json: string }[];
+    const page = rows.slice(0, cap);
+    return { events: page.map(row => ({ sequence: row.sequence,
+      event: JSON.parse(row.event_json) as Record<string, unknown> })),
+      nextCursor: rows.length > cap ? page.at(-1)!.sequence : null };
+  }
+
   recentDenialEvents(limit = 20): Record<string, unknown>[] {
     const cap = Math.max(0, Math.min(100, limit));
     const rows = this.db.prepare(`SELECT event_json FROM runtime_events

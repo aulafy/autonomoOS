@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createDemoControlPlane } from "./demo-control-plane.js";
 import { H3GoalService } from "./h3-goal-service.js";
-import { operatorSnapshot } from "./operator-snapshot.js";
+import { operatorSnapshot, projectEffectTaskEvents } from "./operator-snapshot.js";
 import { FilesystemWorkspace, validateLogicalPath } from "@agent-world/filesystem";
 import { ApiEndpointRegistry, EnvironmentCredentialProvider } from "@agent-world/http-api";
 import { mintResourceId } from "@agent-world/resources";
@@ -1003,6 +1003,23 @@ wss.on(
                 byTask: taskId => database.runtimeEventsByTask(taskId) as unknown as RuntimeEvent[],
                 recentDenials: () => database.recentDenialEvents() as unknown as RuntimeEvent[]
               }) }));
+            return;
+          }
+
+          if (message.type === "control.history.request") {
+            if (!kernel.isHealthy()) throw new Error("RUNTIME_PROJECTION_UNAVAILABLE");
+            const effect = typeof message.effectId === "string"
+              ? stores.effects.get(message.effectId) : undefined;
+            if (!effect) throw new Error("EFFECT_NOT_FOUND");
+            const beforeSequence = message.beforeSequence === undefined
+              ? undefined : Number(message.beforeSequence);
+            const page = database.runtimeEventPageByTask(effect.taskId,
+              effect.intentId, beforeSequence);
+            socket.send(JSON.stringify({ type: "control.history",
+              effectId: effect.id, nextCursor: page.nextCursor,
+              events: page.events.flatMap(({ sequence, event }) =>
+                projectEffectTaskEvents(effect, [event as unknown as RuntimeEvent])
+                  .map(item => ({ sequence, ...item }))) }));
             return;
           }
 

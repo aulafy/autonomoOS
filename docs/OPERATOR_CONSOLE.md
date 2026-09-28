@@ -15,6 +15,13 @@ independent observations, and C7 reconciliation decisions come from their
 authoritative stores. A separate list shows recent denials even when no effect
 was created.
 
+Each effect has a **Browse event history** button. It requests up to 30 raw journal
+rows at a time, ordered by SQLite sequence. **Older events** uses an exclusive
+sequence cursor, so identical timestamps do not duplicate or skip entries.
+The server resolves the effect before querying its task and intent, then sends
+only the narrow event projection used by the summary card. Pages replace one
+another in this prototype.
+
 The snapshot explicitly selects fields. It excludes goals, prompts, action
 parameters, provider bodies, credentials, raw metadata, and arbitrary denial
 text. Only known denial codes and verdicts are displayed. The panel is an
@@ -25,8 +32,8 @@ Run `npm run dev:runtime` and `npm run dev:world`, then open the Vite URL. If
 8787 is in use, start the runtime with `AGENT_RUNTIME_PORT=8799` and append
 `?runtimePort=8799` to the Vite URL. The runtime listens on loopback only.
 
-This prototype keeps up to 20 recent effects in the panel. Long task histories
-show only the most recent 100 journal events, then the latest 30 eligible
-entries. A larger deployment needs cursor pagination, task filters, and
-authenticated operator access before exposing this view
+This prototype keeps up to 20 recent effects in the panel. The summary card
+shows the latest 30 eligible entries from the most recent 100 task events;
+the full journal is cursor-paginated. A larger deployment needs task filters,
+page navigation, and authenticated operator access before exposing this view
 beyond a local development machine.

@@ -23,6 +23,9 @@ const controlPlane =
 const controlDenials =
   $("#control-denials");
 
+const controlHistory =
+  $("#control-history");
+
 const planBox =
   $("#plan");
 
@@ -453,6 +456,14 @@ function renderControlSnapshot(snapshot: ControlSnapshot) {
     if (effect.status === "unknown") {
       fact(card, `reconciliation job ${effect.reconciliation.jobStatus ?? "not queued"}`);
     }
+    const historyButton = document.createElement("button");
+    historyButton.textContent = "Browse event history";
+    historyButton.addEventListener("click", () => {
+      controlHistory.hidden = false;
+      controlHistory.textContent = "Loading journal…";
+      send({ type: "control.history.request", effectId: effect.id });
+    });
+    card.appendChild(historyButton);
     controlPlane.appendChild(card);
   }
 }
@@ -819,6 +830,32 @@ ws.addEventListener(
 
     if (message.type === "control.snapshot") {
       renderControlSnapshot(message.snapshot as ControlSnapshot);
+      return;
+    }
+
+    if (message.type === "control.history") {
+      const page = message as { effectId: string; nextCursor: number | null;
+        events: Array<{ sequence: number; type: string; at: number;
+          detail: string | null }> };
+      controlHistory.hidden = false;
+      controlHistory.replaceChildren();
+      const title = document.createElement("strong");
+      title.textContent = `Governed event history for effect ${page.effectId.slice(0, 12)}`;
+      controlHistory.appendChild(title);
+      for (const item of page.events) {
+        const row = document.createElement("div");
+        row.className = "control-fact";
+        row.textContent = `#${item.sequence} ${new Date(item.at).toLocaleTimeString()}  ` +
+          `${item.type}${item.detail ? ` · ${item.detail}` : ""}`;
+        controlHistory.appendChild(row);
+      }
+      if (page.nextCursor !== null) {
+        const more = document.createElement("button");
+        more.textContent = "Older events";
+        more.addEventListener("click", () => send({ type: "control.history.request",
+          effectId: page.effectId, beforeSequence: page.nextCursor }));
+        controlHistory.appendChild(more);
+      }
       return;
     }
 

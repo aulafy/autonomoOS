@@ -41,6 +41,34 @@ const safeReasonCode = (value: unknown) => typeof value === "string" &&
 const safeVerdict = (value: unknown) => typeof value === "string" &&
   visibleVerdicts.has(value) ? value : null;
 
+/** Project journal facts without sending raw event payloads to the browser. */
+export function projectEffectTaskEvents(effect: { id: string; taskId: string;
+  intentId: string }, runtimeEvents: readonly RuntimeEvent[]) {
+  return runtimeEvents.filter(event => event.taskId === effect.taskId &&
+    (!event.intentId || event.intentId === effect.intentId))
+    .flatMap(event => {
+      if (taskEventTypes.has(event.type)) {
+        const detail = event.type === "plan.proposed" &&
+          Array.isArray(event.payload.actions)
+          ? `${event.payload.actions.length} action(s)` : null;
+        return [{ type: event.type, at: event.timestamp, detail }];
+      }
+      if (event.type !== "control.event" ||
+        event.payload.effectId !== effect.id ||
+        !controlTimelineTypes.has(String(event.payload.controlEventType))) return [];
+      const type = String(event.payload.controlEventType);
+      const raw = event.payload.detail;
+      const details = raw && typeof raw === "object" && !Array.isArray(raw)
+        ? raw as Record<string, unknown> : {};
+      const detail = type === "action.admitted"
+        ? [safeVerdict(details.composition), safeVerdict(details.flow)]
+          .filter(Boolean).join(" / ") || null
+        : type === "action.commit_allowed" ? "durable dispatch marker"
+        : safeReasonCode(details.reasonCode);
+      return [{ type, at: event.timestamp, detail }];
+    });
+}
+
 /** A deliberately narrow, read-only view of authoritative control facts. */
 export function operatorSnapshot(stores: Stores,
   runtimeEvents: readonly RuntimeEvent[] | OperatorEventReader = [], limit = 20) {
@@ -79,31 +107,9 @@ export function operatorSnapshot(stores: Stores,
     taskStatus: stores.tasks.get(effect.taskId)?.status ?? null,
     reservationStatuses: effect.budgetReservationIds.map(id =>
       stores.budgets.getReservation(id)?.status ?? "missing"),
-    taskEvents: (Array.isArray(runtimeEvents) ? runtimeEvents
+    taskEvents: projectEffectTaskEvents(effect, (Array.isArray(runtimeEvents) ? runtimeEvents
       : (runtimeEvents as OperatorEventReader).byTask(effect.taskId))
-      .filter(event => event.taskId === effect.taskId &&
-      (!event.intentId || event.intentId === effect.intentId))
-      .flatMap(event => {
-        if (taskEventTypes.has(event.type)) {
-          const detail = event.type === "plan.proposed" &&
-            Array.isArray(event.payload.actions)
-            ? `${event.payload.actions.length} action(s)` : null;
-          return [{ type: event.type, at: event.timestamp, detail }];
-        }
-        if (event.type !== "control.event" ||
-          event.payload.effectId !== effect.id ||
-          !controlTimelineTypes.has(String(event.payload.controlEventType))) return [];
-        const type = String(event.payload.controlEventType);
-        const raw = event.payload.detail;
-        const details = raw && typeof raw === "object" && !Array.isArray(raw)
-          ? raw as Record<string, unknown> : {};
-        const detail = type === "action.admitted"
-          ? [safeVerdict(details.composition), safeVerdict(details.flow)]
-            .filter(Boolean).join(" / ") || null
-          : type === "action.commit_allowed" ? "durable dispatch marker"
-          : safeReasonCode(details.reasonCode);
-        return [{ type, at: event.timestamp, detail }];
-      }).slice(-30),
+      ).slice(-30),
     transitions: events.filter(event => event.effectId === effect.id)
       .map(event => ({ type: event.type, status: event.toStatus, at: event.at })),
     observations: stores.observations.listByEffect(effect.id)
