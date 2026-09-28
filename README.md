@@ -22,6 +22,11 @@ npm run build
 
 ## Run the demos
 
+The [`pymes`](pymes/README.md) workspace starts a Spanish insurance-agency
+morning desk. Run `npm run demo:pymes` and open `http://127.0.0.1:5174/`.
+It uses fictional inbox and calendar data; no channel, CRM, insurer or calendar
+account is connected yet.
+
 For a guided company presentation, run `npm run demo:company` and open the
 printed `/demo.html` URL. It starts a loopback runtime and a separate Spanish
 interface with three live cases: a confirmed move, a confirmed message, and a

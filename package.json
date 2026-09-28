@@ -4,12 +4,14 @@
   "version": "0.1.0",
   "workspaces": [
     "apps/*",
-    "packages/*"
+    "packages/*",
+    "pymes"
   ],
   "scripts": {
     "dev:world": "npm --workspace apps/world-client run dev",
     "dev:runtime": "npm --workspace apps/agent-runtime run dev",
     "demo:company": "bash scripts/demo-company.sh",
+    "demo:pymes": "npm --workspace pymes run dev",
     "demo:h3": "tsx apps/agent-runtime/src/h3-demo.ts",
     "demo:h4": "tsx apps/agent-runtime/src/h4-demo.ts",
     "demo:h4:lost-response": "tsx apps/agent-runtime/src/h4-lost-response-demo.ts",

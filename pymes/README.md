@@ -1,0 +1,44 @@
+# PYMES · agente de trabajo para seguros
+
+Esta carpeta inicia un producto vertical para una agencia o correduría de
+seguros. El problema inicial es la primera hora de cada mañana: mensajes
+dispersos, incidencias, solicitudes de propuesta, renovaciones, citas y cambios
+en expedientes. El primer prototipo convierte un conjunto ficticio de mensajes
+en una bandeja priorizada, borradores y una agenda de solo lectura.
+
+## Ver el prototipo
+
+Desde la raíz del repositorio:
+
+```bash
+npm install
+npm run demo:pymes
+```
+
+Abrir `http://127.0.0.1:5174/`. Se puede filtrar por canal, buscar un contacto,
+revisar el contexto CRM y marcar un borrador para revisión. Todo se queda en la
+sesión del navegador. Los nombres y mensajes son ficticios. WhatsApp, Telegram,
+iMessage, correo, CRM y calendario aparecen como fuentes y destinos previstos;
+**aún no hay conexiones reales**.
+
+![Resumen de PYMES](demo-overview.jpg)
+
+## Primer flujo completo que construiremos
+
+1. Ingerir mensajes con identificador de origen, hora, canal y consentimiento
+   aplicable; detectar duplicados sin fusionar conversaciones distintas.
+2. Asociar el mensaje con un contacto o pedir revisión si la identidad no es
+   clara. Guardar procedencia y clasificar intención y urgencia.
+3. Preparar un resumen matinal, una siguiente acción y un borrador. Para una
+   propuesta de seguro, recoger datos y consultar productos autorizados antes
+   de mostrar primas o condiciones.
+4. Presentar al agente humano un punto de revisión. Solo tras su aprobación
+   enviar respuestas, crear citas o actualizar el CRM.
+5. Observar la respuesta del proveedor y registrar confirmación o estado
+   incierto; reconciliar antes de repetir una escritura.
+
+La [arquitectura de integración](ARCHITECTURE.md) conecta este flujo con los
+controles C1–C12 de Agent World OS. El primer piloto real necesitará definir
+país, ramos de seguro, CRM, calendario y canales accesibles mediante conectores
+autorizados. Véase también el [estado de los canales](INTEGRATIONS.md), en
+especial la diferencia entre iMessage personal y Messages for Business.

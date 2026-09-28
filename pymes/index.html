@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PYMES · Mesa de trabajo del agente</title>
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <div class="shell" id="app">
+    <aside class="sidebar">
+      <div class="brand"><span class="brand-icon">P</span><span>PYMES<span class="brand-accent">/</span>OS</span></div>
+      <div class="side-caption">AGENTE DE SEGUROS</div>
+      <nav aria-label="Navegación principal">
+        <a class="active" href="#morning">▦ <span>Resumen de mañana</span></a>
+        <a href="#inbox">▤ <span>Bandeja unificada</span></a>
+        <a href="#agenda">▥ <span>Agenda</span></a>
+        <a href="#detail">◇ <span>CRM y preparación</span></a>
+      </nav>
+      <div class="sidebar-note"><strong>Modo de demostración</strong><p>Mensajes y clientes ficticios. Ningún borrador se envía ni se modifica un sistema externo.</p></div>
+    </aside>
+    <main>
+      <header class="topbar"><div>ESPACIO DE TRABAJO <span>/</span> SEGUROS</div><div class="topbar-right"><span class="demo-pill">● DATOS DE EJEMPLO</span><span id="today"></span></div></header>
+      <div class="content">
+        <section class="welcome" id="morning"><div><span class="eyebrow">TU JORNADA, ORDENADA</span><h1>Buenos días.<br><em>Empecemos por lo importante.</em></h1><p>Una vista para decidir qué atender primero, preparar respuestas y llegar a cada llamada con contexto.</p></div><div class="welcome-mark" aria-hidden="true">P<span>↗</span></div></section>
+        <section class="metrics" aria-label="Resumen de mensajes"><div><span>CONVERSACIONES NUEVAS</span><strong id="total-count">0</strong><small>En cuatro canales</small></div><div><span>REQUIEREN ATENCIÓN</span><strong id="attention-count">0</strong><small>Urgentes o con fecha próxima</small></div><div><span>EN COLA DE REVISIÓN</span><strong id="review-count">0</strong><small>Marcados por ti, sin envíos</small></div><div><span>CITAS EN AGENDA</span><strong id="appointment-count">0</strong><small>Confirmadas y propuestas</small></div></section>
+        <section class="workspace" id="inbox"><div class="workspace-heading"><div><span class="eyebrow">BANDEJA UNIFICADA</span><h2>Lo que necesita tu atención</h2></div><div class="search-wrap"><label for="search">Buscar</label><input id="search" type="search" placeholder="Cliente o mensaje…" /></div></div><div class="channel-tabs" id="channel-tabs" role="group" aria-label="Filtrar por canal"></div><div class="work-grid"><div class="inbox-list" id="inbox-list"></div><article class="detail" id="detail" aria-live="polite"></article></div></section>
+        <section class="bottom-grid"><div class="panel" id="agenda"><div class="panel-heading"><div><span class="eyebrow">AGENDA</span><h2>Próximos compromisos</h2></div><span class="subtle">Solo lectura</span></div><div id="appointments"></div></div><div class="panel"><div class="panel-heading"><div><span class="eyebrow">CONTROL</span><h2>Antes de actuar</h2></div></div><div class="rule"><span>01</span><div><strong>Revisar identidad y contexto</strong><p>Confirma que el expediente y la persona corresponden al mensaje.</p></div></div><div class="rule"><span>02</span><div><strong>Cotizar con datos verificados</strong><p>No se inventan primas, coberturas ni condiciones.</p></div></div><div class="rule"><span>03</span><div><strong>Aprobar antes de enviar</strong><p>Mensajes, cambios en CRM y citas necesitan autorización humana.</p></div></div></div></section>
+        <footer>PYMES / AGENT WORLD OS <span>·</span> Prototipo de flujo de trabajo con datos ficticios</footer>
+      </div>
+    </main>
+  </div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
