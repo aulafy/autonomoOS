@@ -33,10 +33,13 @@ los controles de Agent World OS.
 ## Lecturas implementadas
 
 `src/connectors.ts` contiene clientes HTTP de solo lectura. Holded consulta
-`GET /api/invoicing/v1/contacts?phone=…` con coincidencia exacta; Google
+`GET /api/invoicing/v1/contacts` con coincidencia exacta en `phone` y `mobile`,
+eliminando duplicados por ID; Google
 Calendar consulta `GET /calendar/v3/calendars/{id}/events` con una ventana
-temporal, eventos recurrentes expandidos y un máximo de 100. Una respuesta con
-otra página pendiente falla explícitamente. Los tests usan respuestas simuladas;
+temporal, eventos recurrentes expandidos y un máximo de 100 por página. Una respuesta con
+otra página se consulta hasta un límite de diez; los eventos de día completo
+se conservan. Si se supera el límite, la lectura falla sin resultado parcial.
+Los tests usan respuestas simuladas;
 no se han usado cuentas ni datos reales. Para conectarlos hace falta un proceso
 de servidor que obtenga y proteja la clave de Holded y un token OAuth con
 `calendar.events.readonly`, además de decidir qué calendario y qué contactos
@@ -47,3 +50,19 @@ de Holded o Calendar no equivale a una identidad confirmada. Cada enlace al
 contacto local requiere IDs explícitos, operador y fecha de verificación; los
 resultados ambiguos permanecen sin vincular. Los ejemplos y tests no conceden
 permisos ni crean citas.
+
+## Prueba local de lectura
+
+El comando siguiente se ejecuta en Node, fuera del navegador. Devuelve solo
+recuentos; no imprime nombres, teléfonos, títulos ni credenciales.
+
+```bash
+PYMES_HOLDED_API_KEY=... npm run pilot:read --workspace=@agent-world/pymes -- holded +34600111222
+PYMES_GOOGLE_ACCESS_TOKEN=... PYMES_GOOGLE_CALENDAR_ID=primary \
+  npm run pilot:read --workspace=@agent-world/pymes -- calendar \
+  2026-09-29T00:00:00+02:00 2026-09-30T00:00:00+02:00
+```
+
+No se incluye un flujo para obtener el token OAuth. Un piloto real debe
+obtenerlo mediante autorización de la cuenta correspondiente y ejecutar este
+comando en un entorno de servidor protegido.

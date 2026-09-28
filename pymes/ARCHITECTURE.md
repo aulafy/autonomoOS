@@ -13,10 +13,11 @@ esa proyección y permite marcar borradores para revisión en memoria local.
 búsqueda exacta de un contacto en Holded por teléfono y listado acotado de
 eventos con hora en Google Calendar. Reciben credenciales desde un llamador
 de servidor; no las almacenan ni las incluyen en la URL. Devuelven modelos
-externos sin asociarlos automáticamente con una persona del CRM. Una página
-incompleta de Calendar se informa como error, y los eventos de día completo
-quedan fuera hasta diseñar su representación. No hay flujo OAuth, almacén de
-tokens ni cuentas conectadas en esta versión.
+externos sin asociarlos automáticamente con una persona del CRM. Calendar
+recorre páginas con un límite de diez y conserva tanto citas con hora como
+eventos de día completo; un límite superado falla sin devolver un resultado
+parcial. No hay flujo OAuth, almacén de tokens ni cuentas conectadas en esta
+versión.
 
 `src/integration-view.ts` prepara el enlace de esas lecturas con la bandeja.
 Solo acepta asociaciones explícitas entre IDs externos e IDs locales,

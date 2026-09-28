@@ -11,9 +11,9 @@ const crmContacts: ExternalContact[] = [
 ];
 const calendarEvents: ExternalCalendarEvent[] = [
   { provider: "google_calendar", externalId: "g-1", title: "Llamada con Diego Salas",
-    startsAt: "2026-09-29T09:00:00+02:00", endsAt: "2026-09-29T09:30:00+02:00" },
+    startsAt: "2026-09-29T09:00:00+02:00", endsAt: "2026-09-29T09:30:00+02:00", allDay: false },
   { provider: "google_calendar", externalId: "g-2", title: "Llamada con Diego Salas",
-    startsAt: "2026-09-29T10:00:00+02:00", endsAt: "2026-09-29T10:30:00+02:00" }
+    startsAt: "2026-09-29T10:00:00+02:00", endsAt: "2026-09-29T10:30:00+02:00", allDay: false }
 ];
 const verified = (provider: VerifiedLink["provider"], externalId: string,
   localContactId: string): VerifiedLink => ({ provider, externalId, localContactId,
