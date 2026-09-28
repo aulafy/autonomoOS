@@ -9,6 +9,15 @@ como `demo_fixture`: no se presenta como una inferencia de IA. La función no
 posee ningún cliente de red ni método de envío. `src/main.ts` solo muestra
 esa proyección y permite marcar borradores para revisión en memoria local.
 
+`src/connectors.ts` añade dos operaciones de lectura independientes de la UI:
+búsqueda exacta de un contacto en Holded por teléfono y listado acotado de
+eventos con hora en Google Calendar. Reciben credenciales desde un llamador
+de servidor; no las almacenan ni las incluyen en la URL. Devuelven modelos
+externos sin asociarlos automáticamente con una persona del CRM. Una página
+incompleta de Calendar se informa como error, y los eventos de día completo
+quedan fuera hasta diseñar su representación. No hay flujo OAuth, almacén de
+tokens ni cuentas conectadas en esta versión.
+
 ## Integración prevista con el kernel
 
 | Paso | Recurso/control | Resultado exigido |
