@@ -22,6 +22,15 @@ npm run build
 
 ## Run the demos
 
+For a guided company presentation, run `npm run demo:company` and open the
+printed `/demo.html` URL. It starts a loopback runtime and a separate Spanish
+interface with three live cases: a confirmed move, a confirmed message, and a
+denied unregistered purchase request. It needs no local model or external
+service. The facts shown come from the local SQLite journal, not preset UI
+results. See [company demo guide](docs/COMPANY_DEMO.md).
+
+![Company demo overview](docs/company-demo-overview.jpg)
+
 `npm run demo:h4:lost-response` is self-contained. It starts a separate API
 fixture, performs one governed POST, intentionally loses the response, prints
 the persisted `UNKNOWN` state, restarts the runtime, reconciles with a GET, and

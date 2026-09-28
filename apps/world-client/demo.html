@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agent World OS · Demo empresarial</title>
+  <link rel="stylesheet" href="/src/demo.css" />
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand"><span class="brand-mark">A</span><span>AGENT WORLD <b>OS</b></span></div>
+      <div class="sidebar-label">DEMO EN DIRECTO</div>
+      <nav aria-label="Secciones">
+        <a class="active" href="#overview">01 <span>Visión general</span></a>
+        <a href="#scenarios">02 <span>Escenarios</span></a>
+        <a href="#evidence">03 <span>Evidencia</span></a>
+      </nav>
+      <div class="sidebar-bottom">
+        <span class="eyebrow">ENTORNO</span>
+        <strong>Runtime local</strong>
+        <p>Datos y acciones de prueba. Sin servicios externos.</p>
+      </div>
+    </aside>
+
+    <main>
+      <header class="topbar">
+        <div class="breadcrumb">CONTROL PLANE <span>/</span> DEMOSTRACIÓN</div>
+        <div id="connection" class="connection offline"><span class="connection-dot"></span> Conectando…</div>
+      </header>
+
+      <section class="hero" id="overview">
+        <div class="hero-copy">
+          <div class="kicker"><span class="kicker-line"></span> AGENTES CON CONTROL Y EVIDENCIA</div>
+          <h1>De una intención<br>a una acción <em>verificable.</em></h1>
+          <p>Observa cómo Astra solicita una acción, el sistema comprueba sus límites y confirma el resultado. Si la acción no está permitida, se bloquea antes de ejecutarse.</p>
+          <div class="hero-actions">
+            <button id="run-tour" class="primary" disabled>Iniciar demostración <span>↗</span></button>
+            <a href="#scenarios" class="text-link">Explorar los casos <span>↓</span></a>
+          </div>
+          <div id="tour-status" class="tour-status" role="status">Conecta el runtime para iniciar la demo.</div>
+        </div>
+        <div class="hero-visual" aria-hidden="true">
+          <div class="orbit orbit-outer"></div><div class="orbit orbit-inner"></div>
+          <div class="agent-core"><span>A</span></div>
+          <div class="orbit-label label-top"><i></i> AUTORIDAD</div>
+          <div class="orbit-label label-left"><i></i> POLÍTICA</div>
+          <div class="orbit-label label-bottom"><i></i> OBSERVACIÓN</div>
+          <div class="visual-caption">ASTRA <span>·</span> AGENTE BAJO GOBIERNO</div>
+        </div>
+      </section>
+
+      <section class="metrics" aria-label="Estado de la demostración">
+        <div class="metric"><span>EFECTOS CONFIRMADOS</span><strong id="metric-confirmed">0</strong><small>Entre los 20 más recientes</small></div>
+        <div class="metric"><span>DENEGACIONES RECIENTES</span><strong id="metric-denied">0</strong><small>Entre las últimas 20</small></div>
+        <div class="metric"><span>EFECTOS INCIERTOS</span><strong id="metric-unknown">0</strong><small>Entre los 20 más recientes</small></div>
+        <div class="metric metric-last"><span>FUENTE DE VERDAD</span><strong>SQLite</strong><small>Diario persistente local</small></div>
+      </section>
+
+      <section class="section" id="scenarios">
+        <div class="section-heading"><div><span class="eyebrow">01 / RECORRIDO GUIADO</span><h2>Tres decisiones. Un sistema.</h2></div><p>Ejecuta los casos uno por uno o utiliza el recorrido automático. Cada resultado procede del runtime local.</p></div>
+        <div class="scenario-grid">
+          <article class="scenario" data-scenario="move"><div class="scenario-top"><span class="scenario-number">01</span><span class="scenario-tag">PERMITIDA</span></div><div class="scenario-icon">↗</div><h3>Ir a la sala</h3><p>Astra solicita desplazarse a un destino registrado. El control plane valida el recurso y observa la nueva posición.</p><button class="scenario-button" data-action="move" disabled>Ejecutar acción <span>→</span></button><div class="scenario-result" id="result-move">Pendiente</div></article>
+          <article class="scenario" data-scenario="speak"><div class="scenario-top"><span class="scenario-number">02</span><span class="scenario-tag">PERMITIDA</span></div><div class="scenario-icon">◉</div><h3>Comunicar estado</h3><p>Astra comunica un mensaje de prueba. La acción pasa por admisión, ejecución y observación antes de confirmarse.</p><button class="scenario-button" data-action="speak" disabled>Ejecutar acción <span>→</span></button><div class="scenario-result" id="result-speak">Pendiente</div></article>
+          <article class="scenario danger" data-scenario="deny"><div class="scenario-top"><span class="scenario-number">03</span><span class="scenario-tag">BLOQUEADA</span></div><div class="scenario-icon">⊘</div><h3>Compra fuera de alcance</h3><p>Una solicitud de compra no registrada se rechaza. Se conserva el motivo y no se crea un efecto autorizado.</p><button class="scenario-button" data-action="deny" disabled>Probar bloqueo <span>→</span></button><div class="scenario-result" id="result-deny">Pendiente</div></article>
+        </div>
+      </section>
+
+      <section class="section evidence-section" id="evidence">
+        <div class="section-heading"><div><span class="eyebrow">02 / EVIDENCIA PERSISTENTE</span><h2>Lo que ocurrió, paso a paso.</h2></div><p>Esta vista se reconstruye desde el diario del runtime. Actualiza la página para comprobar que la evidencia permanece.</p></div>
+        <div class="evidence-layout">
+          <div class="evidence-list"><div class="panel-title">EFECTOS RECIENTES <span id="effect-count">0</span></div><div id="effect-list" class="effect-list"><div class="empty">Esperando acciones verificables…</div></div></div>
+          <div class="evidence-detail"><div class="panel-title">TRAZA DE DECISIÓN</div><div id="effect-detail" class="empty">Selecciona una acción para ver su recorrido.</div></div>
+        </div>
+        <div class="denial-panel"><div class="panel-title">SOLICITUDES DENEGADAS <span id="denial-count">0</span></div><div id="denial-list" class="denial-list"><div class="empty">No hay denegaciones recientes.</div></div></div>
+      </section>
+
+      <footer>AGENT WORLD OS <span>·</span> Prototipo local para demostrar gobierno de acciones <span>·</span> <a href="/">Abrir consola técnica ↗</a></footer>
+    </main>
+  </div>
+  <script type="module" src="/src/demo.ts"></script>
+</body>
+</html>
