@@ -1,6 +1,6 @@
 import type { DatabaseSync } from "node:sqlite";
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 interface Migration { version: number; sql: string; }
 const migrations: readonly Migration[] = [
@@ -27,6 +27,12 @@ const migrations: readonly Migration[] = [
       digest TEXT NOT NULL,
       updated_at INTEGER NOT NULL
     );
+  ` },
+  { version: 2, sql: `
+    CREATE INDEX idx_runtime_events_task_sequence
+      ON runtime_events(json_extract(event_json, '$.taskId'), sequence);
+    CREATE INDEX idx_runtime_events_type_sequence
+      ON runtime_events(json_extract(event_json, '$.type'), sequence);
   ` }
 ];
 

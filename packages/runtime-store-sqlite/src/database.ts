@@ -136,6 +136,25 @@ export class RuntimeDatabase {
     return rows.map(row => JSON.parse(row.event_json) as Record<string, unknown>);
   }
 
+  runtimeEventsByTask(taskId: string, limit = 100): Record<string, unknown>[] {
+    const rows = this.db.prepare(`SELECT event_json FROM runtime_events
+      WHERE json_extract(event_json, '$.taskId') = ?
+      ORDER BY sequence DESC LIMIT ?`).all(taskId, Math.max(0, Math.min(500, limit))) as
+      { event_json: string }[];
+    return rows.reverse().map(row => JSON.parse(row.event_json) as Record<string, unknown>);
+  }
+
+  recentDenialEvents(limit = 20): Record<string, unknown>[] {
+    const cap = Math.max(0, Math.min(100, limit));
+    const rows = this.db.prepare(`SELECT event_json FROM runtime_events
+      WHERE json_extract(event_json, '$.type') = 'policy.denied'
+        OR (json_extract(event_json, '$.type') = 'control.event'
+          AND json_extract(event_json, '$.payload.controlEventType') IN
+            ('action.admission_denied', 'action.commit_denied'))
+      ORDER BY sequence DESC LIMIT ?`).all(cap) as { event_json: string }[];
+    return rows.reverse().map(row => JSON.parse(row.event_json) as Record<string, unknown>);
+  }
+
   /** Compatibility snapshot for the original JSONL replay/debug format. */
   exportRuntimeEventsJsonl(outputPath: string): number {
     const events = this.runtimeEvents();

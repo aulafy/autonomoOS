@@ -3,7 +3,9 @@
 The Three.js client shows a read-only control-plane panel beside Astra. It
 requests `control.snapshot` over the loopback WebSocket every two seconds.
 The runtime builds that snapshot from SQLite-restored effect, budget,
-observation, reconciliation, task, and runtime-event stores. A browser refresh
+observation, reconciliation, task, and runtime-event stores. Indexed SQLite
+queries load up to 100 recent events per displayed task and 20 recent denials,
+instead of deserializing the entire runtime journal on each refresh. A browser refresh
 therefore reconstructs the view from durable facts.
 
 The runtime journal section retains its SQLite event order. It can show a
@@ -23,7 +25,8 @@ Run `npm run dev:runtime` and `npm run dev:world`, then open the Vite URL. If
 8787 is in use, start the runtime with `AGENT_RUNTIME_PORT=8799` and append
 `?runtimePort=8799` to the Vite URL. The runtime listens on loopback only.
 
-This prototype scans the runtime-event journal for each snapshot and keeps up
-to 20 recent effects in the panel. A larger deployment needs indexed,
-paginated queries and authenticated operator access before exposing this view
+This prototype keeps up to 20 recent effects in the panel. Long task histories
+show only the most recent 100 journal events, then the latest 30 eligible
+entries. A larger deployment needs cursor pagination, task filters, and
+authenticated operator access before exposing this view
 beyond a local development machine.

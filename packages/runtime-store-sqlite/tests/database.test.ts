@@ -34,7 +34,7 @@ test("new database initializes WAL/FULL/foreign keys and reopens at stable migra
     assert.deepEqual(readFileSync(join(path, "../events.jsonl"), "utf8").trim().split("\n")
       .map(line => JSON.parse(line)), reopened.runtimeEvents());
     assert.equal((reopened.db.prepare("SELECT count(*) AS count FROM schema_migrations")
-      .get() as { count: number }).count, 1);
+      .get() as { count: number }).count, SCHEMA_VERSION);
     reopened.close();
   });
 });

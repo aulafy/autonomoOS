@@ -999,7 +999,10 @@ wss.on(
           ) {
             if (!kernel.isHealthy()) throw new Error("RUNTIME_PROJECTION_UNAVAILABLE");
             socket.send(JSON.stringify({ type: "control.snapshot",
-              snapshot: operatorSnapshot(stores, events.readAll()) }));
+              snapshot: operatorSnapshot(stores, {
+                byTask: taskId => database.runtimeEventsByTask(taskId) as unknown as RuntimeEvent[],
+                recentDenials: () => database.recentDenialEvents() as unknown as RuntimeEvent[]
+              }) }));
             return;
           }
 

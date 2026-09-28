@@ -8,8 +8,9 @@ general capability.
 
 Near-term engineering work:
 
-1. Harden Astra's new operator console with indexed and paginated journal reads,
-   task filtering, and explicit status for long-running unknown effects. The
+1. Harden Astra's new operator console with cursor-paginated journal reads,
+   task filtering, and explicit status for long-running unknown effects. Indexed
+   bounded journal reads are implemented. The
    current panel reads proposal, admission, denials, effect status, observation,
    budget settlement, and reconciliation from durable stores.
 2. Add authenticated control-plane access and an operator review surface before

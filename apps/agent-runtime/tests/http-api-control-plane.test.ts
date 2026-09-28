@@ -121,6 +121,13 @@ test("governed POST requires independent GET before effect commits", async () =>
           taskId: "normal", payload: { actions: [], secret: token } },
         { id: "private-denial", timestamp: Date.now(), type: "policy.denied",
           taskId: token, payload: { reason: token } }]);
+    const indexedView = operatorSnapshot(f.stores, {
+      byTask: taskId => f.database.runtimeEventsByTask(taskId) as unknown as RuntimeEvent[],
+      recentDenials: () => f.database.recentDenialEvents() as unknown as RuntimeEvent[]
+    });
+    assert.deepEqual(indexedView.effects[0]?.taskEvents,
+      operatorSnapshot(f.stores,
+        f.database.runtimeEvents() as unknown as RuntimeEvent[]).effects[0]?.taskEvents);
     assert.equal(view.effects[0]?.status, "committed");
     assert.ok(view.effects[0]?.transitions.some(item => item.type === "effect.dispatch_started"));
     assert.ok(view.effects[0]?.observations.some(item => item.status === "confirmed"));

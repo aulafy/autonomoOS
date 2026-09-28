@@ -3,6 +3,10 @@ import type { RuntimeEvent } from "@agent-world/protocol";
 
 type Stores = Pick<ReturnType<typeof createDurableDomainStores>,
   "effects" | "effectEvents" | "observations" | "reconciliations" | "budgets" | "tasks">;
+type OperatorEventReader = {
+  byTask(taskId: string): readonly RuntimeEvent[];
+  recentDenials(): readonly RuntimeEvent[];
+};
 
 const taskEventTypes = new Set<RuntimeEvent["type"]>([
   "task.created", "inference.requested", "inference.completed",
@@ -39,12 +43,14 @@ const safeVerdict = (value: unknown) => typeof value === "string" &&
 
 /** A deliberately narrow, read-only view of authoritative control facts. */
 export function operatorSnapshot(stores: Stores,
-  runtimeEvents: readonly RuntimeEvent[] = [], limit = 20) {
+  runtimeEvents: readonly RuntimeEvent[] | OperatorEventReader = [], limit = 20) {
   const selected = [...stores.effects.list()]
     .sort((a, b) => b.createdAt - a.createdAt || b.id.localeCompare(a.id))
     .slice(0, Math.max(0, Math.min(50, Math.floor(limit))));
   const events = stores.effectEvents.list();
-  const denials = runtimeEvents.flatMap(event => {
+  const denialEvents = Array.isArray(runtimeEvents)
+    ? runtimeEvents : (runtimeEvents as OperatorEventReader).recentDenials();
+  const denials = denialEvents.flatMap(event => {
     if (event.type === "policy.denied") {
       return [{ type: event.type, at: event.timestamp,
         taskId: safeTaskId(event.taskId),
@@ -73,7 +79,9 @@ export function operatorSnapshot(stores: Stores,
     taskStatus: stores.tasks.get(effect.taskId)?.status ?? null,
     reservationStatuses: effect.budgetReservationIds.map(id =>
       stores.budgets.getReservation(id)?.status ?? "missing"),
-    taskEvents: runtimeEvents.filter(event => event.taskId === effect.taskId &&
+    taskEvents: (Array.isArray(runtimeEvents) ? runtimeEvents
+      : (runtimeEvents as OperatorEventReader).byTask(effect.taskId))
+      .filter(event => event.taskId === effect.taskId &&
       (!event.intentId || event.intentId === effect.intentId))
       .flatMap(event => {
         if (taskEventTypes.has(event.type)) {

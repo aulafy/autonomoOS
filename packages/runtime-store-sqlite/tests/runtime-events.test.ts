@@ -50,6 +50,50 @@ test("committed event remains replayable when live delivery is lost or duplicate
   } finally { rmSync(directory, { recursive: true, force: true }); }
 });
 
+test("operator queries preserve sequence order and bound results across reopen", () => {
+  const directory = mkdtempSync(join(tmpdir(), "h11-operator-"));
+  const path = join(directory, "runtime.db");
+  try {
+    const database = new RuntimeDatabase(path);
+    database.appendRuntimeEvent({ id: "a", timestamp: 100, type: "action.proposed",
+      taskId: "task-a" });
+    database.appendRuntimeEvent({ id: "b", timestamp: 100, type: "policy.denied",
+      taskId: "task-b", payload: { reason: "POLICY_DENIED" } });
+    database.appendRuntimeEvent({ id: "c", timestamp: 100, type: "control.event",
+      taskId: "task-a", payload: { controlEventType: "action.commit_denied" } });
+    database.appendRuntimeEvent({ id: "d", timestamp: 100, type: "action.proposed",
+      taskId: "task-a" });
+    assert.deepEqual(database.runtimeEventsByTask("task-a", 2).map(e => e.id), ["c", "d"]);
+    assert.deepEqual(database.recentDenialEvents(1).map(e => e.id), ["c"]);
+    database.close();
+    const reopened = new RuntimeDatabase(path);
+    assert.equal(reopened.schemaVersion, 2);
+    assert.deepEqual(reopened.runtimeEventsByTask("task-a").map(e => e.id), ["a", "c", "d"]);
+    assert.deepEqual(reopened.recentDenialEvents().map(e => e.id), ["b", "c"]);
+    reopened.close();
+  } finally { rmSync(directory, { recursive: true, force: true }); }
+});
+
+test("version one journal upgrades operator indexes without changing events", () => {
+  const directory = mkdtempSync(join(tmpdir(), "h11-upgrade-"));
+  const path = join(directory, "runtime.db");
+  try {
+    const first = new RuntimeDatabase(path);
+    first.appendRuntimeEvent({ id: "before-upgrade", timestamp: 100,
+      type: "policy.denied", taskId: "task-a", payload: {} });
+    first.db.exec(`DROP INDEX idx_runtime_events_task_sequence;
+      DROP INDEX idx_runtime_events_type_sequence;
+      DELETE FROM schema_migrations WHERE version = 2`);
+    first.close();
+    const upgraded = new RuntimeDatabase(path);
+    assert.equal(upgraded.schemaVersion, 2);
+    assert.deepEqual(upgraded.recentDenialEvents().map(e => e.id), ["before-upgrade"]);
+    assert.deepEqual(upgraded.runtimeEventsByTask("task-a").map(e => e.id),
+      ["before-upgrade"]);
+    upgraded.close();
+  } finally { rmSync(directory, { recursive: true, force: true }); }
+});
+
 test("SIGKILL between commit and publication leaves the event available for replay", () => {
   const directory = mkdtempSync(join(tmpdir(), "h11-kill-"));
   const path = join(directory, "runtime.db");
