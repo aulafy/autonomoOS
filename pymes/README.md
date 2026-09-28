@@ -26,7 +26,9 @@ revisar el contexto CRM y marcar un borrador para revisión. Todo se queda en la
 sesión del navegador. La cola permite volver a los casos marcados; los mensajes
 sin identidad se añaden automáticamente. Cada caso muestra una ficha de
 preparación de llamada con preguntas pendientes y, cuando existe, la próxima
-cita del cliente. Los nombres y mensajes son ficticios. WhatsApp, Telegram,
+cita del cliente. El operador puede corregir intención y ramo con un motivo;
+la prioridad de una incidencia comunicada no baja solo por cambiar su etiqueta.
+Los nombres y mensajes son ficticios. WhatsApp, Telegram,
 iMessage, correo, CRM y calendario aparecen como fuentes y destinos previstos;
 **aún no hay conexiones reales**.
 

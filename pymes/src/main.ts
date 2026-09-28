@@ -1,11 +1,13 @@
-import { buildMorningBrief, type Channel, type WorkItem } from "./domain.js";
+import { buildMorningBrief, type Channel, type Topic, type WorkItem } from "./domain.js";
 import { makeDemoData } from "./fixtures.js";
 import { insuranceLines, pilotConfig } from "./config.js";
 import { buildCallPlan } from "./call-plan.js";
+import { acceptClassification, parseClassificationProposal } from "./classification.js";
 
 const demoMorning = new Date();
 demoMorning.setHours(9, 0, 0, 0);
-const brief = buildMorningBrief(makeDemoData(demoMorning));
+const demoData = makeDemoData(demoMorning);
+let brief = buildMorningBrief(demoData);
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const tabs = $<HTMLDivElement>("channel-tabs");
 const list = $<HTMLDivElement>("inbox-list");
@@ -17,7 +19,7 @@ let selectedId = brief.items[0]?.id ?? null;
 
 const channelNames: Record<Channel, string> = {
   whatsapp: "WhatsApp", telegram: "Telegram", imessage: "iMessage", email: "Correo" };
-const topicNames: Record<string, string> = {
+const topicNames: Record<Topic, string> = {
   incident: "Incidencia", quote: "Propuesta", renewal: "Renovación",
   appointment: "Cita", service: "Gestión" };
 const priorityNames = { urgent: "URGENTE", high: "PRÓXIMA", normal: "NORMAL" };
@@ -150,9 +152,76 @@ function renderDetail(item: WorkItem) {
   detail.appendChild(top);
 
   const source = el("div", "detail-block");
-  source.append(el("span", "", "MENSAJE RECIBIDO · DATO DE EJEMPLO"),
+  source.append(el("span", "", item.message.classificationSource === "human"
+    ? "MENSAJE RECIBIDO · CLASIFICACIÓN CORREGIDA EN ESTA SESIÓN"
+    : "MENSAJE RECIBIDO · DATO DE EJEMPLO"),
     el("div", "source-text", item.message.text));
+  if (item.message.classificationReview) {
+    source.appendChild(el("p", "classification-reason",
+      `Motivo de corrección: ${item.message.classificationReview.reason}`));
+  }
   detail.appendChild(source);
+  if (item.message.reportedIncident && item.message.topic !== "incident") {
+    detail.appendChild(el("div", "identity-warning",
+      "La fuente comunicó una incidencia. El caso conserva prioridad urgente aunque se corrija la intención."));
+  }
+
+  const classification = el("details", "classification-review");
+  classification.appendChild(el("summary", "", "Revisar intención y ramo"));
+  classification.appendChild(el("p", "", "Corrige la clasificación de esta demo. El cambio no se envía al CRM ni al cliente."));
+  const controls = el("div", "classification-controls");
+  const topicLabel = el("label", "", "Intención");
+  const topicSelect = el("select");
+  for (const [value, label] of Object.entries(topicNames) as Array<[Topic, string]>) {
+    const option = el("option", "", label);
+    option.value = value;
+    topicSelect.appendChild(option);
+  }
+  topicSelect.value = item.message.topic;
+  topicLabel.appendChild(topicSelect);
+  const lineLabel = el("label", "", "Ramo");
+  const lineSelect = el("select");
+  const none = el("option", "", "Por clasificar");
+  none.value = "";
+  lineSelect.appendChild(none);
+  for (const [value, label] of Object.entries(insuranceLines)) {
+    const option = el("option", "", label);
+    option.value = value;
+    lineSelect.appendChild(option);
+  }
+  lineSelect.value = item.message.insuranceLine ?? "";
+  lineLabel.appendChild(lineSelect);
+  const reasonLabel = el("label", "classification-reason-label", "Motivo de corrección");
+  const reasonInput = el("textarea");
+  reasonInput.rows = 2;
+  reasonInput.maxLength = 240;
+  reasonInput.placeholder = "Explica por qué cambias la clasificación…";
+  reasonLabel.appendChild(reasonInput);
+  const save = el("button", "classification-save", "Guardar corrección local");
+  save.type = "button";
+  save.disabled = true;
+  reasonInput.addEventListener("input", () => {
+    save.disabled = reasonInput.value.trim().length < 5;
+  });
+  save.addEventListener("click", () => {
+    const proposal = parseClassificationProposal({ topic: topicSelect.value,
+      insuranceLine: lineSelect.value || null });
+    const index = demoData.messages.findIndex(message => message.id === item.id);
+    if (index < 0) return;
+    demoData.messages[index] = acceptClassification(demoData.messages[index]!, proposal,
+      reasonInput.value, new Date().toISOString());
+    brief = buildMorningBrief(demoData);
+    review.add(item.id);
+    renderCounts();
+    renderTabs();
+    renderInbox();
+    renderReviewQueue();
+    const updated = brief.items.find(candidate => candidate.id === item.id);
+    if (updated) renderDetail(updated);
+  });
+  controls.append(topicLabel, lineLabel, reasonLabel, save);
+  classification.appendChild(controls);
+  detail.appendChild(classification);
 
   if (item.identityStatus === "unidentified") {
     detail.appendChild(el("div", "identity-warning",
@@ -205,7 +274,7 @@ function renderDetail(item: WorkItem) {
   detail.appendChild(crm);
 
   const bar = el("div", "review-bar");
-  const note = el("small", "", "La clasificación es de ejemplo. Revisión humana obligatoria antes de responder, cotizar, reservar o modificar datos.");
+  const note = el("small", "", `${item.message.classificationSource === "human" ? "Clasificación corregida localmente." : "La clasificación es de ejemplo."} Revisión humana obligatoria antes de responder, cotizar, reservar o modificar datos.`);
   const button = el("button", `review-button${review.has(item.id) ? " added" : ""}`,
     review.has(item.id) ? "En cola de revisión ✓" : "Añadir a revisión →");
   button.type = "button";

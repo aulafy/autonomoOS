@@ -22,7 +22,7 @@ export function makeDemoData(now = new Date()): {
   ];
   const messages: IncomingMessage[] = [
     { id: "msg-1", externalId: "wa-101", channel: "whatsapp",
-      contactId: "contact-lucia", receivedAt: at(-0.6), topic: "incident", insuranceLine: "auto",
+      contactId: "contact-lucia", receivedAt: at(-0.6), topic: "incident", reportedIncident: true, insuranceLine: "auto",
       classificationSource: "demo_fixture",
       text: "Buenos días. He tenido un golpe con el coche y necesito saber cómo abrir el parte." },
     { id: "msg-2", externalId: "mail-202", channel: "email",
@@ -54,7 +54,7 @@ export function makeDemoData(now = new Date()): {
       classificationSource: "demo_fixture",
       text: "Hola, necesito una propuesta de seguro para mi coche. Es la primera vez que os escribo." },
     { id: "msg-1-duplicate", externalId: "wa-101", channel: "whatsapp",
-      contactId: "contact-lucia", receivedAt: at(-0.7), topic: "incident", insuranceLine: "auto",
+      contactId: "contact-lucia", receivedAt: at(-0.7), topic: "incident", reportedIncident: true, insuranceLine: "auto",
       classificationSource: "demo_fixture",
       text: "Duplicado técnico del mismo mensaje, no debe crear otra tarea." }
   ];

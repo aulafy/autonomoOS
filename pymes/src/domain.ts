@@ -20,8 +20,10 @@ export interface IncomingMessage {
   receivedAt: string;
   text: string;
   topic: Topic;
+  reportedIncident?: boolean;
   insuranceLine?: InsuranceLine;
   classificationSource: "demo_fixture" | "human" | "model";
+  classificationReview?: { reason: string; reviewedAt: string };
   dueAt?: string;
 }
 
@@ -59,7 +61,7 @@ const priorityWeight: Record<Priority, number> = { urgent: 0, high: 1, normal: 2
 
 function priorityFor(message: IncomingMessage, now: Date): { priority: Priority;
   reason: string } {
-  if (message.topic === "incident") return {
+  if (message.reportedIncident || message.topic === "incident") return {
     priority: "urgent", reason: "Incidencia comunicada: requiere revisión inmediata" };
   const due = message.dueAt ? new Date(message.dueAt).getTime() : NaN;
   const daysUntilDue = (due - now.getTime()) / 86_400_000;

@@ -18,6 +18,13 @@ mantiene una cola de revisión en memoria durante la sesión; añade
 automáticamente los casos sin identificar y permite abrir desde ella los casos
 marcados. Esta cola no significa aprobación, envío ni llamada realizada.
 
+`src/classification.ts` valida propuestas con un vocabulario cerrado de
+intenciones y ramos. Una propuesta de modelo no altera mensajes; la aceptación
+del operador exige un motivo y fecha y solo cambia la clasificación local.
+La señal `reportedIncident` procede del mensaje inicial y sigue elevando la
+prioridad aunque alguien corrija la etiqueta `topic`. La demo no invoca aún un
+modelo para clasificar mensajes reales.
+
 `src/connectors.ts` añade dos operaciones de lectura independientes de la UI:
 búsqueda exacta de un contacto en Holded por teléfono y listado acotado de
 eventos con hora en Google Calendar. Reciben credenciales desde un llamador
