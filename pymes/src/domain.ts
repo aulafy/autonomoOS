@@ -1,4 +1,5 @@
 import type { InsuranceLine } from "./config.js";
+import { quoteRequirements } from "./quote-intake.js";
 
 export type Channel = "whatsapp" | "telegram" | "imessage" | "email";
 export type Topic = "incident" | "quote" | "renewal" | "appointment" | "service" | "unknown";
@@ -72,13 +73,6 @@ function priorityFor(message: IncomingMessage, now: Date): { priority: Priority;
   return { priority: "normal", reason: "Pendiente de preparación y revisión" };
 }
 
-const quoteInformation: Record<InsuranceLine, string[]> = {
-  auto: ["Vehículo y uso", "Conductores habituales", "Coberturas deseadas", "Fecha de inicio"],
-  life: ["Capital y finalidad", "Personas a asegurar", "Fecha de inicio", "Cuestionario de la aseguradora, por canal autorizado"],
-  home: ["Vivienda y uso", "Capitales a asegurar", "Coberturas deseadas", "Fecha de inicio"],
-  selfEmployedLiability: ["Actividad profesional", "Ámbito de cobertura", "Límites deseados", "Fecha de inicio"]
-};
-
 function preparation(topic: Topic, firstName: string, line?: InsuranceLine): Pick<WorkItem,
   "nextAction" | "draft" | "missingInformation"> {
   switch (topic) {
@@ -89,7 +83,7 @@ function preparation(topic: Topic, firstName: string, line?: InsuranceLine): Pic
     case "quote": return {
       nextAction: "Preparar recogida de datos para propuesta",
       draft: `Hola ${firstName}, gracias por contactar. Para preparar una propuesta adecuada necesito confirmar el riesgo, las coberturas que buscas y los datos necesarios. Después revisaré las opciones contigo.`,
-      missingInformation: line ? quoteInformation[line] :
+      missingInformation: line ? quoteRequirements[line].map(requirement => requirement.label) :
         ["Datos del riesgo", "Coberturas deseadas", "Fecha de inicio"] };
     case "renewal": return {
       nextAction: "Revisar condiciones y preparar llamada",

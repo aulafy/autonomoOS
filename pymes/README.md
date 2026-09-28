@@ -28,6 +28,12 @@ sin identidad se añaden automáticamente. Cada caso muestra una ficha de
 preparación de llamada con preguntas pendientes y, cuando existe, la próxima
 cita del cliente. El operador puede corregir intención y ramo con un motivo;
 la prioridad de una incidencia comunicada no baja solo por cambiar su etiqueta.
+Las solicitudes de propuesta tienen una ficha por ramo para marcar datos
+preliminares verificados durante esta sesión. Si la identidad no está vinculada,
+las casillas se bloquean. Para vida, el cuestionario de la aseguradora se
+muestra como paso externo y esta demo no recoge datos de salud. Completar la
+ficha no equivale a obtener una cotización: faltan tarifador, condiciones y
+revisión de una oferta real.
 Los nombres y mensajes son ficticios. WhatsApp, Telegram,
 iMessage, correo, CRM y calendario aparecen como fuentes y destinos previstos;
 **aún no hay conexiones reales**.

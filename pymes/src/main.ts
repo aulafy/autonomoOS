@@ -1,6 +1,7 @@
 import { buildMorningBrief, type Channel, type Topic, type WorkItem } from "./domain.js";
 import { makeDemoData } from "./fixtures.js";
-import { insuranceLines, pilotConfig } from "./config.js";
+import { insuranceLines, pilotConfig, type InsuranceLine } from "./config.js";
+import { evaluateQuoteIntake, quoteRequirements } from "./quote-intake.js";
 import { buildCallPlan } from "./call-plan.js";
 import { acceptClassification, parseClassificationProposal,
   type ClassificationProposal } from "./classification.js";
@@ -16,6 +17,7 @@ const detail = $<HTMLElement>("detail");
 const review = new Set<string>(brief.items.filter(item =>
   item.identityStatus === "unidentified").map(item => item.id));
 const modelSuggestions = new Map<string, { proposal: ClassificationProposal; model: string }>();
+const quoteChecks = new Map<string, { line: InsuranceLine; checked: Set<string> }>();
 let selectedChannel: Channel | "all" = "all";
 let selectedId = brief.items[0]?.id ?? null;
 
@@ -257,6 +259,7 @@ function renderDetail(item: WorkItem) {
     demoData.messages[index] = acceptClassification(demoData.messages[index]!, proposal,
       reasonInput.value, new Date().toISOString());
     modelSuggestions.delete(item.id);
+    quoteChecks.delete(item.id);
     brief = buildMorningBrief(demoData);
     review.add(item.id);
     renderCounts();
@@ -287,13 +290,61 @@ function renderDetail(item: WorkItem) {
   detail.appendChild(draft);
 
   const missing = el("div", "detail-block");
-  missing.appendChild(el("span", "", "DATOS QUE FALTAN ANTES DE ACTUAR"));
+  missing.appendChild(el("span", "", item.message.topic === "quote"
+    ? "DATOS A CONFIRMAR ANTES DE ACTUAR" : "DATOS QUE FALTAN ANTES DE ACTUAR"));
   const chips = el("div", "missing");
   for (const information of item.missingInformation) {
     chips.appendChild(el("span", "", information));
   }
   missing.appendChild(chips);
   detail.appendChild(missing);
+
+  if (item.message.topic === "quote") {
+    const intake = el("details", "quote-intake");
+    intake.appendChild(el("summary", "", "Ficha de preparación de propuesta"));
+    intake.appendChild(el("p", "", "Marca solo datos verificados. Esta ficha no calcula una prima ni genera condiciones de aseguradora."));
+    const line = item.message.insuranceLine;
+    if (line && quoteChecks.get(item.id)?.line !== line) {
+      quoteChecks.set(item.id, { line, checked: new Set() });
+    }
+    const checked = line ? quoteChecks.get(item.id)!.checked : new Set<string>();
+    const progress = el("p", "quote-progress");
+    const updateProgress = () => {
+      const result = evaluateQuoteIntake({ line,
+        identityStatus: item.identityStatus, checkedIds: checked });
+      const statusText = result.status === "identity_required" ? "Verifica primero la identidad y el expediente." :
+        result.status === "line_required" ? "Clasifica primero el ramo." :
+          result.status === "collecting" ? "Información preliminar pendiente." :
+            result.status === "external_step_required" ? "Información preliminar registrada; queda el paso externo de la aseguradora." :
+              "Información preliminar registrada; falta consultar y revisar una oferta real.";
+      progress.textContent = `${result.checked}/${result.total} datos verificados · ${statusText}`;
+    };
+    if (line) {
+      const fields = el("div", "quote-fields");
+      for (const requirement of quoteRequirements[line]) {
+        if (requirement.externalOnly) {
+          fields.appendChild(el("p", "quote-external", `${requirement.label}. No introduzcas datos de salud en esta demo.`));
+          continue;
+        }
+        const label = el("label", "quote-field");
+        const checkbox = el("input") as HTMLInputElement;
+        checkbox.type = "checkbox";
+        checkbox.checked = checked.has(requirement.id);
+        checkbox.disabled = item.identityStatus === "unidentified";
+        checkbox.addEventListener("change", () => {
+          if (checkbox.checked) checked.add(requirement.id);
+          else checked.delete(requirement.id);
+          updateProgress();
+        });
+        label.append(checkbox, el("span", "", requirement.label));
+        fields.appendChild(label);
+      }
+      intake.appendChild(fields);
+    }
+    updateProgress();
+    intake.appendChild(progress);
+    detail.appendChild(intake);
+  }
 
   const plan = buildCallPlan(item, brief);
   const call = el("details", "call-plan");
