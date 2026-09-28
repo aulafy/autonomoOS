@@ -29,9 +29,12 @@ modelo para clasificar mensajes reales.
 con salida estructurada y solo admite una URL HTTP de loopback. El comando
 `pilot:classify` selecciona un ID de los datos ficticios y nunca toma texto
 libre del usuario; `pilot:evaluate` repite el conjunto de ejemplos y un caso
-adversarial. Ninguno acepta la propuesta ni la introduce en la interfaz. La
-clasificación de mensajes reales necesitará pasar por los controles de flujo
-de información C9 y por el límite de aceptación humana antes de usar el modelo.
+adversarial. `vite.config.ts` añade una ruta de desarrollo que solo acepta
+`POST /api/demo-classify/msg-1` a `msg-8` desde el origen de la demo. La ruta
+lee el texto fijo del servidor y devuelve una propuesta no aceptada. La UI
+puede copiarla al formulario, pero sigue exigiendo un motivo para aceptar la
+clasificación. La clasificación de mensajes reales necesitará pasar por los
+controles de flujo de información C9 y por el límite de aceptación humana.
 
 `src/connectors.ts` añade dos operaciones de lectura independientes de la UI:
 búsqueda exacta de un contacto en Holded por teléfono y listado acotado de

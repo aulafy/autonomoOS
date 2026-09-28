@@ -2,7 +2,8 @@ import { buildMorningBrief, type Channel, type Topic, type WorkItem } from "./do
 import { makeDemoData } from "./fixtures.js";
 import { insuranceLines, pilotConfig } from "./config.js";
 import { buildCallPlan } from "./call-plan.js";
-import { acceptClassification, parseClassificationProposal } from "./classification.js";
+import { acceptClassification, parseClassificationProposal,
+  type ClassificationProposal } from "./classification.js";
 
 const demoMorning = new Date();
 demoMorning.setHours(9, 0, 0, 0);
@@ -14,6 +15,7 @@ const list = $<HTMLDivElement>("inbox-list");
 const detail = $<HTMLElement>("detail");
 const review = new Set<string>(brief.items.filter(item =>
   item.identityStatus === "unidentified").map(item => item.id));
+const modelSuggestions = new Map<string, { proposal: ClassificationProposal; model: string }>();
 let selectedChannel: Channel | "all" = "all";
 let selectedId = brief.items[0]?.id ?? null;
 
@@ -191,6 +193,50 @@ function renderDetail(item: WorkItem) {
   }
   lineSelect.value = item.message.insuranceLine ?? "";
   lineLabel.appendChild(lineSelect);
+  const modelBox = el("div", "model-box");
+  const requestProposal = el("button", "model-request", "Proponer con modelo local");
+  requestProposal.type = "button";
+  const modelStatus = el("div", "model-status");
+  const showModelSuggestion = () => {
+    modelStatus.replaceChildren();
+    const suggestion = modelSuggestions.get(item.id);
+    if (!suggestion) return;
+    modelStatus.appendChild(el("p", "", `Propuesta no aceptada · ${suggestion.model}: ${topicNames[suggestion.proposal.topic]} · ${suggestion.proposal.insuranceLine ? insuranceLines[suggestion.proposal.insuranceLine] : "Ramo no identificado"}`));
+    const copy = el("button", "model-copy", "Copiar a campos para revisar");
+    copy.type = "button";
+    copy.addEventListener("click", () => {
+      topicSelect.value = suggestion.proposal.topic;
+      lineSelect.value = suggestion.proposal.insuranceLine ?? "";
+      reasonInput.focus();
+    });
+    modelStatus.appendChild(copy);
+  };
+  requestProposal.addEventListener("click", async () => {
+    requestProposal.disabled = true;
+    modelStatus.textContent = "Consultando el modelo local…";
+    try {
+      const response = await fetch(`/api/demo-classify/${encodeURIComponent(item.id)}`, {
+        method: "POST", headers: { Accept: "application/json" }
+      });
+      if (!response.ok) throw new Error("MODEL_UNAVAILABLE");
+      const data: unknown = await response.json();
+      if (!data || typeof data !== "object") throw new Error("INVALID_MODEL_RESULT");
+      const result = data as Record<string, unknown>;
+      if (result.messageId !== item.id || result.fixtureOnly !== true ||
+        result.accepted !== false || typeof result.model !== "string") {
+        throw new Error("INVALID_MODEL_RESULT");
+      }
+      modelSuggestions.set(item.id, { proposal: parseClassificationProposal(result.proposed),
+        model: result.model });
+      showModelSuggestion();
+    } catch {
+      modelStatus.textContent = "Modelo local no disponible. Puedes corregir manualmente.";
+    } finally {
+      requestProposal.disabled = false;
+    }
+  });
+  modelBox.append(requestProposal, modelStatus);
+  showModelSuggestion();
   const reasonLabel = el("label", "classification-reason-label", "Motivo de corrección");
   const reasonInput = el("textarea");
   reasonInput.rows = 2;
@@ -210,6 +256,7 @@ function renderDetail(item: WorkItem) {
     if (index < 0) return;
     demoData.messages[index] = acceptClassification(demoData.messages[index]!, proposal,
       reasonInput.value, new Date().toISOString());
+    modelSuggestions.delete(item.id);
     brief = buildMorningBrief(demoData);
     review.add(item.id);
     renderCounts();
@@ -219,7 +266,7 @@ function renderDetail(item: WorkItem) {
     const updated = brief.items.find(candidate => candidate.id === item.id);
     if (updated) renderDetail(updated);
   });
-  controls.append(topicLabel, lineLabel, reasonLabel, save);
+  controls.append(modelBox, topicLabel, lineLabel, reasonLabel, save);
   classification.appendChild(controls);
   detail.appendChild(classification);
 

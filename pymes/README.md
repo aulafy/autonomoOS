@@ -40,8 +40,12 @@ npm run pilot:evaluate --workspace=@agent-world/pymes
 ```
 
 Requiere Ollama en `127.0.0.1:11434` con `llama3.2:3b` cargado, o un modelo
-local indicado mediante `PYMES_LOCAL_MODEL`. La salida es una propuesta no
-aceptada y no actualiza la demo. Véase [evaluación del modelo](MODEL_EVALUATION.md).
+local indicado mediante `PYMES_LOCAL_MODEL`. En la interfaz, abre «Revisar
+intención y ramo» y pulsa «Proponer con modelo local». La propuesta puede
+copiarse al formulario, pero no se guarda sin un motivo escrito por el
+operador. La ruta del servidor acepta únicamente los ocho IDs ficticios; la
+salida no actualiza automáticamente el caso. Véase
+[evaluación del modelo](MODEL_EVALUATION.md).
 
 ![Resumen de PYMES](demo-overview.jpg)
 
