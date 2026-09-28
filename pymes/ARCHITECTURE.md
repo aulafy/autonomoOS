@@ -8,6 +8,9 @@ prepara borradores. La clasificación de los datos de muestra está etiquetada
 como `demo_fixture`: no se presenta como una inferencia de IA. La función no
 posee ningún cliente de red ni método de envío. `src/main.ts` solo muestra
 esa proyección y permite marcar borradores para revisión en memoria local.
+Si falta un contacto o el ID no existe, el mensaje se conserva con identidad
+pendiente, prioridad elevada y un borrador bloqueado para envío. Solo una
+verificación humana puede convertirlo en una asociación de expediente.
 
 `src/connectors.ts` añade dos operaciones de lectura independientes de la UI:
 búsqueda exacta de un contacto en Holded por teléfono y listado acotado de

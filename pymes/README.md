@@ -5,6 +5,8 @@ seguros. El problema inicial es la primera hora de cada mañana: mensajes
 dispersos, incidencias, solicitudes de propuesta, renovaciones, citas y cambios
 en expedientes. El primer prototipo convierte un conjunto ficticio de mensajes
 en una bandeja priorizada, borradores y una agenda de solo lectura.
+Los mensajes sin contacto reconocido permanecen en la bandeja como casos
+pendientes de identidad; no reciben un borrador personalizado ni ficha CRM.
 
 El piloto está configurado para España y cubre coche, vida, hogar y
 responsabilidad civil para autónomos. Holded es el CRM de referencia y Google

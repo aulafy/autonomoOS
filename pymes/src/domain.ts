@@ -16,7 +16,7 @@ export interface IncomingMessage {
   id: string;
   externalId: string;
   channel: Channel;
-  contactId: string;
+  contactId?: string;
   receivedAt: string;
   text: string;
   topic: Topic;
@@ -36,7 +36,8 @@ export interface Appointment {
 export interface WorkItem {
   id: string;
   message: IncomingMessage;
-  contact: Contact;
+  contact: Contact | null;
+  identityStatus: "linked" | "unidentified";
   priority: Priority;
   reason: string;
   nextAction: string;
@@ -50,7 +51,7 @@ export interface MorningBrief {
   generatedAt: string;
   items: WorkItem[];
   appointments: Array<Appointment & { contactName: string }>;
-  counts: { total: number; urgent: number; high: number;
+  counts: { total: number; urgent: number; high: number; unidentified: number;
     byChannel: Record<Channel, number> };
 }
 
@@ -117,15 +118,21 @@ export function buildMorningBrief(input: { contacts: readonly Contact[];
     const key = `${message.channel}:${message.externalId}`;
     if (seen.has(key)) continue;
     seen.add(key);
-    const contact = contacts.get(message.contactId);
-    if (!contact) throw new Error(`UNKNOWN_CONTACT:${message.contactId}`);
+    const contact = message.contactId ? contacts.get(message.contactId) ?? null : null;
     if (Number.isNaN(new Date(message.receivedAt).getTime())) {
       throw new Error(`INVALID_MESSAGE_TIME:${message.id}`);
     }
-    const firstName = contact.name.split(" ")[0] ?? contact.name;
+    const firstName = contact?.name.split(" ")[0] ?? "";
     const priority = priorityFor(message, now);
-    items.push({ id: message.id, message, contact, ...priority,
-      ...preparation(message.topic, firstName, message.insuranceLine),
+    const prepared = preparation(message.topic, firstName, message.insuranceLine);
+    items.push({ id: message.id, message, contact,
+      identityStatus: contact ? "linked" : "unidentified",
+      priority: contact ? priority.priority : priority.priority === "urgent" ? "urgent" : "high",
+      reason: contact ? priority.reason : `Identidad sin verificar. ${priority.reason}`,
+      nextAction: contact ? prepared.nextAction : "Verificar identidad y expediente antes de preparar respuesta",
+      draft: contact ? prepared.draft : "Borrador pendiente de verificar identidad. No enviar ni asociar a un expediente.",
+      missingInformation: contact ? prepared.missingInformation :
+        ["Identidad y vínculo con expediente", ...prepared.missingInformation],
       reviewRequired: true, executionStatus: "draft_only" });
   }
   items.sort((a, b) => priorityWeight[a.priority] - priorityWeight[b.priority] ||
@@ -140,5 +147,6 @@ export function buildMorningBrief(input: { contacts: readonly Contact[];
     counts: { total: items.length,
       urgent: items.filter(item => item.priority === "urgent").length,
       high: items.filter(item => item.priority === "high").length,
+      unidentified: items.filter(item => item.identityStatus === "unidentified").length,
       byChannel } };
 }

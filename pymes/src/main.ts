@@ -19,6 +19,7 @@ const topicNames: Record<string, string> = {
   incident: "Incidencia", quote: "Propuesta", renewal: "Renovación",
   appointment: "Cita", service: "Gestión" };
 const priorityNames = { urgent: "URGENTE", high: "PRÓXIMA", normal: "NORMAL" };
+const contactName = (item: WorkItem) => item.contact?.name ?? "Contacto sin identificar";
 const dayTime = (iso: string) => new Date(iso).toLocaleString("es-ES", {
   day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 const el = <K extends keyof HTMLElementTagNameMap>(tag: K,
@@ -32,6 +33,7 @@ const el = <K extends keyof HTMLElementTagNameMap>(tag: K,
 function renderCounts() {
   $("total-count").textContent = String(brief.counts.total);
   $("attention-count").textContent = String(brief.counts.urgent + brief.counts.high);
+  $("unidentified-count").textContent = `${brief.counts.unidentified} sin identificar`;
   $("review-count").textContent = String(review.size);
   $("appointment-count").textContent = String(brief.appointments.length);
 }
@@ -59,7 +61,7 @@ function visibleItems(): WorkItem[] {
   const query = $<HTMLInputElement>("search").value.trim().toLocaleLowerCase("es");
   return brief.items.filter(item =>
     (selectedChannel === "all" || item.message.channel === selectedChannel) &&
-    (!query || `${item.contact.name} ${item.message.text} ${topicNames[item.message.topic]} ${item.message.insuranceLine ? insuranceLines[item.message.insuranceLine] : ""}`
+    (!query || `${contactName(item)} ${item.message.text} ${topicNames[item.message.topic]} ${item.message.insuranceLine ? insuranceLines[item.message.insuranceLine] : ""}`
       .toLocaleLowerCase("es").includes(query)));
 }
 
@@ -74,10 +76,11 @@ function renderInbox() {
     const button = el("button", `message-card${selectedId === item.id ? " active" : ""}`);
     button.type = "button";
     const head = el("div", "message-head");
-    head.append(el("strong", "", item.contact.name),
+    head.append(el("strong", "", contactName(item)),
       el("span", `priority ${item.priority}`, priorityNames[item.priority]));
     const meta = el("div", "message-meta");
     meta.append(el("span", "channel", channelNames[item.message.channel]),
+      ...(item.identityStatus === "unidentified" ? [el("span", "identity-pending", "· Identidad pendiente")] : []),
       el("span", "", `· ${topicNames[item.message.topic]}`),
       el("span", "", `· ${item.message.insuranceLine ? insuranceLines[item.message.insuranceLine] : "Por clasificar"}`),
       el("span", "", `· ${dayTime(item.message.receivedAt)}`));
@@ -96,8 +99,8 @@ function renderDetail(item: WorkItem) {
   const top = el("div", "detail-top");
   const identity = el("div");
   identity.append(el("span", "detail-label", topicNames[item.message.topic].toUpperCase()),
-    el("h3", "", item.contact.name),
-    el("p", "", `${item.contact.relationship === "client" ? "Cliente" : "Futuro cliente"} · ${channelNames[item.message.channel]} · ${dayTime(item.message.receivedAt)}`));
+    el("h3", "", contactName(item)),
+    el("p", "", `${item.contact ? item.contact.relationship === "client" ? "Cliente" : "Futuro cliente" : "Identidad pendiente"} · ${channelNames[item.message.channel]} · ${dayTime(item.message.receivedAt)}`));
   top.append(identity, el("span", `priority ${item.priority}`, priorityNames[item.priority]));
   detail.appendChild(top);
 
@@ -105,6 +108,11 @@ function renderDetail(item: WorkItem) {
   source.append(el("span", "", "MENSAJE RECIBIDO · DATO DE EJEMPLO"),
     el("div", "source-text", item.message.text));
   detail.appendChild(source);
+
+  if (item.identityStatus === "unidentified") {
+    detail.appendChild(el("div", "identity-warning",
+      "Vinculación pendiente: este mensaje no está asociado a ningún expediente. Verifica la identidad antes de responder o cotizar."));
+  }
 
   const action = el("div", "detail-block");
   action.append(el("span", "", "SIGUIENTE PASO PROPUESTO"),
@@ -127,9 +135,9 @@ function renderDetail(item: WorkItem) {
   detail.appendChild(missing);
 
   const crm = el("div", "crm-strip");
-  for (const [label, value] of [["RELACIÓN", item.contact.relationship === "client" ? "Cliente" : "Prospecto"],
-    ["PRODUCTO", item.contact.product ? insuranceLines[item.contact.product] : "Por definir"],
-    ["RESPONSABLE", item.contact.owner]]) {
+  for (const [label, value] of [["RELACIÓN", item.contact ? item.contact.relationship === "client" ? "Cliente" : "Prospecto" : "Sin vincular"],
+    ["PRODUCTO", item.contact?.product ? insuranceLines[item.contact.product] : "Por definir"],
+    ["RESPONSABLE", item.contact?.owner ?? "Por asignar"]]) {
     const field = el("div");
     field.append(el("span", "", label), el("strong", "", value));
     crm.appendChild(field);
