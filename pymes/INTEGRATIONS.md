@@ -41,3 +41,9 @@ no se han usado cuentas ni datos reales. Para conectarlos hace falta un proceso
 de servidor que obtenga y proteja la clave de Holded y un token OAuth con
 `calendar.events.readonly`, además de decidir qué calendario y qué contactos
 puede consultar el agente.
+
+El siguiente límite ya está modelado en `src/integration-view.ts`: una lectura
+de Holded o Calendar no equivale a una identidad confirmada. Cada enlace al
+contacto local requiere IDs explícitos, operador y fecha de verificación; los
+resultados ambiguos permanecen sin vincular. Los ejemplos y tests no conceden
+permisos ni crean citas.

@@ -18,6 +18,12 @@ incompleta de Calendar se informa como error, y los eventos de día completo
 quedan fuera hasta diseñar su representación. No hay flujo OAuth, almacén de
 tokens ni cuentas conectadas en esta versión.
 
+`src/integration-view.ts` prepara el enlace de esas lecturas con la bandeja.
+Solo acepta asociaciones explícitas entre IDs externos e IDs locales,
+registradas con persona y fecha de verificación. Ni el nombre del contacto ni
+el título de la cita se usan para asociar identidades. Los registros sin
+vínculo permanecen pendientes y los vínculos duplicados o incompletos fallan.
+
 ## Integración prevista con el kernel
 
 | Paso | Recurso/control | Resultado exigido |
