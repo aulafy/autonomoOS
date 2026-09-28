@@ -25,6 +25,14 @@ La señal `reportedIncident` procede del mensaje inicial y sigue elevando la
 prioridad aunque alguien corrija la etiqueta `topic`. La demo no invoca aún un
 modelo para clasificar mensajes reales.
 
+`src/local-classifier.ts` llama a la [API local de Ollama](https://github.com/ollama/ollama/blob/main/docs/capabilities/structured-outputs.mdx)
+con salida estructurada y solo admite una URL HTTP de loopback. El comando
+`pilot:classify` selecciona un ID de los datos ficticios y nunca toma texto
+libre del usuario; `pilot:evaluate` repite el conjunto de ejemplos y un caso
+adversarial. Ninguno acepta la propuesta ni la introduce en la interfaz. La
+clasificación de mensajes reales necesitará pasar por los controles de flujo
+de información C9 y por el límite de aceptación humana antes de usar el modelo.
+
 `src/connectors.ts` añade dos operaciones de lectura independientes de la UI:
 búsqueda exacta de un contacto en Holded por teléfono y listado acotado de
 eventos con hora en Google Calendar. Reciben credenciales desde un llamador

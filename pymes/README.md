@@ -32,6 +32,17 @@ Los nombres y mensajes son ficticios. WhatsApp, Telegram,
 iMessage, correo, CRM y calendario aparecen como fuentes y destinos previstos;
 **aún no hay conexiones reales**.
 
+La clasificación local puede probarse **solo con los mensajes ficticios**:
+
+```bash
+npm run pilot:classify --workspace=@agent-world/pymes -- msg-1
+npm run pilot:evaluate --workspace=@agent-world/pymes
+```
+
+Requiere Ollama en `127.0.0.1:11434` con `llama3.2:3b` cargado, o un modelo
+local indicado mediante `PYMES_LOCAL_MODEL`. La salida es una propuesta no
+aceptada y no actualiza la demo. Véase [evaluación del modelo](MODEL_EVALUATION.md).
+
 ![Resumen de PYMES](demo-overview.jpg)
 
 ## Primer flujo completo que construiremos

@@ -21,7 +21,7 @@ const channelNames: Record<Channel, string> = {
   whatsapp: "WhatsApp", telegram: "Telegram", imessage: "iMessage", email: "Correo" };
 const topicNames: Record<Topic, string> = {
   incident: "Incidencia", quote: "Propuesta", renewal: "Renovación",
-  appointment: "Cita", service: "Gestión" };
+  appointment: "Cita", service: "Gestión", unknown: "Sin clasificar" };
 const priorityNames = { urgent: "URGENTE", high: "PRÓXIMA", normal: "NORMAL" };
 const contactName = (item: WorkItem) => item.contact?.name ?? "Contacto sin identificar";
 const dayTime = (iso: string) => new Date(iso).toLocaleString("es-ES", {

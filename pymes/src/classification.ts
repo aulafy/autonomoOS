@@ -6,7 +6,7 @@ export interface ClassificationProposal {
   insuranceLine: InsuranceLine | null;
 }
 
-const topics: readonly Topic[] = ["incident", "quote", "renewal", "appointment", "service"];
+const topics: readonly Topic[] = ["incident", "quote", "renewal", "appointment", "service", "unknown"];
 
 /** Strict boundary for a future untrusted model response. A proposal has no effect. */
 export function parseClassificationProposal(value: unknown): ClassificationProposal {

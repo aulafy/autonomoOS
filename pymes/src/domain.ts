@@ -1,7 +1,7 @@
 import type { InsuranceLine } from "./config.js";
 
 export type Channel = "whatsapp" | "telegram" | "imessage" | "email";
-export type Topic = "incident" | "quote" | "renewal" | "appointment" | "service";
+export type Topic = "incident" | "quote" | "renewal" | "appointment" | "service" | "unknown";
 export type Priority = "urgent" | "high" | "normal";
 
 export interface Contact {
@@ -103,6 +103,10 @@ function preparation(topic: Topic, firstName: string, line?: InsuranceLine): Pic
       nextAction: "Verificar solicitud en CRM antes de cambiar datos",
       draft: `Hola ${firstName}, he recibido tu solicitud. Verificaré los datos de tu expediente y te confirmaré el siguiente paso.`,
       missingInformation: ["Identidad y autorización", "Datos actuales del expediente"] };
+    case "unknown": return {
+      nextAction: "Revisar manualmente el mensaje antes de decidir una acción",
+      draft: "Clasificación pendiente de revisión. No enviar respuesta automática.",
+      missingInformation: ["Motivo de contacto", "Ramo aplicable"] };
   }
 }
 
