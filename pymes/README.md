@@ -23,7 +23,10 @@ npm run demo:pymes
 
 Abrir `http://127.0.0.1:5174/`. Se puede filtrar por canal, buscar un contacto,
 revisar el contexto CRM y marcar un borrador para revisión. Todo se queda en la
-sesión del navegador. Los nombres y mensajes son ficticios. WhatsApp, Telegram,
+sesión del navegador. La cola permite volver a los casos marcados; los mensajes
+sin identidad se añaden automáticamente. Cada caso muestra una ficha de
+preparación de llamada con preguntas pendientes y, cuando existe, la próxima
+cita del cliente. Los nombres y mensajes son ficticios. WhatsApp, Telegram,
 iMessage, correo, CRM y calendario aparecen como fuentes y destinos previstos;
 **aún no hay conexiones reales**.
 

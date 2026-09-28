@@ -1,6 +1,7 @@
 import { buildMorningBrief, type Channel, type WorkItem } from "./domain.js";
 import { makeDemoData } from "./fixtures.js";
 import { insuranceLines, pilotConfig } from "./config.js";
+import { buildCallPlan } from "./call-plan.js";
 
 const demoMorning = new Date();
 demoMorning.setHours(9, 0, 0, 0);
@@ -9,7 +10,8 @@ const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as 
 const tabs = $<HTMLDivElement>("channel-tabs");
 const list = $<HTMLDivElement>("inbox-list");
 const detail = $<HTMLElement>("detail");
-const review = new Set<string>();
+const review = new Set<string>(brief.items.filter(item =>
+  item.identityStatus === "unidentified").map(item => item.id));
 let selectedChannel: Channel | "all" = "all";
 let selectedId = brief.items[0]?.id ?? null;
 
@@ -21,7 +23,8 @@ const topicNames: Record<string, string> = {
 const priorityNames = { urgent: "URGENTE", high: "PRÓXIMA", normal: "NORMAL" };
 const contactName = (item: WorkItem) => item.contact?.name ?? "Contacto sin identificar";
 const dayTime = (iso: string) => new Date(iso).toLocaleString("es-ES", {
-  day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
+  timeZone: pilotConfig.timeZone });
 const el = <K extends keyof HTMLElementTagNameMap>(tag: K,
   className = "", text = ""): HTMLElementTagNameMap[K] => {
   const element = document.createElement(tag);
@@ -94,6 +97,48 @@ function renderInbox() {
   }
 }
 
+function showItem(item: WorkItem) {
+  selectedId = item.id;
+  selectedChannel = "all";
+  $<HTMLInputElement>("search").value = "";
+  renderTabs();
+  renderInbox();
+  renderDetail(item);
+  detail.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function renderReviewQueue() {
+  const queue = $("review-list");
+  queue.replaceChildren();
+  const items = brief.items.filter(item => review.has(item.id));
+  if (!items.length) {
+    queue.appendChild(el("p", "queue-empty", "Selecciona una conversación para prepararla aquí."));
+    return;
+  }
+  for (const item of items) {
+    const row = el("div", "queue-row");
+    const open = el("button", "queue-open", `${contactName(item)} · ${topicNames[item.message.topic]}`);
+    open.type = "button";
+    open.addEventListener("click", () => showItem(item));
+    row.appendChild(open);
+    row.appendChild(el("span", item.identityStatus === "unidentified" ? "queue-pending" : "queue-ready",
+      item.identityStatus === "unidentified" ? "Identidad pendiente" : "Por revisar"));
+    if (item.identityStatus === "linked") {
+      const remove = el("button", "queue-remove", "Quitar");
+      remove.type = "button";
+      remove.setAttribute("aria-label", `Quitar a ${contactName(item)} de la cola`);
+      remove.addEventListener("click", () => {
+        review.delete(item.id);
+        renderCounts();
+        renderReviewQueue();
+        if (selectedId === item.id) renderDetail(item);
+      });
+      row.appendChild(remove);
+    }
+    queue.appendChild(row);
+  }
+}
+
 function renderDetail(item: WorkItem) {
   detail.replaceChildren();
   const top = el("div", "detail-top");
@@ -134,6 +179,21 @@ function renderDetail(item: WorkItem) {
   missing.appendChild(chips);
   detail.appendChild(missing);
 
+  const plan = buildCallPlan(item, brief);
+  const call = el("details", "call-plan");
+  const summary = el("summary", "", plan.status === "identity_required"
+    ? "Preparar verificación antes de llamar" : "Ver preparación de llamada");
+  call.appendChild(summary);
+  call.appendChild(el("p", "", plan.objective));
+  const questions = el("ul");
+  for (const question of plan.questions) questions.appendChild(el("li", "", question));
+  call.appendChild(questions);
+  if (plan.nextAppointment) {
+    call.appendChild(el("p", "call-appointment",
+      `Próxima cita: ${plan.nextAppointment.title} · ${dayTime(plan.nextAppointment.startsAt)} · ${plan.nextAppointment.state === "confirmed" ? "confirmada" : "propuesta"}`));
+  }
+  detail.appendChild(call);
+
   const crm = el("div", "crm-strip");
   for (const [label, value] of [["RELACIÓN", item.contact ? item.contact.relationship === "client" ? "Cliente" : "Prospecto" : "Sin vincular"],
     ["PRODUCTO", item.contact?.product ? insuranceLines[item.contact.product] : "Por definir"],
@@ -147,11 +207,13 @@ function renderDetail(item: WorkItem) {
   const bar = el("div", "review-bar");
   const note = el("small", "", "La clasificación es de ejemplo. Revisión humana obligatoria antes de responder, cotizar, reservar o modificar datos.");
   const button = el("button", `review-button${review.has(item.id) ? " added" : ""}`,
-    review.has(item.id) ? "Añadido a revisión ✓" : "Preparar revisión →");
+    review.has(item.id) ? "En cola de revisión ✓" : "Añadir a revisión →");
   button.type = "button";
+  button.disabled = review.has(item.id);
   button.addEventListener("click", () => {
     review.add(item.id);
     renderCounts();
+    renderReviewQueue();
     renderDetail(item);
   });
   bar.append(note, button);
@@ -165,11 +227,14 @@ function renderAppointments() {
     const date = new Date(appointment.startsAt);
     const row = el("div", "appointment");
     const tile = el("div", "date-tile");
-    tile.append(el("strong", "", String(date.getDate())),
-      el("small", "", date.toLocaleDateString("es-ES", { month: "short" }).toUpperCase()));
+    tile.append(el("strong", "", date.toLocaleDateString("es-ES", {
+      day: "numeric", timeZone: pilotConfig.timeZone })),
+      el("small", "", date.toLocaleDateString("es-ES", {
+        month: "short", timeZone: pilotConfig.timeZone }).toUpperCase()));
     const copy = el("div");
     copy.append(el("strong", "", appointment.title),
-      el("p", "", `${appointment.contactName} · ${date.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}`));
+      el("p", "", `${appointment.contactName} · ${date.toLocaleTimeString("es-ES", {
+        hour: "2-digit", minute: "2-digit", timeZone: pilotConfig.timeZone })}`));
     row.append(tile, copy, el("span", "state", appointment.state === "confirmed"
       ? "Confirmada" : "Propuesta"));
     container.appendChild(row);
@@ -177,11 +242,12 @@ function renderAppointments() {
 }
 
 $("today").textContent = new Date(brief.generatedAt).toLocaleDateString("es-ES", {
-  weekday: "long", day: "numeric", month: "long" });
+  weekday: "long", day: "numeric", month: "long", timeZone: pilotConfig.timeZone });
 $("pilot-context").textContent = `${pilotConfig.country} · ${pilotConfig.crm.name} por conectar · ${pilotConfig.calendar.name} por conectar`;
 $<HTMLInputElement>("search").addEventListener("input", renderInbox);
 renderCounts();
 renderTabs();
 renderInbox();
 if (brief.items[0]) renderDetail(brief.items[0]);
+renderReviewQueue();
 renderAppointments();

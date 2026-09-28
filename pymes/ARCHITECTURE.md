@@ -12,6 +12,12 @@ Si falta un contacto o el ID no existe, el mensaje se conserva con identidad
 pendiente, prioridad elevada y un borrador bloqueado para envío. Solo una
 verificación humana puede convertirlo en una asociación de expediente.
 
+`src/call-plan.ts` prepara un guion de llamada a partir del caso y de la agenda
+local. Un caso sin identidad no hereda citas de otro contacto. La interfaz
+mantiene una cola de revisión en memoria durante la sesión; añade
+automáticamente los casos sin identificar y permite abrir desde ella los casos
+marcados. Esta cola no significa aprobación, envío ni llamada realizada.
+
 `src/connectors.ts` añade dos operaciones de lectura independientes de la UI:
 búsqueda exacta de un contacto en Holded por teléfono y listado acotado de
 eventos con hora en Google Calendar. Reciben credenciales desde un llamador
