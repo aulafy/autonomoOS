@@ -114,6 +114,11 @@ export class GovernedActionRunner {
       const effect = this.deps.effects.get(effectId)!;
       this.deps.events.append({ type: "effect.prepared", taskId: request.taskId,
         intentId: request.intent.id, effectId, at: this.deps.now() });
+      this.deps.events.append({ type: "action.admitted", taskId: request.taskId,
+        intentId: request.intent.id, effectId, at: this.deps.now(), detail: {
+          resourceId: resource.id, composition: prerequisites.composition.verdict,
+          flow: prerequisites.flow?.verdict ?? "not_required",
+          budget: "reserved" } });
       return { reservation, effect };
     });
     const currentBudget = this.deps.budgets.getBudget(budget.id)!;
@@ -169,6 +174,10 @@ export class GovernedActionRunner {
     current = (this.deps.transaction ?? ((work) => work()))(() => {
       const dispatching = this.deps.coordinator.startDispatch(effect.id, effect.version);
       this.deps.facts.fromEffectFacts(dispatching.id);
+      this.deps.events.append({ type: "action.commit_allowed",
+        taskId: prepared.request.taskId, intentId: prepared.request.intent.id,
+        effectId: prepared.effectId, at: this.deps.now(),
+        detail: { gate: "passed", dispatchMarker: "durable" } });
       this.emit("effect.dispatching", prepared);
       return dispatching;
     });

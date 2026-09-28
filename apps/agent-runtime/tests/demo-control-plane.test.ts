@@ -21,9 +21,9 @@ test("M5 world side effects pass through C11 and completion uses observations", 
   "task-1", "task-1");
   assert.equal(goto.status, "completed");
   assert.deepEqual(world.getEntity("astra")?.transform?.position, [4, 0, -2]);
-  assert.deepEqual(eventTypes.filter(type => !type.startsWith("recovery.")).slice(0, 5),
-    ["effect.prepared", "effect.dispatching",
-    "agent.moved", "effect.dispatch_reported", "effect.committed"]);
+  assert.deepEqual(eventTypes.filter(type => !type.startsWith("recovery.")).slice(0, 7),
+    ["effect.prepared", "action.admitted", "action.commit_allowed",
+    "effect.dispatching", "agent.moved", "effect.dispatch_reported", "effect.committed"]);
   assert.equal(await governance.mayComplete("task-1"), true);
   const second = await governance.run({ id: "intent-3", actorId: "astra", action: "goto",
     targetId: "meeting_room", parameters: {}, provenance: { source: "model" } },

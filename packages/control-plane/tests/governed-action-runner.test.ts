@@ -28,8 +28,12 @@ test("full governed path records dispatch before executor and commits only after
   assert.equal(f.effects.get(prepared.effectId)?.status, "committed");
   assert.equal(f.budgets.getReservation(prepared.reservationId)?.status, "committed");
   assert.deepEqual(f.events.events.map(event => event.type), [
-    "effect.prepared", "effect.dispatching", "effect.dispatch_reported", "effect.committed"
+    "effect.prepared", "action.admitted", "action.commit_allowed",
+    "effect.dispatching", "effect.dispatch_reported", "effect.committed"
   ]);
+  assert.deepEqual(f.events.events.find(event => event.type === "action.admitted")?.detail,
+    { resourceId: placeId, composition: "allow", flow: "not_required",
+      budget: "reserved" });
 });
 
 test("revoked grant between admission and commit blocks executor", async () => {

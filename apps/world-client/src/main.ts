@@ -20,6 +20,9 @@ const timeline =
 const controlPlane =
   $("#control-plane");
 
+const controlDenials =
+  $("#control-denials");
+
 const planBox =
   $("#plan");
 
@@ -384,9 +387,12 @@ function eventClass(
 }
 
 type ControlSnapshot = {
+  denials: Array<{ type: string; at: number; taskId: string | null;
+    reasonCode: string | null }>;
   effects: Array<{
     id: string; taskId: string; action: string; resourceIds: string[];
     status: string; taskStatus: string | null; reservationStatuses: string[];
+    taskEvents: Array<{ type: string; at: number; detail: string | null }>;
     transitions: Array<{ type: string; status: string; at: number }>;
     observations: Array<{ status: string; source: string; at: number }>;
     reconciliation: { jobStatus: string | null;
@@ -395,8 +401,19 @@ type ControlSnapshot = {
 };
 
 function renderControlSnapshot(snapshot: ControlSnapshot) {
+  const denials = Array.isArray(snapshot.denials) ? snapshot.denials : [];
+  controlDenials.replaceChildren();
+  controlDenials.hidden = denials.length === 0;
+  for (const denial of denials) {
+    const row = document.createElement("div");
+    row.className = "control-denial";
+    row.textContent = `${new Date(denial.at).toLocaleTimeString()} ${denial.type}` +
+      `${denial.reasonCode ? ` · ${denial.reasonCode}` : ""}` +
+      `${denial.taskId ? ` · task ${denial.taskId.slice(0, 12)}` : ""}`;
+    controlDenials.appendChild(row);
+  }
   controlPlane.replaceChildren();
-  if (!snapshot.effects.length) {
+  if (!Array.isArray(snapshot.effects) || !snapshot.effects.length) {
     controlPlane.textContent = "No governed effects recorded yet.";
     return;
   }
@@ -416,8 +433,16 @@ function renderControlSnapshot(snapshot: ControlSnapshot) {
     fact(card, `effect ${effect.id.slice(0, 12)} · task ${effect.taskId.slice(0, 12)}`);
     fact(card, `resource ${effect.resourceIds.join(", ")}`);
     fact(card, `task ${effect.taskStatus ?? "unknown"} · budget ${effect.reservationStatuses.join(", ") || "none"}`);
-    for (const transition of effect.transitions) {
-      fact(card, `${new Date(transition.at).toLocaleTimeString()}  ${transition.type} → ${transition.status}`);
+    if (effect.taskEvents.length) {
+      fact(card, "Runtime journal (durable order):");
+      for (const event of effect.taskEvents) {
+        fact(card, `${new Date(event.at).toLocaleTimeString()}  ${event.type}${event.detail ? ` · ${event.detail}` : ""}`);
+      }
+    } else {
+      fact(card, "C6 effect ledger:");
+      for (const transition of effect.transitions) {
+        fact(card, `${new Date(transition.at).toLocaleTimeString()}  ${transition.type} → ${transition.status}`);
+      }
     }
     for (const observation of effect.observations) {
       fact(card, `${new Date(observation.at).toLocaleTimeString()}  observation ${observation.status} (${observation.source})`);

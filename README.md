@@ -48,7 +48,7 @@ read-only projection of SQLite-backed effects, observations, budget settlement,
 and reconciliation decisions. If port 8787 is occupied, start the runtime with
 `AGENT_RUNTIME_PORT=8799` and open the Vite URL with `?runtimePort=8799`.
 The WebSocket runtime is currently loopback-only; authenticated remote control
-is future work.
+is future work. See the [operator console notes](docs/OPERATOR_CONSOLE.md).
 
 ## Design boundaries
 

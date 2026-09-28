@@ -190,6 +190,16 @@
     .control-effect[data-status="committed"] { border-color: #16884a; }
     .control-effect[data-status="failed"] { border-color: #b53131; }
 
+    .control-denial {
+      margin: 7px 0;
+      padding: 7px 9px;
+      border-left: 3px solid #b53131;
+      background: #fff4f4;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 11px;
+      overflow-wrap: anywhere;
+    }
+
     .event {
       display: grid;
 
@@ -245,6 +255,7 @@
     <div class="section">
       <div class="section-title">Durable control plane</div>
       <div class="muted">Read-only facts from the SQLite-backed runtime</div>
+      <div id="control-denials" hidden></div>
       <div id="control-plane">Waiting for runtime snapshot…</div>
     </div>
 

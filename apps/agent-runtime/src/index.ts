@@ -999,7 +999,7 @@ wss.on(
           ) {
             if (!kernel.isHealthy()) throw new Error("RUNTIME_PROJECTION_UNAVAILABLE");
             socket.send(JSON.stringify({ type: "control.snapshot",
-              snapshot: operatorSnapshot(stores) }));
+              snapshot: operatorSnapshot(stores, events.readAll()) }));
             return;
           }
 

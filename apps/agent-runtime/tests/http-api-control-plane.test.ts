@@ -115,10 +115,19 @@ test("governed POST requires independent GET before effect commits", async () =>
     assert.equal(f.stores.effects.get(result.effectId!)?.status, "committed");
     assert.equal(f.stores.observations.listByEffect(result.effectId!).at(-1)?.status,
       "confirmed");
-    const view = operatorSnapshot(f.stores);
+    const view = operatorSnapshot(f.stores,
+      [...f.database.runtimeEvents() as unknown as RuntimeEvent[],
+        { id: "private-event", timestamp: Date.now(), type: "plan.proposed",
+          taskId: "normal", payload: { actions: [], secret: token } },
+        { id: "private-denial", timestamp: Date.now(), type: "policy.denied",
+          taskId: token, payload: { reason: token } }]);
     assert.equal(view.effects[0]?.status, "committed");
     assert.ok(view.effects[0]?.transitions.some(item => item.type === "effect.dispatch_started"));
     assert.ok(view.effects[0]?.observations.some(item => item.status === "confirmed"));
+    assert.ok(view.effects[0]?.taskEvents.some(item => item.type === "action.admitted"));
+    assert.ok(view.effects[0]?.taskEvents.some(item => item.type === "action.commit_allowed"));
+    assert.equal(view.denials[0]?.reasonCode, null);
+    assert.equal(view.denials[0]?.taskId, null);
     assert.equal(JSON.stringify(view).includes(token), false);
     assert.equal(await f.control.mayComplete("normal"), true);
     assert.equal(f.stores.budgets.getBudget("budget:normal")?.consumed.network_bytes,
@@ -158,6 +167,11 @@ test("authority, C8, budget and C10 gates block API POST", async () => {
         });
       assert.notEqual(result.status, "completed", `${gate}: ${result.reasonCode}`);
       assert.equal((await f.fixture.stats()).counts.post, 0, gate);
+      if (gate === "revoke") {
+        const view = operatorSnapshot(f.stores,
+          f.database.runtimeEvents() as unknown as RuntimeEvent[]);
+        assert.ok(view.denials.some(item => item.reasonCode === "GRANT_REVOKED"));
+      }
     } finally { await f.close(); }
   }
 });
@@ -168,7 +182,8 @@ test("lost response is UNKNOWN; restart reconciles by GET with exactly one POST"
     await f.fixture.mode("drop_after");
     const result = await create(f.control, f.binding.endpointId, "lost");
     assert.equal(result.status, "unknown", result.reasonCode);
-    assert.equal(operatorSnapshot(f.stores).effects[0]?.status, "unknown");
+    assert.equal(operatorSnapshot(f.stores,
+      f.database.runtimeEvents() as unknown as RuntimeEvent[]).effects[0]?.status, "unknown");
     assert.equal((await f.fixture.stats()).counts.post, 1);
     assert.equal(f.stores.budgets.getReservation(f.stores.effects.get(result.effectId!)!
       .budgetReservationIds[0]!)?.status, "active");
@@ -176,8 +191,10 @@ test("lost response is UNKNOWN; restart reconciles by GET with exactly one POST"
     const reopened = await f.runtime();
     try {
       await reopened.control.reconcilePendingHttpApi();
-      const view = operatorSnapshot(reopened.stores);
+      const view = operatorSnapshot(reopened.stores,
+        reopened.database.runtimeEvents() as unknown as RuntimeEvent[]);
       assert.equal(view.effects[0]?.status, "committed");
+      assert.ok(view.effects[0]?.taskEvents.some(item => item.type === "action.admitted"));
       assert.ok(view.effects[0]?.reconciliation.decisions.some(item =>
         item.outcome === "confirmed_effect"));
       assert.equal(reopened.stores.effects.get(result.effectId!)?.status, "committed");
@@ -392,6 +409,9 @@ test("natural-language API proposal reaches C11 without model network authority"
       targetId: f.binding.endpointId, action: "api.create_record",
       expectedRecord: { name: "alpha", value: 42 } });
     assert.equal(result.status, "completed", result.reason ?? "unknown failure");
+    const view = operatorSnapshot(f.stores,
+      f.database.runtimeEvents() as unknown as RuntimeEvent[]);
+    assert.ok(view.effects[0]?.taskEvents.some(item => item.type === "plan.proposed"));
     assert.equal(result.acceptanceConfirmed, true);
     assert.equal((await f.fixture.stats()).counts.post, 1);
     assert.equal(f.stores.tasks.get(result.taskId)?.status, "completed");
