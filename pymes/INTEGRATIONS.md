@@ -10,8 +10,19 @@ integración antes de incorporar conversaciones reales.
 | WhatsApp | [WhatsApp Business Platform](https://whatsappbusiness.com/developers/developer-hub/) ofrece números de prueba y webhooks. | Evaluar una cuenta empresarial autorizada; no asumir acceso a WhatsApp personal. |
 | Telegram | [Bot API](https://core.telegram.org/bots/api) recibe actualizaciones del bot mediante webhook o `getUpdates`. | Probar un bot o conexión empresarial consentida; no asumir lectura de todos los chats personales. |
 | iMessage | [Messages framework](https://developer.apple.com/documentation/messages) documenta extensiones y aplicaciones dentro de Messages; [Messages for Business](https://support.apple.com/en-gb/guide/security/sec1c603aab4/web) es un servicio distinto para conversaciones con empresas. | Tratar la bandeja iMessage personal como requisito sin conector confirmado. Estudiar Messages for Business o un proveedor autorizado si el caso lo permite. |
-| Correo y calendario | Dependen del proveedor concreto de la agencia. | Primer candidato para una integración de prueba y solo lectura tras elegir proveedor y cuenta. |
-| CRM | Depende del producto usado por la agencia. | Definir campos, identidad, permisos y API antes de actualizar expedientes. |
+| Correo | Depende del proveedor concreto de la agencia. | Elegir una cuenta de prueba autorizada antes de integrarlo. |
+| Google Calendar | [Calendar API](https://developers.google.com/workspace/calendar/api/auth) documenta OAuth y el alcance `calendar.events.readonly`. | Integrar primero citas en solo lectura, con autorización de la cuenta. La agenda actual es ficticia. |
+| Holded | [API de contactos](https://developers.holded.com/reference/list-contacts-1) y [API de CRM](https://developers.holded.com/reference/create-lead-1). | Preparar lectura de contactos y vinculación de identidades. No escribir leads o expedientes todavía. |
+
+## Elección de CRM
+
+Holded es el valor inicial porque [su oferta para autónomos en España](https://www.holded.com/es/autonomos)
+incluye CRM y gestión administrativa, y dispone de API documentada. No hemos
+encontrado una clasificación independiente reciente que confirme que sea **el
+CRM más utilizado por autónomos en España**; esa posición no se afirma aquí.
+Si la agencia ya usa un sistema especializado como
+[ebroker CRM 360](https://www.ebroker.es/funcionalidades/crm-360/), el conector
+debe adaptarse al sistema existente en lugar de crear una segunda ficha maestra.
 
 El orden de integración se decidirá con la agencia. Para el primer piloto,
 conviene empezar por una fuente que permita acceso de prueba autorizado y una

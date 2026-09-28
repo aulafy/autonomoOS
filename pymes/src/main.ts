@@ -1,5 +1,6 @@
 import { buildMorningBrief, type Channel, type WorkItem } from "./domain.js";
 import { makeDemoData } from "./fixtures.js";
+import { insuranceLines, pilotConfig } from "./config.js";
 
 const demoMorning = new Date();
 demoMorning.setHours(9, 0, 0, 0);
@@ -58,7 +59,7 @@ function visibleItems(): WorkItem[] {
   const query = $<HTMLInputElement>("search").value.trim().toLocaleLowerCase("es");
   return brief.items.filter(item =>
     (selectedChannel === "all" || item.message.channel === selectedChannel) &&
-    (!query || `${item.contact.name} ${item.message.text} ${topicNames[item.message.topic]}`
+    (!query || `${item.contact.name} ${item.message.text} ${topicNames[item.message.topic]} ${item.message.insuranceLine ? insuranceLines[item.message.insuranceLine] : ""}`
       .toLocaleLowerCase("es").includes(query)));
 }
 
@@ -78,6 +79,7 @@ function renderInbox() {
     const meta = el("div", "message-meta");
     meta.append(el("span", "channel", channelNames[item.message.channel]),
       el("span", "", `· ${topicNames[item.message.topic]}`),
+      el("span", "", `· ${item.message.insuranceLine ? insuranceLines[item.message.insuranceLine] : "Por clasificar"}`),
       el("span", "", `· ${dayTime(item.message.receivedAt)}`));
     button.append(head, meta, el("p", "", item.message.text));
     button.addEventListener("click", () => {
@@ -126,7 +128,7 @@ function renderDetail(item: WorkItem) {
 
   const crm = el("div", "crm-strip");
   for (const [label, value] of [["RELACIÓN", item.contact.relationship === "client" ? "Cliente" : "Prospecto"],
-    ["PRODUCTO", item.contact.product ?? "Por definir"],
+    ["PRODUCTO", item.contact.product ? insuranceLines[item.contact.product] : "Por definir"],
     ["RESPONSABLE", item.contact.owner]]) {
     const field = el("div");
     field.append(el("span", "", label), el("strong", "", value));
@@ -168,6 +170,7 @@ function renderAppointments() {
 
 $("today").textContent = new Date(brief.generatedAt).toLocaleDateString("es-ES", {
   weekday: "long", day: "numeric", month: "long" });
+$("pilot-context").textContent = `${pilotConfig.country} · ${pilotConfig.crm.name} por conectar · ${pilotConfig.calendar.name} por conectar`;
 $<HTMLInputElement>("search").addEventListener("input", renderInbox);
 renderCounts();
 renderTabs();

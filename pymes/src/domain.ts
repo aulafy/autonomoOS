@@ -1,3 +1,5 @@
+import type { InsuranceLine } from "./config.js";
+
 export type Channel = "whatsapp" | "telegram" | "imessage" | "email";
 export type Topic = "incident" | "quote" | "renewal" | "appointment" | "service";
 export type Priority = "urgent" | "high" | "normal";
@@ -7,7 +9,7 @@ export interface Contact {
   name: string;
   relationship: "client" | "prospect";
   owner: string;
-  product: string | null;
+  product: InsuranceLine | null;
 }
 
 export interface IncomingMessage {
@@ -18,6 +20,7 @@ export interface IncomingMessage {
   receivedAt: string;
   text: string;
   topic: Topic;
+  insuranceLine?: InsuranceLine;
   classificationSource: "demo_fixture" | "human" | "model";
   dueAt?: string;
 }
@@ -66,7 +69,14 @@ function priorityFor(message: IncomingMessage, now: Date): { priority: Priority;
   return { priority: "normal", reason: "Pendiente de preparación y revisión" };
 }
 
-function preparation(topic: Topic, firstName: string): Pick<WorkItem,
+const quoteInformation: Record<InsuranceLine, string[]> = {
+  auto: ["Vehículo y uso", "Conductores habituales", "Coberturas deseadas", "Fecha de inicio"],
+  life: ["Capital y finalidad", "Personas a asegurar", "Fecha de inicio", "Cuestionario de la aseguradora, por canal autorizado"],
+  home: ["Vivienda y uso", "Capitales a asegurar", "Coberturas deseadas", "Fecha de inicio"],
+  selfEmployedLiability: ["Actividad profesional", "Ámbito de cobertura", "Límites deseados", "Fecha de inicio"]
+};
+
+function preparation(topic: Topic, firstName: string, line?: InsuranceLine): Pick<WorkItem,
   "nextAction" | "draft" | "missingInformation"> {
   switch (topic) {
     case "incident": return {
@@ -76,7 +86,8 @@ function preparation(topic: Topic, firstName: string): Pick<WorkItem,
     case "quote": return {
       nextAction: "Preparar recogida de datos para propuesta",
       draft: `Hola ${firstName}, gracias por contactar. Para preparar una propuesta adecuada necesito confirmar el riesgo, las coberturas que buscas y los datos necesarios. Después revisaré las opciones contigo.`,
-      missingInformation: ["Datos del riesgo", "Coberturas deseadas", "Fecha de inicio"] };
+      missingInformation: line ? quoteInformation[line] :
+        ["Datos del riesgo", "Coberturas deseadas", "Fecha de inicio"] };
     case "renewal": return {
       nextAction: "Revisar condiciones y preparar llamada",
       draft: `Hola ${firstName}, he visto tu consulta sobre la renovación. Revisaré las condiciones vigentes y las alternativas disponibles antes de darte una respuesta concreta.`,
@@ -114,7 +125,7 @@ export function buildMorningBrief(input: { contacts: readonly Contact[];
     const firstName = contact.name.split(" ")[0] ?? contact.name;
     const priority = priorityFor(message, now);
     items.push({ id: message.id, message, contact, ...priority,
-      ...preparation(message.topic, firstName),
+      ...preparation(message.topic, firstName, message.insuranceLine),
       reviewRequired: true, executionStatus: "draft_only" });
   }
   items.sort((a, b) => priorityWeight[a.priority] - priorityWeight[b.priority] ||

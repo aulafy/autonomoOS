@@ -6,6 +6,10 @@ dispersos, incidencias, solicitudes de propuesta, renovaciones, citas y cambios
 en expedientes. El primer prototipo convierte un conjunto ficticio de mensajes
 en una bandeja priorizada, borradores y una agenda de solo lectura.
 
+El piloto está configurado para España y cubre coche, vida, hogar y
+responsabilidad civil para autónomos. Holded es el CRM de referencia y Google
+Calendar el calendario previsto. Ambos siguen **sin conexión real**.
+
 ## Ver el prototipo
 
 Desde la raíz del repositorio:
@@ -38,7 +42,7 @@ iMessage, correo, CRM y calendario aparecen como fuentes y destinos previstos;
    incierto; reconciliar antes de repetir una escritura.
 
 La [arquitectura de integración](ARCHITECTURE.md) conecta este flujo con los
-controles C1–C12 de Agent World OS. El primer piloto real necesitará definir
-país, ramos de seguro, CRM, calendario y canales accesibles mediante conectores
-autorizados. Véase también el [estado de los canales](INTEGRATIONS.md), en
+controles C1–C12 de Agent World OS. El primer piloto real necesitará validar
+las cuentas y canales accesibles mediante conectores autorizados. Véase
+también el [estado de los canales](INTEGRATIONS.md), en
 especial la diferencia entre iMessage personal y Messages for Business.
