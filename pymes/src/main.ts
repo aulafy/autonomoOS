@@ -247,6 +247,18 @@ function renderDetail(item: WorkItem) {
             block.appendChild(outcome);
           }
         }
+        if (effect.status === "failed") {
+          const retry = el("button", "review-button", "Reintentar operación");
+          retry.type = "button";
+          retry.addEventListener("click", async () => {
+            const reason = window.prompt("Motivo obligatorio del reintento:", "");
+            if (!reason?.trim()) return;
+            retry.disabled = true;
+            try { await remoteWorkspaceClient!.retryEffect(effect.id, reason); await checkRemoteWorkspace(); renderDetail(item); }
+            catch (error) { retry.disabled = false; retry.textContent = error instanceof Error ? error.message : "No se pudo reintentar"; }
+          });
+          block.appendChild(retry);
+        }
       }
       detail.insertBefore(block, source);
     }).catch(() => undefined);
