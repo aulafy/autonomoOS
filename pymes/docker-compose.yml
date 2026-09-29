@@ -1,0 +1,23 @@
+services:
+  pymes-workspace:
+    build:
+      context: ..
+      dockerfile: pymes/Dockerfile
+    ports:
+      - "8790:8790"
+    environment:
+      PYMES_API_BOOTSTRAP_TOKEN: ${PYMES_API_BOOTSTRAP_TOKEN:?set a token of at least 16 characters}
+      PYMES_API_BOOTSTRAP_TENANT: ${PYMES_API_BOOTSTRAP_TENANT:-demo-agency}
+      PYMES_API_BOOTSTRAP_USER: ${PYMES_API_BOOTSTRAP_USER:-demo-owner}
+      PYMES_OPENCLAW_INGRESS_TOKEN: ${PYMES_OPENCLAW_INGRESS_TOKEN:-}
+    volumes:
+      - pymes-data:/data
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8790/healthz').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  pymes-data:
