@@ -37,9 +37,11 @@ const server = createServer(async (request, nodeResponse) => {
   });
   request.on("end", async () => {
     if (bodyTooLarge || bytes > 1_048_576) {
+      const requestId = request.headers["x-request-id"] ?? crypto.randomUUID();
       nodeResponse.statusCode = 413;
       nodeResponse.setHeader("content-type", "application/json; charset=utf-8");
       nodeResponse.setHeader("cache-control", "no-store");
+      nodeResponse.setHeader("x-request-id", Array.isArray(requestId) ? requestId[0] : requestId);
       nodeResponse.end(JSON.stringify({ error: "BODY_TOO_LARGE" }));
       return;
     }
