@@ -25,6 +25,9 @@ export interface RemoteInboxRecord {
 }
 export interface RemoteCaseAudit { id: string; caseId: string; from: string; to: string; actorId: string; at: string; version: number; }
 export interface RemoteEffect { id: string; caseId: string; kind: string; status: string; requestedBy: string; requestedAt: string; retryCount?: number; payload: Record<string, unknown>; executionNote?: string; executedBy?: string; executedAt?: string; }
+export class WorkspaceConflictError extends Error {
+  constructor(readonly currentVersion: number) { super(`CASE_VERSION_CONFLICT_CURRENT_${currentVersion}`); }
+}
 
 function validConfig(config: WorkspaceClientConfig): void {
   if (!config.baseUrl || !/^https?:\/\//.test(config.baseUrl) ||
@@ -42,8 +45,13 @@ export class WorkspaceClient {
     });
     const body: unknown = await response.json();
     if (!body || typeof body !== "object" || Array.isArray(body)) throw new Error("INVALID_WORKSPACE_RESPONSE");
-    if (!response.ok) throw new Error(typeof (body as Record<string, unknown>).error === "string"
-      ? (body as Record<string, string>).error : "WORKSPACE_REQUEST_FAILED");
+    if (!response.ok) {
+      const record = body as Record<string, unknown>;
+      if (response.status === 409 && record.error === "CASE_VERSION_CONFLICT" && typeof record.currentVersion === "number") {
+        throw new WorkspaceConflictError(record.currentVersion);
+      }
+      throw new Error(typeof record.error === "string" ? record.error : "WORKSPACE_REQUEST_FAILED");
+    }
     return body as Record<string, unknown>;
   }
 

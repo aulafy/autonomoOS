@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { WorkspaceApi } from "../src/workspace-api.js";
 import { handlePymesRequest } from "../src/api-server.js";
-import { WorkspaceClient } from "../src/workspace-client.js";
+import { WorkspaceClient, WorkspaceConflictError } from "../src/workspace-client.js";
 
 function client() {
   const api = new WorkspaceApi();
@@ -45,6 +45,16 @@ test("workspace client performs an authenticated case transition", async () => {
   const value = new WorkspaceClient({ baseUrl: "http://workspace.local", tenantId: "agency-1", token: "owner-token-123456" }, fetcher);
   await value.transition("case-client", "executing", "2026-09-29T15:00:00Z", 0);
   assert.equal((await value.inbox())[0]?.state, "executing");
+});
+
+test("workspace client exposes current version on transition conflict", async () => {
+  const api = new WorkspaceApi();
+  api.addSession("owner-token-123456", { userId: "owner", tenantId: "agency-1", role: "owner" });
+  api.addInbox({ id: "case-conflict", tenantId: "agency-1", state: "approved", summary: "Caso", version: 3 });
+  const fetcher: typeof fetch = (input, init) => handlePymesRequest(api, new Request(String(input), init));
+  const value = new WorkspaceClient({ baseUrl: "http://workspace.local", tenantId: "agency-1", token: "owner-token-123456" }, fetcher);
+  await assert.rejects(() => value.transition("case-conflict", "executing", "2026-09-29T15:00:00Z", 2),
+    (error: unknown) => error instanceof WorkspaceConflictError && error.currentVersion === 3);
 });
 
 test("workspace client retries a failed effect through the API", async () => {
