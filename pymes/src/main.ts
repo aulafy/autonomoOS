@@ -230,6 +230,20 @@ function renderDetail(item: WorkItem) {
           });
           block.appendChild(confirm);
         }
+        if (effect.status === "confirmed") {
+          for (const result of ["succeeded", "failed"] as const) {
+            const outcome = el("button", "review-button", result === "succeeded" ? "Registrar realizada" : "Registrar fallo");
+            outcome.type = "button";
+            outcome.addEventListener("click", async () => {
+              const note = window.prompt("Nota obligatoria de ejecución:", "");
+              if (!note?.trim()) return;
+              outcome.disabled = true;
+              try { await remoteWorkspaceClient!.reportEffectResult(effect.id, result, note); await checkRemoteWorkspace(); renderDetail(item); }
+              catch (error) { outcome.disabled = false; outcome.textContent = error instanceof Error ? error.message : "No se pudo registrar"; }
+            });
+            block.appendChild(outcome);
+          }
+        }
       }
       detail.insertBefore(block, source);
     }).catch(() => undefined);

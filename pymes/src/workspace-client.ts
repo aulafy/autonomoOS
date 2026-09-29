@@ -86,4 +86,10 @@ export class WorkspaceClient {
     });
     return body as unknown as RemoteEffect;
   }
+  async reportEffectResult(effectId: string, result: "succeeded" | "failed", note: string): Promise<RemoteEffect> {
+    const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/effects/${encodeURIComponent(effectId)}/result`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ result, note, executedAt: new Date().toISOString() })
+    });
+    return body as unknown as RemoteEffect;
+  }
 }
