@@ -20,6 +20,19 @@ export interface OpenClawIngressPolicy {
   consentedConversationIds: ReadonlySet<string>;
 }
 
+export interface OpenClawEnterpriseEnvelope {
+  tenantId: string;
+  agentId: string;
+  resourceId: string;
+  inbound: OpenClawInboundEvent;
+}
+
+export interface OpenClawEnterprisePolicy extends OpenClawIngressPolicy {
+  tenantId: string;
+  allowedAgentIds: ReadonlySet<string>;
+  allowedResourceIds: ReadonlySet<string>;
+}
+
 export type OpenClawIngressResult =
   | { accepted: true; message: IncomingMessage }
   | { accepted: false; reason: "CHANNEL_NOT_ALLOWED" | "SENDER_NOT_PAIRED" |
@@ -63,4 +76,19 @@ export function ingestOpenClawEvent(event: OpenClawInboundEvent,
     topic: "unknown",
     classificationSource: "connector"
   } };
+}
+
+/** Checks enterprise scope before the ordinary channel boundary. */
+export function ingestOpenClawEnterpriseEvent(
+  envelope: OpenClawEnterpriseEnvelope,
+  policy: OpenClawEnterprisePolicy
+): OpenClawIngressResult {
+  if (!nonempty(envelope.tenantId) || !nonempty(envelope.agentId) ||
+    !nonempty(envelope.resourceId)) return { accepted: false, reason: "INVALID_EVENT" };
+  if (envelope.tenantId !== policy.tenantId ||
+    !policy.allowedAgentIds.has(envelope.agentId) ||
+    !policy.allowedResourceIds.has(envelope.resourceId)) {
+    return { accepted: false, reason: "INVALID_EVENT" };
+  }
+  return ingestOpenClawEvent(envelope.inbound, policy);
 }

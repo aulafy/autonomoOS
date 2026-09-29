@@ -14,16 +14,16 @@ integración antes de incorporar conversaciones reales.
 | Google Calendar | [Calendar API](https://developers.google.com/workspace/calendar/api/auth) documenta OAuth y el alcance `calendar.events.readonly`. | Integrar primero citas en solo lectura, con autorización de la cuenta. La agenda actual es ficticia. |
 | Holded | [API de contactos](https://developers.holded.com/reference/list-contacts-1) y [API de CRM](https://developers.holded.com/reference/create-lead-1). | Preparar lectura de contactos y vinculación de identidades. No escribir leads o expedientes todavía. |
 
-## OpenClaw como gateway opcional
+## OpenClaw Enterprise como gateway opcional
 
-OpenClaw puede actuar como transporte local para reunir canales y eventos. Su
-repositorio describe un Gateway que conecta sesiones, herramientas y canales;
-también advierte que los mensajes entrantes son no confiables y que las
-herramientas pueden ejecutar acciones en el host. En PYMES solo se reutiliza el
-patrón de gateway y adaptadores, no su autoridad operativa. `src/openclaw-gateway.ts`
-exige canal permitido, remitente emparejado y consentimiento explícito; después
-crea un mensaje neutral pendiente de identidad y clasificación. No se debe
-conectar un canal real hasta revisar permisos, aislamiento y retención.
+OpenClaw Enterprise puede ser el control plane para desplegar y administrar
+agentes. Su repositorio separa controller, contratos, ciclo de vida de recursos,
+IAM y auditoría. En PYMES se reutilizan esos límites como transporte y control
+de infraestructura, no como autoridad sobre pólizas. `src/openclaw-gateway.ts`
+exige tenant, agente, recurso, canal permitido, remitente emparejado y
+consentimiento; después crea un mensaje neutral pendiente de identidad y
+clasificación. No se debe conectar un canal real hasta revisar permisos,
+aislamiento, retención y el contrato exacto de la instalación Enterprise.
 
 ## Elección de CRM
 

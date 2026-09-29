@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { ingestOpenClawEvent, type OpenClawInboundEvent } from "../src/openclaw-gateway.js";
+import { ingestOpenClawEnterpriseEvent, ingestOpenClawEvent,
+  type OpenClawInboundEvent } from "../src/openclaw-gateway.js";
 
 const event: OpenClawInboundEvent = {
   eventId: "evt-1", externalMessageId: "wa-1", channel: "whatsapp",
@@ -40,4 +41,15 @@ test("consentimiento y canal son controles independientes", () => {
 test("evento malformado no produce una tarea parcial", () => {
   const result = ingestOpenClawEvent({ ...event, text: "", receivedAt: "not-a-date" }, policy);
   assert.deepEqual(result, { accepted: false, reason: "INVALID_EVENT" });
+});
+
+test("la envolvente Enterprise impone tenant, agente y recurso", () => {
+  const enterprisePolicy = { ...policy, tenantId: "agency-1",
+    allowedAgentIds: new Set(["agent-1"]), allowedResourceIds: new Set(["resource-inbox-1"]) };
+  const accepted = ingestOpenClawEnterpriseEvent({ tenantId: "agency-1", agentId: "agent-1",
+    resourceId: "resource-inbox-1", inbound: event }, enterprisePolicy);
+  assert.equal(accepted.accepted, true);
+  assert.deepEqual(ingestOpenClawEnterpriseEvent({ tenantId: "agency-2", agentId: "agent-1",
+    resourceId: "resource-inbox-1", inbound: event }, enterprisePolicy),
+    { accepted: false, reason: "INVALID_EVENT" });
 });
