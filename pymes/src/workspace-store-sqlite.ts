@@ -1,7 +1,7 @@
 import { DatabaseSync } from "node:sqlite";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
-import type { ApprovalRecord, WorkspaceInboxRecord, WorkspacePrincipal,
+import type { ApprovalRecord, CaseAuditRecord, WorkspaceInboxRecord, WorkspacePrincipal,
   WorkspaceRepository } from "./workspace-api.js";
 
 /** Small durable repository. The API owns policy; this class owns persistence only. */
@@ -25,6 +25,11 @@ export class SqliteWorkspaceRepository implements WorkspaceRepository {
         id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL, resource_id TEXT NOT NULL,
         operation TEXT NOT NULL, approved_by TEXT NOT NULL, approved_at TEXT NOT NULL,
         reason TEXT NOT NULL, draft_hash TEXT NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS workspace_case_audit (
+        id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL, case_id TEXT NOT NULL,
+        from_state TEXT NOT NULL, to_state TEXT NOT NULL, operation TEXT NOT NULL,
+        actor_id TEXT NOT NULL, at TEXT NOT NULL, version INTEGER NOT NULL
       );`);
     // Keep databases created by the previous inbox schema readable.
     try { this.db.exec("ALTER TABLE workspace_inbox ADD COLUMN version INTEGER NOT NULL DEFAULT 0"); } catch {}
@@ -53,6 +58,20 @@ export class SqliteWorkspaceRepository implements WorkspaceRepository {
       record.state, record.summary, record.version ?? 0, record.updatedAt ?? null);
   }
   updateInbox(record: WorkspaceInboxRecord): void { this.appendInbox(record); }
+  appendCaseAudit(record: CaseAuditRecord): void {
+    this.db.prepare(`INSERT INTO workspace_case_audit
+      (id, tenant_id, case_id, from_state, to_state, operation, actor_id, at, version)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(record.id, record.tenantId, record.caseId,
+      record.from, record.to, record.operation, record.actorId, record.at, record.version);
+  }
+  listCaseAudit(tenantId: string, caseId: string): CaseAuditRecord[] {
+    const rows = this.db.prepare(`SELECT id, tenant_id, case_id, from_state, to_state,
+      operation, actor_id, at, version FROM workspace_case_audit
+      WHERE tenant_id = ? AND case_id = ? ORDER BY version`).all(tenantId, caseId) as Array<any>;
+    return rows.map(row => ({ id: row.id, tenantId: row.tenant_id, caseId: row.case_id,
+      from: row.from_state, to: row.to_state, operation: row.operation,
+      actorId: row.actor_id, at: row.at, version: row.version }));
+  }
   appendApproval(approval: ApprovalRecord): void {
     this.db.prepare(`INSERT INTO workspace_approvals
       (id, tenant_id, resource_id, operation, approved_by, approved_at, reason, draft_hash)

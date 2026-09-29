@@ -50,3 +50,16 @@ test("reviewer can read approvals but tenant remains isolated", () => {
   assert.equal(response.status, 200);
   assert.deepEqual(response.body.approvals, []);
 });
+
+test("case transition is authenticated and leaves an audit trail", () => {
+  const value = api();
+  const response = value.handle({ method: "POST", path: "/v1/workspaces/agency-1/cases/msg-1/transition",
+    authorization: "Bearer agent-token-12345", body: { to: "approved", at: "2026-09-29T12:00:00Z" } });
+  assert.equal(response.status, 403);
+  const allowed = value.handle({ method: "POST", path: "/v1/workspaces/agency-1/cases/msg-1/transition",
+    authorization: "Bearer reviewer-token-1234", body: { to: "approved", at: "2026-09-29T12:00:00Z" } });
+  assert.equal(allowed.status, 200);
+  const audit = value.handle({ method: "GET", path: "/v1/workspaces/agency-1/cases/msg-1/audit",
+    authorization: "Bearer reviewer-token-1234" });
+  assert.equal((audit.body.audit as Array<unknown>).length, 1);
+});

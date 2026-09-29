@@ -13,6 +13,10 @@ export interface WorkspaceInboxRecord {
   version?: number;
   updatedAt?: string;
 }
+export interface CaseAuditRecord {
+  id: string; tenantId: string; caseId: string; from: CaseState; to: CaseState;
+  operation: string; actorId: string; at: string; version: number;
+}
 
 export interface WorkspaceApiRequest {
   method: "GET" | "POST";
@@ -32,6 +36,8 @@ export interface WorkspaceRepository {
   listInbox(tenantId: string): WorkspaceInboxRecord[];
   appendInbox(record: WorkspaceInboxRecord): void;
   updateInbox(record: WorkspaceInboxRecord): void;
+  appendCaseAudit(record: CaseAuditRecord): void;
+  listCaseAudit(tenantId: string, caseId: string): CaseAuditRecord[];
   appendApproval(approval: ApprovalRecord): void;
   listApprovals(tenantId: string): ApprovalRecord[];
 }
@@ -55,6 +61,11 @@ export class InMemoryWorkspaceRepository implements WorkspaceRepository {
     this.inbox.set(record.tenantId, [...records, structuredClone(record)]);
   }
   updateInbox(record: WorkspaceInboxRecord): void { this.appendInbox(record); }
+  private readonly audits: CaseAuditRecord[] = [];
+  appendCaseAudit(record: CaseAuditRecord): void { this.audits.push(structuredClone(record)); }
+  listCaseAudit(tenantId: string, caseId: string): CaseAuditRecord[] {
+    return this.audits.filter(value => value.tenantId === tenantId && value.caseId === caseId).map(value => structuredClone(value));
+  }
   appendApproval(approval: ApprovalRecord): void { this.approvals.push(structuredClone(approval)); }
   listApprovals(tenantId: string): ApprovalRecord[] {
     return this.approvals.filter(value => value.tenantId === tenantId)
@@ -156,11 +167,19 @@ export class WorkspaceApi {
           version: item.version ?? 0, updatedAt: item.updatedAt ?? new Date(0).toISOString() },
           to: body.to as CaseState, principal, at: body.at });
         this.repository.updateInbox({ ...item, state: next.state, version: next.version, updatedAt: next.updatedAt });
+        this.repository.appendCaseAudit({ id: `audit-${tenantId}-${item.id}-${next.version}`, tenantId,
+          caseId: item.id, from: item.state, to: next.state, operation: "transition", actorId: principal.userId,
+          at: next.updatedAt, version: next.version });
         return { status: 200, body: next as unknown as Record<string, unknown> };
       } catch (error) {
         const message = error instanceof Error ? error.message : "INVALID_CASE_TRANSITION";
         return { status: message === "WORKSPACE_PERMISSION_DENIED" ? 403 : 400, body: { error: message } };
       }
+    }
+    if (request.method === "GET" && parts[3] === "cases" && parts[5] === "audit" && parts.length === 6) {
+      try { requirePermission(principal, "readInbox", { tenantId, id: parts[4] }); }
+      catch { return { status: 403, body: { error: "WORKSPACE_PERMISSION_DENIED" } }; }
+      return { status: 200, body: { tenantId, caseId: parts[4], audit: this.repository.listCaseAudit(tenantId, parts[4]) } };
     }
     if (request.method === "POST" && parts[3] === "approvals" && parts.length === 4) {
       const body = jsonRecord(request.body);
