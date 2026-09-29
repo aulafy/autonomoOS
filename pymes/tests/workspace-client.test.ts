@@ -23,6 +23,19 @@ test("workspace client uses the API contract for approvals", async () => {
   assert.equal((await value.inbox())[0]?.id, "msg-remote");
 });
 
+test("workspace client reads an individual effect", async () => {
+  const api = new WorkspaceApi();
+  api.addSession("owner-token-123456", { userId: "owner", tenantId: "agency-1", role: "owner" });
+  api.handle({ method: "POST", path: "/v1/workspaces/agency-1/effects", authorization: "Bearer owner-token-123456",
+    body: { id: "effect-client", caseId: "case-1", kind: "crm_task", payload: { title: "Llamar" },
+      requestedAt: "2026-09-29T14:00:00Z", draftHash: "sha256:test" } });
+  const fetcher: typeof fetch = (input, init) => handlePymesRequest(api, new Request(String(input), init));
+  const value = new WorkspaceClient({ baseUrl: "http://workspace.local", tenantId: "agency-1", token: "owner-token-123456" }, fetcher);
+  const effect = await value.effect("effect-client");
+  assert.equal(effect.kind, "crm_task");
+  assert.equal(effect.status, "pending");
+});
+
 test("workspace client rejects invalid configuration", () => {
   assert.throws(() => new WorkspaceClient({ baseUrl: "", tenantId: "a", token: "t" }),
     /INVALID_WORKSPACE_CLIENT_CONFIG/);
