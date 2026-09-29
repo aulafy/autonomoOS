@@ -19,7 +19,8 @@ function response(status: number, body: Record<string, unknown>, requestId = new
 
 /** Web-standard HTTP adapter; usable by Node, tests, or a future edge runtime. */
 export async function handlePymesRequest(api: WorkspaceApi, request: Request): Promise<Response> {
-  const requestId = request.headers.get("x-request-id")?.trim() || newRequestId();
+  const suppliedRequestId = request.headers.get("x-request-id")?.trim();
+  const requestId = suppliedRequestId && suppliedRequestId.length <= 200 ? suppliedRequestId : newRequestId();
   const pathname = new URL(request.url).pathname;
   const origin = request.headers.get("origin") ?? undefined;
   if (request.method === "OPTIONS") return response(200, { status: "ok" }, requestId, origin);
