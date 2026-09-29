@@ -2,6 +2,10 @@
 
 La API es multi-tenant y requiere `Authorization: Bearer <token>` en todas las rutas de workspace. Las operaciones externas nunca se ejecutan al crearse: pasan por confirmación y resultado.
 
+La interfaz local puede llamar al API desde `http://127.0.0.1:5174` o
+`http://localhost:5174`; el adaptador responde al preflight `OPTIONS` y limita
+los orígenes a esos dos valores.
+
 ## Salud
 
 `GET /healthz` devuelve `{ "status": "ok", "service": "pymes-workspace", "version": "0.1.0" }`.
