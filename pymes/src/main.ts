@@ -25,6 +25,7 @@ const quoteChecks = new Map<string, { line: InsuranceLine; checked: Set<string>;
   externalStepConfirmed: boolean }>();
 const quoteOffers = workspaceStore.loadOffers();
 let remoteWorkspaceClient: WorkspaceClient | null = null;
+let remoteInbox = new Map<string, { state: string; version?: number }>();
 let selectedChannel: Channel | "all" = "all";
 let selectedId = brief.items[0]?.id ?? null;
 
@@ -39,6 +40,7 @@ async function checkRemoteWorkspace(): Promise<void> {
     const client = new WorkspaceClient({ baseUrl, tenantId, token });
     const [approvals, inbox] = await Promise.all([client.approvals(), client.inbox()]);
     remoteWorkspaceClient = client;
+    remoteInbox = new Map(inbox.map(item => [item.id, item]));
     status.className = "workspace-pill connected";
     status.textContent = `● WORKSPACE CONECTADO · ${inbox.length} casos · ${approvals.length} aprobaciones`;
     status.title = "Los casos y aprobaciones se leen del workspace remoto; los fixtures locales no se mezclan automáticamente.";
@@ -197,6 +199,18 @@ function renderDetail(item: WorkItem) {
       trace.replaceChildren(el("strong", "", `Trazabilidad · ${entries.length} transiciones`));
       if (!entries.length) trace.appendChild(el("p", "", "Todavía no hay cambios de estado registrados."));
       for (const entry of entries) trace.appendChild(el("p", "", `v${entry.version} · ${entry.from} → ${entry.to} · ${entry.actorId} · ${dayTime(entry.at)}`));
+      const remote = remoteInbox.get(item.id);
+      const next = remote?.state === "pending_review" ? "approved" : remote?.state === "approved" ? "executing" : null;
+      if (next) {
+        const action = el("button", "review-button", next === "approved" ? "Aprobar caso" : "Iniciar ejecución");
+        action.type = "button";
+        action.addEventListener("click", async () => {
+          action.disabled = true;
+          try { await remoteWorkspaceClient!.transition(item.id, next); await checkRemoteWorkspace(); renderDetail(item); }
+          catch (error) { action.disabled = false; action.textContent = error instanceof Error ? error.message : "No se pudo avanzar"; }
+        });
+        trace.appendChild(action);
+      }
     }).catch(() => { trace.textContent = "Trazabilidad no disponible para este caso."; });
   }
 
