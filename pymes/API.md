@@ -12,7 +12,18 @@ si no, el API genera un UUID. Las respuestas usan `Cache-Control: no-store`,
 
 ## Salud
 
-`GET /healthz` y `GET /readyz` devuelven `{ "status": "ok", "service": "pymes-workspace", "version": "0.1.0" }`.
+`GET /healthz` confirma que el proceso está vivo. `GET /readyz` comprueba
+además que el repositorio responde; devuelve `503` con `status: "not_ready"`
+si el almacenamiento no está disponible.
+
+## Ingress OpenClaw Enterprise
+
+`POST /v1/workspaces/:tenant/ingress/openclaw` usa
+`X-PYMES-Ingress-Token` y aplica la política de tenant, agente, recurso,
+canal, remitente emparejado y consentimiento. Un evento aceptado devuelve
+`201`; un evento ya procesado devuelve `409 DUPLICATE_EVENT`. El ingress
+siempre crea un caso neutral en estado `received` y no envía respuestas por sí
+mismo.
 
 ## Bandeja y trazabilidad
 
