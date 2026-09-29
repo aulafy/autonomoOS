@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 5174 --strictPort",
+    "api": "tsx src/server.ts",
     "pilot:read": "tsx src/pilot-read.ts",
     "pilot:classify": "tsx src/pilot-classify.ts",
     "pilot:evaluate": "tsx src/evaluate-classifier.ts",
