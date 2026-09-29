@@ -83,6 +83,19 @@ docker compose start pymes-workspace
 
 Conserva el archivo generado fuera del host de ejecución y prueba una
 restauración periódicamente.
+
+Restauración de un backup:
+
+```bash
+docker compose stop pymes-workspace
+docker run --rm -v pymes-data:/data -v "$PWD/backups:/backup" \
+  alpine sh -c 'rm -rf /data/* && tar xzf /backup/pymes-YYYYMMDD-HHMMSS.tgz -C /data'
+docker compose start pymes-workspace
+curl --fail http://127.0.0.1:8790/readyz
+```
+
+Realiza la restauración primero en un entorno de staging y conserva el
+backup anterior hasta validar la recuperación.
 - Configurar un supervisor que envíe `SIGTERM` para el apagado ordenado.
 - Monitorizar `/healthz` y revisar los efectos `failed` antes de reintentar.
 - El volumen Docker usa `/data/pymes-workspace.db`; conservarlo junto con sus
