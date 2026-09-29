@@ -32,6 +32,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Validate repository diff
+        run: git diff --check
       - run: npm run check --workspace=@agent-world/pymes
       - name: Validate operational scripts
         run: |
