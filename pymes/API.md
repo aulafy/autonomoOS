@@ -62,6 +62,8 @@ POST /v1/workspaces/:tenant/effects/:effectId/retry
 
 La respuesta incluye `retryCount`, que empieza en `0` y aumenta en cada
 reintento gobernado. La nota anterior se conserva y se añade el motivo nuevo.
+Se permiten como máximo 20 reintentos; después la API devuelve
+`EFFECT_RETRY_LIMIT_REACHED` y exige revisión operativa.
 
 Los resultados solo se aceptan después de confirmar el efecto. Cada ruta comprueba tenant, rol y estado actual.
 

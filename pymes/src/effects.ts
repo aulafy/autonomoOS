@@ -1,6 +1,7 @@
 import { requirePermission, type WorkspacePrincipal } from "./workspace-policy.js";
 
 export type EffectKind = "call" | "calendar" | "message" | "crm_task";
+export const MAX_EFFECT_RETRIES = 20;
 const effectKinds: readonly EffectKind[] = ["call", "calendar", "message", "crm_task"];
 export interface PendingEffect { id: string; tenantId: string; caseId: string; kind: EffectKind; payload: Record<string, unknown>; status: "pending" | "confirmed" | "succeeded" | "failed"; requestedBy: string; requestedAt: string; retryCount: number; confirmedBy?: string; confirmedAt?: string; executedBy?: string; executedAt?: string; executionNote?: string; draftHash: string; }
 export function createPendingEffect(input: { id: string; tenantId: string; caseId: string; kind: EffectKind; payload: Record<string, unknown>; principal: WorkspacePrincipal; requestedAt: string; draftHash: string }): PendingEffect {

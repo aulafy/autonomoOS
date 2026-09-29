@@ -2,7 +2,7 @@ import { createApproval, requirePermission, type ApprovalRecord,
   type WorkspacePrincipal, type WorkspaceRole } from "./workspace-policy.js";
 import { ingestOpenClawIntoWorkspace } from "./workspace-ingress.js";
 import { transitionCase, type CaseState } from "./case-lifecycle.js";
-import { createPendingEffect, type EffectKind, type PendingEffect } from "./effects.js";
+import { createPendingEffect, MAX_EFFECT_RETRIES, type EffectKind, type PendingEffect } from "./effects.js";
 import type { OpenClawEnterpriseEnvelope, OpenClawEnterprisePolicy } from "./openclaw-gateway.js";
 export type { ApprovalRecord, WorkspacePrincipal } from "./workspace-policy.js";
 
@@ -257,7 +257,7 @@ export class WorkspaceApi {
       if (!effect) return { status: 404, body: { error: "EFFECT_NOT_FOUND" } };
       try {
         requirePermission(principal, "executeEffect", { tenantId, id: effect.caseId });
-        if (effect.status !== "failed" || Number.isNaN(Date.parse(body.requestedAt)) || body.reason.trim().length < 3 || body.reason.trim().length > 2000) throw new Error("EFFECT_NOT_RETRYABLE");
+        if (effect.status !== "failed" || effect.retryCount >= MAX_EFFECT_RETRIES || Number.isNaN(Date.parse(body.requestedAt)) || body.reason.trim().length < 3 || body.reason.trim().length > 2000) throw new Error(effect.retryCount >= MAX_EFFECT_RETRIES ? "EFFECT_RETRY_LIMIT_REACHED" : "EFFECT_NOT_RETRYABLE");
         const retry = { ...effect, status: "pending" as const, retryCount: effect.retryCount + 1, requestedBy: principal.userId, requestedAt: body.requestedAt,
           executionNote: `${effect.executionNote ? `${effect.executionNote}\n` : ""}Reintento: ${body.reason.trim()}` };
         this.repository.updateEffect(retry);

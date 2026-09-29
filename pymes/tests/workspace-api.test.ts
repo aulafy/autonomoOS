@@ -95,6 +95,22 @@ test("effects require execute permission and explicit confirmation", () => {
   assert.equal((retry.body as { status: string }).status, "pending");
   assert.equal((retry.body as { retryCount: number }).retryCount, 1);
   assert.match((retry.body as { executionNote: string }).executionNote, /No se pudo contactar.*Cliente disponible/s);
+  for (let attempt = 2; attempt <= 20; attempt++) {
+    assert.equal(value.handle({ method: "POST", path: "/v1/workspaces/agency-1/effects/effect-1/confirm",
+      authorization: "Bearer owner-token-12345", body: { confirm: true, confirmedAt: `2026-09-29T12:${String(attempt).padStart(2, "0")}:00Z` } }).status, 200);
+    assert.equal(value.handle({ method: "POST", path: "/v1/workspaces/agency-1/effects/effect-1/result",
+      authorization: "Bearer owner-token-12345", body: { result: "failed", executedAt: `2026-09-29T13:${String(attempt).padStart(2, "0")}:00Z`, note: "Sin respuesta" } }).status, 200);
+    assert.equal(value.handle({ method: "POST", path: "/v1/workspaces/agency-1/effects/effect-1/retry",
+      authorization: "Bearer owner-token-12345", body: { requestedAt: `2026-09-29T14:${String(attempt).padStart(2, "0")}:00Z`, reason: `Reintento ${attempt}` } }).status, 200);
+  }
+  assert.equal(value.handle({ method: "POST", path: "/v1/workspaces/agency-1/effects/effect-1/confirm",
+    authorization: "Bearer owner-token-12345", body: { confirm: true, confirmedAt: "2026-09-29T15:00:00Z" } }).status, 200);
+  assert.equal(value.handle({ method: "POST", path: "/v1/workspaces/agency-1/effects/effect-1/result",
+    authorization: "Bearer owner-token-12345", body: { result: "failed", executedAt: "2026-09-29T15:01:00Z", note: "Sin respuesta" } }).status, 200);
+  const limit = value.handle({ method: "POST", path: "/v1/workspaces/agency-1/effects/effect-1/retry",
+    authorization: "Bearer owner-token-12345", body: { requestedAt: "2026-09-29T15:02:00Z", reason: "Límite" } });
+  assert.equal(limit.status, 400);
+  assert.equal((limit.body as { error: string }).error, "EFFECT_RETRY_LIMIT_REACHED");
   assert.equal(value.handle({ method: "GET", path: "/v1/workspaces/agency-2/effects",
     authorization: "Bearer other-token-1234" }).status, 200);
   assert.deepEqual((value.handle({ method: "GET", path: "/v1/workspaces/agency-2/effects",
