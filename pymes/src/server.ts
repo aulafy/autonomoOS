@@ -90,7 +90,14 @@ server.listen(port, host, () => console.log(`PYMES API listening on http://${hos
 
 function shutdown(signal: string): void {
   console.log(`PYMES API received ${signal}; shutting down`);
+  const forceExit = setTimeout(() => {
+    console.error("PYMES API shutdown timed out");
+    repository.close();
+    process.exit(1);
+  }, 25_000);
+  forceExit.unref();
   server.close(error => {
+    clearTimeout(forceExit);
     repository.close();
     if (error) { console.error(error); process.exitCode = 1; }
   });
