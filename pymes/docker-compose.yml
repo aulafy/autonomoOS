@@ -33,6 +33,8 @@ services:
       retries: 5
     restart: unless-stopped
     stop_grace_period: 30s
+    mem_limit: 512m
+    cpus: "1.0"
 
 volumes:
   pymes-data:
