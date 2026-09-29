@@ -81,6 +81,14 @@ docker run --rm -v pymes-data:/data -v "$PWD/backups:/backup" \
 docker compose start pymes-workspace
 ```
 
+También puedes usar el script versionado:
+
+```bash
+docker compose stop pymes-workspace
+bash pymes/scripts/backup-volume.sh ./backups
+docker compose start pymes-workspace
+```
+
 Conserva el archivo generado fuera del host de ejecución y prueba una
 restauración periódicamente.
 
