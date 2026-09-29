@@ -52,3 +52,7 @@ requieren Bearer token y comprueban el tenant antes de leer o escribir.
 - Mantener el token bootstrap fuera del repositorio.
 - Configurar un supervisor que envíe `SIGTERM` para el apagado ordenado.
 - Monitorizar `/healthz` y revisar los efectos `failed` antes de reintentar.
+- El volumen Docker usa `/data/pymes-workspace.db`; conservarlo junto con sus
+  ficheros WAL durante los respaldos.
+- Las listas `PYMES_OPENCLAW_*` deben configurarse con valores explícitos en
+  producción; dejar una lista vacía bloquea el ingress correspondiente.
