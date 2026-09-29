@@ -77,6 +77,7 @@ requieren Bearer token y comprueban el tenant antes de leer o escribir.
   cascada.
 - Los descriptores de archivo están limitados a 4.096 blandos y 8.192 duros;
   ajústalos si el volumen de conexiones lo requiere.
+- Compose usa un init ligero para recoger procesos hijos y evitar zombies.
 
 Backup consistente con el contenedor detenido:
 
