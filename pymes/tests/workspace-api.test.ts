@@ -42,3 +42,11 @@ test("malformed approval is rejected without creating state", () => {
   assert.equal(response.status, 400);
   assert.equal(value.approvalsForTenant("agency-1").length, 0);
 });
+
+test("reviewer can read approvals but tenant remains isolated", () => {
+  const value = api();
+  const response = value.handle({ method: "GET", path: "/v1/workspaces/agency-1/approvals",
+    authorization: "Bearer reviewer-token-1234" });
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body.approvals, []);
+});

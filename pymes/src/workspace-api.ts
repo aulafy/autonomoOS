@@ -115,6 +115,11 @@ export class WorkspaceApi {
       catch { return { status: 403, body: { error: "WORKSPACE_PERMISSION_DENIED" } }; }
       return { status: 200, body: { tenantId, items: this.repository.listInbox(tenantId) } };
     }
+    if (request.method === "GET" && parts[3] === "approvals" && parts.length === 4) {
+      try { requirePermission(principal, "readInbox", resource); }
+      catch { return { status: 403, body: { error: "WORKSPACE_PERMISSION_DENIED" } }; }
+      return { status: 200, body: { tenantId, approvals: this.repository.listApprovals(tenantId) } };
+    }
     if (request.method === "POST" && parts[3] === "approvals" && parts.length === 4) {
       const body = jsonRecord(request.body);
       if (!body || typeof body.resourceId !== "string" || typeof body.reason !== "string" ||

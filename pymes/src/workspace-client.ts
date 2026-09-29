@@ -1,0 +1,51 @@
+export interface WorkspaceClientConfig {
+  baseUrl: string;
+  tenantId: string;
+  token: string;
+}
+
+export interface RemoteApproval {
+  id: string;
+  tenantId: string;
+  resourceId: string;
+  operation: "approveOffer" | "executeEffect";
+  approvedBy: string;
+  approvedAt: string;
+  reason: string;
+  draftHash: string;
+}
+
+function validConfig(config: WorkspaceClientConfig): void {
+  if (!config.baseUrl || !/^https?:\/\//.test(config.baseUrl) ||
+    !config.tenantId || !config.token) throw new Error("INVALID_WORKSPACE_CLIENT_CONFIG");
+}
+
+export class WorkspaceClient {
+  constructor(private readonly config: WorkspaceClientConfig,
+    private readonly fetcher: typeof fetch = fetch) { validConfig(config); }
+
+  private async request(path: string, init: RequestInit = {}): Promise<Record<string, unknown>> {
+    const response = await this.fetcher(`${this.config.baseUrl.replace(/\/$/, "")}${path}`, {
+      ...init, headers: { Accept: "application/json", Authorization: `Bearer ${this.config.token}`,
+        ...(init.headers ?? {}) }
+    });
+    const body: unknown = await response.json();
+    if (!body || typeof body !== "object" || Array.isArray(body)) throw new Error("INVALID_WORKSPACE_RESPONSE");
+    if (!response.ok) throw new Error(typeof (body as Record<string, unknown>).error === "string"
+      ? (body as Record<string, string>).error : "WORKSPACE_REQUEST_FAILED");
+    return body as Record<string, unknown>;
+  }
+
+  async approvals(): Promise<RemoteApproval[]> {
+    const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/approvals`);
+    if (!Array.isArray(body.approvals)) throw new Error("INVALID_WORKSPACE_APPROVALS");
+    return body.approvals as RemoteApproval[];
+  }
+
+  async approve(input: { resourceId: string; reason: string; draftHash: string; approvedAt: string }): Promise<RemoteApproval> {
+    const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/approvals`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input)
+    });
+    return body as unknown as RemoteApproval;
+  }
+}

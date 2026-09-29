@@ -4,6 +4,7 @@ import { insuranceLines, pilotConfig, type InsuranceLine } from "./config.js";
 import { evaluateQuoteIntake, quoteRequirements } from "./quote-intake.js";
 import { offersForCase, recordQuoteOffer, type OfferEntry, type QuoteOffer } from "./quote-offers.js";
 import { createWorkspaceStore } from "./workspace-store.js";
+import { WorkspaceClient } from "./workspace-client.js";
 import { buildCallPlan } from "./call-plan.js";
 import { acceptClassification, parseClassificationProposal,
   type ClassificationProposal } from "./classification.js";
@@ -25,6 +26,25 @@ const quoteChecks = new Map<string, { line: InsuranceLine; checked: Set<string>;
 const quoteOffers = workspaceStore.loadOffers();
 let selectedChannel: Channel | "all" = "all";
 let selectedId = brief.items[0]?.id ?? null;
+
+async function checkRemoteWorkspace(): Promise<void> {
+  const status = $("workspace-status");
+  const params = new URLSearchParams(window.location.search);
+  const baseUrl = params.get("workspaceApi");
+  const tenantId = params.get("tenant");
+  const token = sessionStorage.getItem("pymes.workspace.token");
+  if (!baseUrl || !tenantId || !token) return;
+  try {
+    const client = new WorkspaceClient({ baseUrl, tenantId, token });
+    const approvals = await client.approvals();
+    status.className = "workspace-pill connected";
+    status.textContent = `● WORKSPACE CONECTADO · ${approvals.length} aprobaciones`;
+    status.title = "La bandeja de esta demo sigue siendo local; las aprobaciones se leen del workspace remoto.";
+  } catch {
+    status.className = "workspace-pill error";
+    status.textContent = "● WORKSPACE NO DISPONIBLE";
+  }
+}
 
 const channelNames: Record<Channel, string> = {
   whatsapp: "WhatsApp", telegram: "Telegram", imessage: "iMessage", email: "Correo" };
@@ -519,3 +539,4 @@ renderInbox();
 if (brief.items[0]) renderDetail(brief.items[0]);
 renderReviewQueue();
 renderAppointments();
+void checkRemoteWorkspace();
