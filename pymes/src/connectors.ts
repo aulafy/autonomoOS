@@ -51,6 +51,17 @@ function timeoutSignal(timeoutMs: number | undefined): AbortSignal {
   return AbortSignal.timeout(value);
 }
 
+async function providerFetch(fetcher: Fetcher, input: RequestInfo | URL, init: RequestInit, timeoutMs: number | undefined): Promise<Response> {
+  let lastResponse: Response | undefined;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const response = await fetcher(input, { ...init, signal: timeoutSignal(timeoutMs) });
+    lastResponse = response;
+    if (response.status !== 429 && (response.status < 500 || response.status >= 600)) return response;
+    if (attempt < 2) await new Promise(resolve => setTimeout(resolve, 25 * (attempt + 1)));
+  }
+  return lastResponse!;
+}
+
 /** Exact phone and mobile lookups avoid downloading the entire contact book. */
 export async function findHoldedContactsByPhone(input: {
   apiKey: string;
@@ -65,10 +76,9 @@ export async function findHoldedContactsByPhone(input: {
   for (const field of ["phone", "mobile"] as const) {
     const url = new URL("https://api.holded.com/api/invoicing/v1/contacts");
     url.searchParams.set(field, phone);
-    const response = await (input.fetcher ?? fetch)(url, {
-      method: "GET", headers: { key: input.apiKey, Accept: "application/json" },
-      signal: timeoutSignal(input.timeoutMs)
-    });
+    const response = await providerFetch(input.fetcher ?? fetch, url, {
+      method: "GET", headers: { key: input.apiKey, Accept: "application/json" }
+    }, input.timeoutMs);
     if (!response.ok) throw new Error(`HOLDED_READ_FAILED:${response.status}`);
     const data: unknown = await response.json();
     if (!Array.isArray(data)) throw new Error("HOLDED_INVALID_RESPONSE");
@@ -111,10 +121,9 @@ export async function listGoogleCalendarEvents(input: {
   const seenPages = new Set<string>();
   const seenEvents = new Set<string>();
   for (let page = 0; page < 10; page++) {
-    const response = await (input.fetcher ?? fetch)(url, {
-      method: "GET", headers: { Authorization: `Bearer ${input.accessToken}`, Accept: "application/json" },
-      signal: timeoutSignal(input.timeoutMs)
-    });
+    const response = await providerFetch(input.fetcher ?? fetch, url, {
+      method: "GET", headers: { Authorization: `Bearer ${input.accessToken}`, Accept: "application/json" }
+    }, input.timeoutMs);
     if (!response.ok) throw new Error(`GOOGLE_CALENDAR_READ_FAILED:${response.status}`);
     const data = record(await response.json());
     if (!data || !Array.isArray(data.items)) throw new Error("GOOGLE_CALENDAR_INVALID_RESPONSE");
