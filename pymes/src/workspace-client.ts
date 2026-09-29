@@ -15,6 +15,13 @@ export interface RemoteApproval {
   draftHash: string;
 }
 
+export interface RemoteInboxRecord {
+  id: string;
+  tenantId: string;
+  state: "received" | "pending_review" | "approved";
+  summary: string;
+}
+
 function validConfig(config: WorkspaceClientConfig): void {
   if (!config.baseUrl || !/^https?:\/\//.test(config.baseUrl) ||
     !config.tenantId || !config.token) throw new Error("INVALID_WORKSPACE_CLIENT_CONFIG");
@@ -40,6 +47,12 @@ export class WorkspaceClient {
     const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/approvals`);
     if (!Array.isArray(body.approvals)) throw new Error("INVALID_WORKSPACE_APPROVALS");
     return body.approvals as RemoteApproval[];
+  }
+
+  async inbox(): Promise<RemoteInboxRecord[]> {
+    const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/inbox`);
+    if (!Array.isArray(body.items)) throw new Error("INVALID_WORKSPACE_INBOX");
+    return body.items as RemoteInboxRecord[];
   }
 
   async approve(input: { resourceId: string; reason: string; draftHash: string; approvedAt: string }): Promise<RemoteApproval> {

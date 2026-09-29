@@ -37,11 +37,11 @@ async function checkRemoteWorkspace(): Promise<void> {
   if (!baseUrl || !tenantId || !token) return;
   try {
     const client = new WorkspaceClient({ baseUrl, tenantId, token });
-    const approvals = await client.approvals();
+    const [approvals, inbox] = await Promise.all([client.approvals(), client.inbox()]);
     remoteWorkspaceClient = client;
     status.className = "workspace-pill connected";
-    status.textContent = `● WORKSPACE CONECTADO · ${approvals.length} aprobaciones`;
-    status.title = "La bandeja de esta demo sigue siendo local; las aprobaciones se leen del workspace remoto.";
+    status.textContent = `● WORKSPACE CONECTADO · ${inbox.length} casos · ${approvals.length} aprobaciones`;
+    status.title = "Los casos y aprobaciones se leen del workspace remoto; los fixtures locales no se mezclan automáticamente.";
   } catch {
     status.className = "workspace-pill error";
     status.textContent = "● WORKSPACE NO DISPONIBLE";
