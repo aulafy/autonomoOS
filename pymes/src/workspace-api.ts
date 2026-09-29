@@ -64,7 +64,12 @@ export class InMemoryWorkspaceRepository implements WorkspaceRepository {
     const records = this.inbox.get(record.tenantId) ?? [];
     this.inbox.set(record.tenantId, [...records, structuredClone(record)]);
   }
-  updateInbox(record: WorkspaceInboxRecord): void { this.appendInbox(record); }
+  updateInbox(record: WorkspaceInboxRecord): void {
+    const records = this.inbox.get(record.tenantId) ?? [];
+    const index = records.findIndex(value => value.id === record.id);
+    if (index < 0) this.appendInbox(record);
+    else this.inbox.set(record.tenantId, records.map((value, position) => position === index ? structuredClone(record) : value));
+  }
   private readonly audits: CaseAuditRecord[] = [];
   appendCaseAudit(record: CaseAuditRecord): void { this.audits.push(structuredClone(record)); }
   listCaseAudit(tenantId: string, caseId: string): CaseAuditRecord[] {
