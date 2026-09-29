@@ -70,9 +70,9 @@ export class WorkspaceClient {
     if (!Array.isArray(body.audit)) throw new Error("INVALID_WORKSPACE_AUDIT");
     return body.audit as RemoteCaseAudit[];
   }
-  async transition(caseId: string, to: string, at = new Date().toISOString()): Promise<void> {
+  async transition(caseId: string, to: string, at = new Date().toISOString(), expectedVersion?: number): Promise<void> {
     await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/cases/${encodeURIComponent(caseId)}/transition`, {
-      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to, at })
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to, at, ...(expectedVersion === undefined ? {} : { expectedVersion }) })
     });
   }
   async effects(): Promise<RemoteEffect[]> {

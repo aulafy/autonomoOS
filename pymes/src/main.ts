@@ -215,7 +215,7 @@ function renderDetail(item: WorkItem) {
         action.type = "button";
         action.addEventListener("click", async () => {
           action.disabled = true;
-          try { await remoteWorkspaceClient!.transition(item.id, next); await checkRemoteWorkspace(); renderDetail(item); }
+          try { await remoteWorkspaceClient!.transition(item.id, next, new Date().toISOString(), remote?.version); await checkRemoteWorkspace(); renderDetail(item); }
           catch (error) { action.disabled = false; action.textContent = error instanceof Error ? error.message : "No se pudo avanzar"; }
         });
         trace.appendChild(action);

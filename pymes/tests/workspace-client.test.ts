@@ -43,7 +43,7 @@ test("workspace client performs an authenticated case transition", async () => {
   api.addInbox({ id: "case-client", tenantId: "agency-1", state: "approved", summary: "Caso listo" });
   const fetcher: typeof fetch = (input, init) => handlePymesRequest(api, new Request(String(input), init));
   const value = new WorkspaceClient({ baseUrl: "http://workspace.local", tenantId: "agency-1", token: "owner-token-123456" }, fetcher);
-  await value.transition("case-client", "executing", "2026-09-29T15:00:00Z");
+  await value.transition("case-client", "executing", "2026-09-29T15:00:00Z", 0);
   assert.equal((await value.inbox())[0]?.state, "executing");
 });
 
