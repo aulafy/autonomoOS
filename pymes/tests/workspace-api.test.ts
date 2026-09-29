@@ -84,4 +84,10 @@ test("effects require execute permission and explicit confirmation", () => {
     authorization: "Bearer other-token-1234" }).status, 200);
   assert.deepEqual((value.handle({ method: "GET", path: "/v1/workspaces/agency-2/effects",
     authorization: "Bearer other-token-1234" }).body.effects), []);
+  const own = value.handle({ method: "GET", path: "/v1/workspaces/agency-1/effects/effect-1",
+    authorization: "Bearer owner-token-12345" });
+  assert.equal(own.status, 200);
+  assert.equal((own.body as { id: string }).id, "effect-1");
+  assert.equal(value.handle({ method: "GET", path: "/v1/workspaces/agency-2/effects/effect-1",
+    authorization: "Bearer other-token-1234" }).status, 404);
 });
