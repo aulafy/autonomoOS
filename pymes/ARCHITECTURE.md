@@ -116,3 +116,9 @@ workspace. Valida el sobre empresarial, consentimiento y pairing mediante el
 adaptador de gateway, deduplica por `openclaw:<eventId>` y persiste un caso
 `received`. El caso conserva el texto de entrada, pero no recibe identidad,
 intención ni borrador hasta pasar por el flujo PYMES.
+
+`src/case-lifecycle.ts` define los estados y transiciones de un caso. Cada
+transición exige el rol adecuado y aumenta una versión monotónica; los saltos
+directos a aprobación o ejecución fallan. Un resultado `uncertain` solo puede
+volver a `executing` mediante otra operación gobernada, nunca mediante un
+reintento ciego.
