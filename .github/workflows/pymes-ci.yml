@@ -60,10 +60,11 @@ jobs:
           docker run --detach --rm --name pymes-ci -p 8790:8790 \
             -e PYMES_API_BOOTSTRAP_TOKEN=ci-smoke-test-token \
             -e PYMES_API_BOOTSTRAP_TENANT=ci-agency \
+            -e PYMES_API_VERSION=ci-${{ github.run_number }} \
             pymes-workspace:ci
           trap 'docker stop pymes-ci' EXIT
           for attempt in $(seq 1 20); do
-            if curl --fail --silent http://127.0.0.1:8790/readyz; then exit 0; fi
+            if curl --fail --silent http://127.0.0.1:8790/readyz | grep -F '"version":"ci-${{ github.run_number }}"'; then exit 0; fi
             sleep 1
           done
           docker logs pymes-ci
