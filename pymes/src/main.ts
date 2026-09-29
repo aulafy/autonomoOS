@@ -3,6 +3,7 @@ import { makeDemoData } from "./fixtures.js";
 import { insuranceLines, pilotConfig, type InsuranceLine } from "./config.js";
 import { evaluateQuoteIntake, quoteRequirements } from "./quote-intake.js";
 import { offersForCase, recordQuoteOffer, type OfferEntry, type QuoteOffer } from "./quote-offers.js";
+import { createWorkspaceStore } from "./workspace-store.js";
 import { buildCallPlan } from "./call-plan.js";
 import { acceptClassification, parseClassificationProposal,
   type ClassificationProposal } from "./classification.js";
@@ -15,12 +16,13 @@ const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as 
 const tabs = $<HTMLDivElement>("channel-tabs");
 const list = $<HTMLDivElement>("inbox-list");
 const detail = $<HTMLElement>("detail");
-const review = new Set<string>(brief.items.filter(item =>
+const workspaceStore = createWorkspaceStore();
+const review = workspaceStore.loadReviewIds(brief.items.filter(item =>
   item.identityStatus === "unidentified").map(item => item.id));
 const modelSuggestions = new Map<string, { proposal: ClassificationProposal; model: string }>();
 const quoteChecks = new Map<string, { line: InsuranceLine; checked: Set<string>;
   externalStepConfirmed: boolean }>();
-const quoteOffers = new Map<string, QuoteOffer[]>();
+const quoteOffers = workspaceStore.loadOffers();
 let selectedChannel: Channel | "all" = "all";
 let selectedId = brief.items[0]?.id ?? null;
 
@@ -138,6 +140,7 @@ function renderReviewQueue() {
       remove.setAttribute("aria-label", `Quitar a ${contactName(item)} de la cola`);
       remove.addEventListener("click", () => {
         review.delete(item.id);
+        workspaceStore.saveReviewIds(review);
         renderCounts();
         renderReviewQueue();
         if (selectedId === item.id) renderDetail(item);
@@ -264,6 +267,7 @@ function renderDetail(item: WorkItem) {
     modelSuggestions.delete(item.id);
     quoteChecks.delete(item.id);
     quoteOffers.delete(item.id);
+    workspaceStore.saveOffers(quoteOffers);
     brief = buildMorningBrief(demoData);
     review.add(item.id);
     renderCounts();
@@ -425,6 +429,7 @@ function renderDetail(item: WorkItem) {
           const existing = quoteOffers.get(item.id) ?? [];
           offersForCase([...existing, offer], item.id, line);
           quoteOffers.set(item.id, [...existing, offer]);
+          workspaceStore.saveOffers(quoteOffers);
           form.reset();
           error.textContent = "";
           renderOffers();
@@ -474,6 +479,7 @@ function renderDetail(item: WorkItem) {
   button.disabled = review.has(item.id);
   button.addEventListener("click", () => {
     review.add(item.id);
+    workspaceStore.saveReviewIds(review);
     renderCounts();
     renderReviewQueue();
     renderDetail(item);

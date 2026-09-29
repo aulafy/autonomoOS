@@ -38,6 +38,11 @@ Los nombres y mensajes son ficticios. WhatsApp, Telegram,
 iMessage, correo, CRM y calendario aparecen como fuentes y destinos previstos;
 **aún no hay conexiones reales**.
 
+La cola de revisión y las ofertas transcritas se guardan ahora en un almacén
+versionado del navegador para no perder el trabajo al recargar. Sigue siendo
+almacenamiento local de la demo, no persistencia multiusuario: el producto real
+lo sustituirá por la API autenticada y la base de datos del tenant.
+
 La clasificación local puede probarse **solo con los mensajes ficticios**:
 
 ```bash
