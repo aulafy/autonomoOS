@@ -41,6 +41,8 @@ export async function handlePymesRequest(api: WorkspaceApi, request: Request): P
   }
   let body: unknown;
   if (request.method === "POST") {
+    const contentType = request.headers.get("content-type")?.split(";", 1)[0].trim().toLowerCase();
+    if (contentType !== "application/json") return response(415, { error: "UNSUPPORTED_MEDIA_TYPE" }, requestId, origin);
     const text = await request.text();
     if (new TextEncoder().encode(text).byteLength > MAX_BODY_BYTES) {
       return response(413, { error: "BODY_TOO_LARGE" }, requestId, origin);
