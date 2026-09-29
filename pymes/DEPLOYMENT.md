@@ -89,7 +89,7 @@ bash pymes/scripts/backup-volume.sh ./backups
 docker compose start pymes-workspace
 ```
 
-Conserva el archivo generado fuera del host de ejecución y prueba una
+Conserva el archivo generado y su checksum fuera del host de ejecución y prueba una
 restauración periódicamente.
 
 Restauración de un backup:

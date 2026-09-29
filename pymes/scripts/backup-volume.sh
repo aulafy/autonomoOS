@@ -11,5 +11,7 @@ docker run --rm \
   -v "$volume_name:/data:ro" \
   -v "$(cd "$output_dir" && pwd):/backup" \
   alpine sh -c "tar czf /backup/$(basename "$archive") -C /data ."
+sha256sum "$archive" > "$archive.sha256"
 
 printf 'Backup creado: %s\n' "$archive"
+printf 'Checksum: %s\n' "$archive.sha256"
