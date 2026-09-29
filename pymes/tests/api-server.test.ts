@@ -22,6 +22,15 @@ test("HTTP adapter preserves or creates request correlation ids", async () => {
   assert.match(generated.headers.get("x-request-id") ?? "", /^[0-9a-f-]{36}$/);
 });
 
+test("HTTP adapter supports restricted local CORS preflight", async () => {
+  const response = await handlePymesRequest(api(), new Request("http://localhost/healthz", {
+    method: "OPTIONS", headers: { origin: "http://127.0.0.1:5174" }
+  }));
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("access-control-allow-origin"), "http://127.0.0.1:5174");
+  assert.equal(response.headers.get("access-control-allow-methods"), "GET, POST, OPTIONS");
+});
+
 test("HTTP adapter returns JSON and enforces authentication", async () => {
   const response = await handlePymesRequest(api(), new Request("http://localhost/v1/workspaces/agency-1/inbox"));
   assert.equal(response.status, 401);

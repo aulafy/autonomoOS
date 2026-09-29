@@ -3,9 +3,16 @@ import { WorkspaceApi, type WorkspaceApiRequest } from "./workspace-api.js";
 const MAX_BODY_BYTES = 1_048_576;
 
 const newRequestId = (): string => crypto.randomUUID();
-function response(status: number, body: Record<string, unknown>, requestId = newRequestId()): Response {
+function response(status: number, body: Record<string, unknown>, requestId = newRequestId(), origin?: string): Response {
+  const headers: Record<string, string> = { "content-type": "application/json; charset=utf-8", "x-request-id": requestId };
+  if (origin && ["http://127.0.0.1:5174", "http://localhost:5174"].includes(origin)) {
+    headers["access-control-allow-origin"] = origin;
+    headers["access-control-allow-headers"] = "Authorization, Content-Type, X-PYMES-Ingress-Token, X-Request-Id";
+    headers["access-control-allow-methods"] = "GET, POST, OPTIONS";
+    headers["vary"] = "Origin";
+  }
   return new Response(JSON.stringify(body), {
-    status, headers: { "content-type": "application/json; charset=utf-8", "x-request-id": requestId }
+    status, headers
   });
 }
 
@@ -13,28 +20,30 @@ function response(status: number, body: Record<string, unknown>, requestId = new
 export async function handlePymesRequest(api: WorkspaceApi, request: Request): Promise<Response> {
   const requestId = request.headers.get("x-request-id")?.trim() || newRequestId();
   const pathname = new URL(request.url).pathname;
+  const origin = request.headers.get("origin") ?? undefined;
+  if (request.method === "OPTIONS") return response(200, { status: "ok" }, requestId, origin);
   if (request.method === "GET" && pathname === "/healthz") {
-    return response(200, { status: "ok", service: "pymes-workspace", version: "0.1.0" }, requestId);
+    return response(200, { status: "ok", service: "pymes-workspace", version: "0.1.0" }, requestId, origin);
   }
   if (request.method !== "GET" && request.method !== "POST") {
-    return response(405, { error: "METHOD_NOT_ALLOWED" }, requestId);
+    return response(405, { error: "METHOD_NOT_ALLOWED" }, requestId, origin);
   }
   const contentLength = request.headers.get("content-length");
   if (contentLength && (!/^\d+$/.test(contentLength) || Number(contentLength) > MAX_BODY_BYTES)) {
-    return response(413, { error: "BODY_TOO_LARGE" }, requestId);
+    return response(413, { error: "BODY_TOO_LARGE" }, requestId, origin);
   }
   let body: unknown;
   if (request.method === "POST") {
     const text = await request.text();
     if (new TextEncoder().encode(text).byteLength > MAX_BODY_BYTES) {
-      return response(413, { error: "BODY_TOO_LARGE" }, requestId);
+      return response(413, { error: "BODY_TOO_LARGE" }, requestId, origin);
     }
     try { body = text ? JSON.parse(text) : undefined; }
-    catch { return response(400, { error: "INVALID_JSON" }, requestId); }
+    catch { return response(400, { error: "INVALID_JSON" }, requestId, origin); }
   }
   const input: WorkspaceApiRequest = { method: request.method, path: pathname,
     authorization: request.headers.get("authorization") ?? undefined,
     ingressToken: request.headers.get("x-pymes-ingress-token") ?? undefined, body };
   const result = api.handle(input);
-  return response(result.status, result.body, requestId);
+  return response(result.status, result.body, requestId, origin);
 }
