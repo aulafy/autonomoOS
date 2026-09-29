@@ -41,6 +41,7 @@ const server = createServer(async (request, nodeResponse) => {
       const requestId = typeof suppliedRequestId === "string" && suppliedRequestId.length <= 200
         ? suppliedRequestId : crypto.randomUUID();
       nodeResponse.statusCode = 413;
+      nodeResponse.setHeader("connection", "close");
       nodeResponse.setHeader("content-type", "application/json; charset=utf-8");
       nodeResponse.setHeader("cache-control", "no-store");
       nodeResponse.setHeader("x-content-type-options", "nosniff");
