@@ -216,8 +216,7 @@ function renderDetail(item: WorkItem) {
         trace.appendChild(action);
       }
     }).catch(() => { trace.textContent = "Trazabilidad no disponible para este caso."; });
-    void remoteWorkspaceClient.effects().then(effects => {
-      const own = effects.filter(effect => effect.caseId === item.id);
+    void remoteWorkspaceClient.effectsForCase(item.id).then(own => {
       const block = el("div", "detail-block");
       block.appendChild(el("strong", "", `Operaciones pendientes · ${own.length}`));
       if (!own.length) block.appendChild(el("p", "", "No hay efectos externos pendientes."));
