@@ -71,6 +71,8 @@ requieren Bearer token y comprueban el tenant antes de leer o escribir.
 - El root filesystem es de solo lectura; `/data` es el único almacenamiento
   persistente y `/tmp` se monta como temporal.
 - Compose concede 30 segundos para el apagado ordenado y el cierre de SQLite.
+- El contenedor usa `SIGTERM` para activar el apagado ordenado antes de ese
+  periodo de gracia.
 - El servicio está limitado a 512 MiB de memoria y 1 CPU; ajusta estos límites
   según el volumen real de mensajes y citas.
 - El límite de procesos es 100 para contener fallos que creen procesos en

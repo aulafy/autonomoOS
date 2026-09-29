@@ -34,6 +34,7 @@ services:
       start_period: 10s
     restart: unless-stopped
     init: true
+    stop_signal: SIGTERM
     stop_grace_period: 30s
     mem_limit: 512m
     cpus: "1.0"
