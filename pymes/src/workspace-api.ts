@@ -40,6 +40,7 @@ export interface WorkspaceRepository {
   appendCaseAudit(record: CaseAuditRecord): void;
   listCaseAudit(tenantId: string, caseId: string): CaseAuditRecord[];
   appendEffect(effect: PendingEffect): void;
+  updateEffect(effect: PendingEffect): void;
   listEffects(tenantId: string, caseId?: string): PendingEffect[];
   appendApproval(approval: ApprovalRecord): void;
   listApprovals(tenantId: string): ApprovalRecord[];
@@ -71,6 +72,7 @@ export class InMemoryWorkspaceRepository implements WorkspaceRepository {
   }
   private readonly effects: PendingEffect[] = [];
   appendEffect(effect: PendingEffect): void { this.effects.push(structuredClone(effect)); }
+  updateEffect(effect: PendingEffect): void { const index = this.effects.findIndex(v => v.id === effect.id && v.tenantId === effect.tenantId); if (index >= 0) this.effects[index] = structuredClone(effect); }
   listEffects(tenantId: string, caseId?: string): PendingEffect[] { return this.effects.filter(v => v.tenantId === tenantId && (!caseId || v.caseId === caseId)).map(v => structuredClone(v)); }
   appendApproval(approval: ApprovalRecord): void { this.approvals.push(structuredClone(approval)); }
   listApprovals(tenantId: string): ApprovalRecord[] {
@@ -201,6 +203,19 @@ export class WorkspaceApi {
         this.repository.appendEffect(effect);
         return { status: 201, body: effect as unknown as Record<string, unknown> };
       } catch (error) { const message = error instanceof Error ? error.message : "INVALID_PENDING_EFFECT"; return { status: message === "WORKSPACE_PERMISSION_DENIED" ? 403 : 400, body: { error: message } }; }
+    }
+    if (request.method === "POST" && parts[3] === "effects" && parts[5] === "confirm" && parts.length === 6) {
+      const body = jsonRecord(request.body);
+      if (!body || body.confirm !== true || typeof body.confirmedAt !== "string") return { status: 400, body: { error: "EXPLICIT_CONFIRMATION_REQUIRED" } };
+      const effect = this.repository.listEffects(tenantId).find(value => value.id === parts[4]);
+      if (!effect) return { status: 404, body: { error: "EFFECT_NOT_FOUND" } };
+      try {
+        requirePermission(principal, "executeEffect", { tenantId, id: effect.caseId });
+        if (effect.status !== "pending" || Number.isNaN(Date.parse(body.confirmedAt))) throw new Error("EFFECT_NOT_PENDING");
+        const confirmed = { ...effect, status: "confirmed" as const, confirmedBy: principal.userId, confirmedAt: body.confirmedAt };
+        this.repository.updateEffect(confirmed);
+        return { status: 200, body: confirmed as unknown as Record<string, unknown> };
+      } catch (error) { const message = error instanceof Error ? error.message : "EFFECT_CONFIRMATION_FAILED"; return { status: message === "WORKSPACE_PERMISSION_DENIED" ? 403 : 400, body: { error: message } }; }
     }
     if (request.method === "POST" && parts[3] === "approvals" && parts.length === 4) {
       const body = jsonRecord(request.body);
