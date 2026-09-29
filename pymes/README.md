@@ -38,6 +38,20 @@ Los nombres y mensajes son ficticios. WhatsApp, Telegram,
 iMessage, correo, CRM y calendario aparecen como fuentes y destinos previstos;
 **aún no hay conexiones reales**.
 
+## API local de workspace
+
+La primera API de PYMES se puede ejecutar con un token de desarrollo explícito:
+
+```bash
+PYMES_API_BOOTSTRAP_TOKEN='cambia-este-token-en-desarrollo' npm run api --workspace=@agent-world/pymes
+```
+
+Expone `GET /v1/workspaces/:tenant/inbox` y
+`POST /v1/workspaces/:tenant/approvals`. El token de arranque no es un sistema
+de autenticación de producción; la siguiente fase lo sustituirá por sesiones y
+persistencia de servidor. El servidor no arranca sin un token de al menos 16
+caracteres.
+
 La cola de revisión y las ofertas transcritas se guardan ahora en un almacén
 versionado del navegador para no perder el trabajo al recargar. Sigue siendo
 almacenamiento local de la demo, no persistencia multiusuario: el producto real
