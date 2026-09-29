@@ -6,7 +6,8 @@ La interfaz local puede llamar al API desde `http://127.0.0.1:5174` o
 `http://localhost:5174`; el adaptador responde al preflight `OPTIONS` y limita
 los orígenes a esos dos valores.
 En llamadas autorizadas desde navegador, `x-request-id` y `retry-after` se
-exponen mediante CORS para facilitar diagnóstico y backoff.
+exponen mediante CORS para facilitar diagnóstico y backoff; el preflight se
+puede reutilizar durante 600 segundos.
 
 Cada respuesta incluye `x-request-id`. Si el cliente envía uno, se conserva;
 si no, el API genera un UUID. Las respuestas usan `Cache-Control: no-store`,
