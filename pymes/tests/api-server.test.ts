@@ -90,4 +90,5 @@ test("HTTP adapter rejects invalid JSON and unsupported methods", async () => {
   assert.equal(media.status, 415);
   const method = await handlePymesRequest(api(), new Request("http://localhost/v1/workspaces/agency-1/inbox", { method: "PUT" }));
   assert.equal(method.status, 405);
+  assert.equal(method.headers.get("allow"), "GET, POST, OPTIONS");
 });

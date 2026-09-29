@@ -18,6 +18,7 @@ same-origin`, además de
 `Referrer-Policy: no-referrer`.
 Las rutas `POST` requieren `Content-Type: application/json`; otros tipos
 devuelven `415 UNSUPPORTED_MEDIA_TYPE`.
+Un método no permitido devuelve `405` con la cabecera `Allow` correspondiente.
 
 ## Salud
 

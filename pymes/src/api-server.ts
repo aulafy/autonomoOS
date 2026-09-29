@@ -38,7 +38,9 @@ export async function handlePymesRequest(api: WorkspaceApi, request: Request): P
     return result;
   }
   if (request.method !== "GET" && request.method !== "POST") {
-    return response(405, { error: "METHOD_NOT_ALLOWED" }, requestId, origin);
+    const result = response(405, { error: "METHOD_NOT_ALLOWED" }, requestId, origin);
+    result.headers.set("allow", "GET, POST, OPTIONS");
+    return result;
   }
   const contentLength = request.headers.get("content-length");
   if (contentLength && (!/^\d+$/.test(contentLength) || Number(contentLength) > MAX_BODY_BYTES)) {
