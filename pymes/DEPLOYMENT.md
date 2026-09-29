@@ -75,6 +75,8 @@ requieren Bearer token y comprueban el tenant antes de leer o escribir.
   periodo de gracia.
 - El servicio está limitado a 512 MiB de memoria y 1 CPU; ajusta estos límites
   según el volumen real de mensajes y citas.
+- Tiene una reserva mínima de 128 MiB para mantener capacidad básica bajo
+  presión del host.
 - El límite de procesos es 100 para contener fallos que creen procesos en
   cascada.
 - Los descriptores de archivo están limitados a 4.096 blandos y 8.192 duros;
