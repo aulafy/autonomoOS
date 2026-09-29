@@ -12,7 +12,7 @@ si no, el API genera un UUID. Las respuestas usan `Cache-Control: no-store`,
 
 ## Salud
 
-`GET /healthz` devuelve `{ "status": "ok", "service": "pymes-workspace", "version": "0.1.0" }`.
+`GET /healthz` y `GET /readyz` devuelven `{ "status": "ok", "service": "pymes-workspace", "version": "0.1.0" }`.
 
 ## Bandeja y trazabilidad
 

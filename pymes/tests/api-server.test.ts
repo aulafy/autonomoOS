@@ -15,6 +15,12 @@ test("health endpoint is public and reports service identity", async () => {
   assert.deepEqual(await response.json(), { status: "ok", service: "pymes-workspace", version: "0.1.0" });
 });
 
+test("readiness endpoint is public", async () => {
+  const response = await handlePymesRequest(api(), new Request("http://localhost/readyz"));
+  assert.equal(response.status, 200);
+  assert.equal((await response.json()).status, "ok");
+});
+
 test("HTTP adapter preserves or creates request correlation ids", async () => {
   const provided = await handlePymesRequest(api(), new Request("http://localhost/healthz", { headers: { "x-request-id": "support-case-42" } }));
   assert.equal(provided.headers.get("x-request-id"), "support-case-42");
