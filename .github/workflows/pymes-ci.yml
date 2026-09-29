@@ -29,7 +29,10 @@ jobs:
       - run: npm ci
       - run: npm run check --workspace=@agent-world/pymes
       - name: Validate operational scripts
-        run: bash -n pymes/scripts/backup-volume.sh pymes/scripts/verify-backup.sh
+        run: |
+          bash -n pymes/scripts/backup-volume.sh pymes/scripts/verify-backup.sh
+          test -x pymes/scripts/backup-volume.sh
+          test -x pymes/scripts/verify-backup.sh
       - name: Validate deployment compose file
         env:
           PYMES_API_BOOTSTRAP_TOKEN: ci-compose-validation-token
