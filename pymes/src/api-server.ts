@@ -11,6 +11,7 @@ function response(status: number, body: Record<string, unknown>, requestId = new
     headers["access-control-allow-origin"] = origin;
     headers["access-control-allow-headers"] = "Authorization, Content-Type, X-PYMES-Ingress-Token, X-Request-Id";
     headers["access-control-allow-methods"] = "GET, POST, OPTIONS";
+    headers["access-control-expose-headers"] = "x-request-id, retry-after";
   }
   return new Response(JSON.stringify(body), {
     status, headers

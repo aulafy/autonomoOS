@@ -49,6 +49,7 @@ test("HTTP adapter supports restricted local CORS preflight", async () => {
   assert.equal(response.status, 200);
   assert.equal(response.headers.get("access-control-allow-origin"), "http://127.0.0.1:5174");
   assert.equal(response.headers.get("access-control-allow-methods"), "GET, POST, OPTIONS");
+  assert.equal(response.headers.get("access-control-expose-headers"), "x-request-id, retry-after");
   const denied = await handlePymesRequest(api(), new Request("http://localhost/healthz", {
     method: "OPTIONS", headers: { origin: "https://attacker.example" }
   }));
