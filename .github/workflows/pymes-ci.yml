@@ -25,3 +25,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run check --workspace=@agent-world/pymes
+      - name: Validate deployment compose file
+        env:
+          PYMES_API_BOOTSTRAP_TOKEN: ci-compose-validation-token
+        run: docker compose -f pymes/docker-compose.yml config --quiet
