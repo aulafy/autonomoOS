@@ -19,7 +19,9 @@ curl http://127.0.0.1:8790/healthz
 Usa `/readyz` para el readiness check del orquestador.
 
 La base se crea en `./data/pymes-workspace.db` por defecto. Para un entorno
-persistente, define `PYMES_API_DB_PATH` en un volumen estable.
+persistente, define `PYMES_API_DB_PATH` en un volumen estable. `PYMES_API_VERSION`
+permite fijar la versión visible en `/healthz` y `/readyz` sin recompilar; por
+defecto es `0.1.0`.
 
 ## Interfaz
 

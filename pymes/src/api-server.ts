@@ -4,6 +4,7 @@ import { normalizeRequestId } from "./request-id.js";
 const MAX_BODY_BYTES = 1_048_576;
 const defaultCorsOrigins = ["http://127.0.0.1:5174", "http://localhost:5174"];
 export interface PymesHttpOptions { allowedOrigins?: readonly string[]; }
+const serviceVersion = process.env.PYMES_API_VERSION ?? "0.1.0";
 
 function response(status: number, body: Record<string, unknown>, requestId = normalizeRequestId(undefined), origin?: string, allowedOrigins: readonly string[] = defaultCorsOrigins): Response {
   const headers: Record<string, string> = { "content-type": "application/json; charset=utf-8", "x-request-id": requestId,
@@ -31,11 +32,11 @@ export async function handlePymesRequest(api: WorkspaceApi, request: Request, op
   const origin = request.headers.get("origin") ?? undefined;
   if (request.method === "OPTIONS") return response(200, { status: "ok" }, requestId, origin, allowedOrigins);
   if (request.method === "GET" && pathname === "/healthz") {
-    return response(200, { status: "ok", service: "pymes-workspace", version: "0.1.0" }, requestId, origin, allowedOrigins);
+    return response(200, { status: "ok", service: "pymes-workspace", version: serviceVersion }, requestId, origin, allowedOrigins);
   }
   if (request.method === "GET" && pathname === "/readyz") {
     const ready = api.isReady();
-    const result = response(ready ? 200 : 503, { status: ready ? "ok" : "not_ready", service: "pymes-workspace", version: "0.1.0" }, requestId, origin, allowedOrigins);
+    const result = response(ready ? 200 : 503, { status: ready ? "ok" : "not_ready", service: "pymes-workspace", version: serviceVersion }, requestId, origin, allowedOrigins);
     if (!ready) result.headers.set("retry-after", "5");
     return result;
   }
