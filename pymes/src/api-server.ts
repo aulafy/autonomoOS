@@ -24,8 +24,12 @@ export async function handlePymesRequest(api: WorkspaceApi, request: Request): P
   const pathname = new URL(request.url).pathname;
   const origin = request.headers.get("origin") ?? undefined;
   if (request.method === "OPTIONS") return response(200, { status: "ok" }, requestId, origin);
-  if (request.method === "GET" && (pathname === "/healthz" || pathname === "/readyz")) {
+  if (request.method === "GET" && pathname === "/healthz") {
     return response(200, { status: "ok", service: "pymes-workspace", version: "0.1.0" }, requestId, origin);
+  }
+  if (request.method === "GET" && pathname === "/readyz") {
+    const ready = api.isReady();
+    return response(ready ? 200 : 503, { status: ready ? "ok" : "not_ready", service: "pymes-workspace", version: "0.1.0" }, requestId, origin);
   }
   if (request.method !== "GET" && request.method !== "POST") {
     return response(405, { error: "METHOD_NOT_ALLOWED" }, requestId, origin);

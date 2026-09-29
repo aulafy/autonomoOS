@@ -121,6 +121,12 @@ export class WorkspaceApi {
   constructor(readonly repository: WorkspaceRepository = new InMemoryWorkspaceRepository(),
     private readonly ingress?: { token: string; policy: OpenClawEnterprisePolicy }) {}
 
+  /** Lightweight storage probe used by the process readiness endpoint. */
+  isReady(): boolean {
+    try { this.repository.listInbox("__readiness_probe__"); return true; }
+    catch { return false; }
+  }
+
   addSession(token: string, principal: WorkspacePrincipal): void {
     if (!token || token.length < 16) throw new Error("INVALID_SESSION_TOKEN");
     if (this.repository instanceof InMemoryWorkspaceRepository) this.repository.addSession(token, principal);

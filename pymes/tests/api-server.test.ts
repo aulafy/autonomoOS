@@ -21,6 +21,17 @@ test("readiness endpoint is public", async () => {
   assert.equal((await response.json()).status, "ok");
 });
 
+test("readiness reports storage failures", async () => {
+  const broken = new WorkspaceApi({
+    findSession() { return null; }, listInbox() { throw new Error("DB_DOWN"); },
+    appendInbox() {}, updateInbox() {}, appendApproval() {}, listApprovals() { return []; },
+    appendCaseAudit() {}, listCaseAudit() { return []; }, appendEffect() {}, updateEffect() {}, listEffects() { return []; }
+  });
+  const response = await handlePymesRequest(broken, new Request("http://localhost/readyz"));
+  assert.equal(response.status, 503);
+  assert.equal((await response.json()).status, "not_ready");
+});
+
 test("HTTP adapter preserves or creates request correlation ids", async () => {
   const provided = await handlePymesRequest(api(), new Request("http://localhost/healthz", { headers: { "x-request-id": "support-case-42" } }));
   assert.equal(provided.headers.get("x-request-id"), "support-case-42");
