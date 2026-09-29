@@ -2,6 +2,7 @@ import { buildMorningBrief, type Channel, type Topic, type WorkItem } from "./do
 import { makeDemoData } from "./fixtures.js";
 import { insuranceLines, pilotConfig, type InsuranceLine } from "./config.js";
 import { evaluateQuoteIntake, quoteRequirements } from "./quote-intake.js";
+import { offersForCase, recordQuoteOffer, type OfferEntry, type QuoteOffer } from "./quote-offers.js";
 import { buildCallPlan } from "./call-plan.js";
 import { acceptClassification, parseClassificationProposal,
   type ClassificationProposal } from "./classification.js";
@@ -17,7 +18,9 @@ const detail = $<HTMLElement>("detail");
 const review = new Set<string>(brief.items.filter(item =>
   item.identityStatus === "unidentified").map(item => item.id));
 const modelSuggestions = new Map<string, { proposal: ClassificationProposal; model: string }>();
-const quoteChecks = new Map<string, { line: InsuranceLine; checked: Set<string> }>();
+const quoteChecks = new Map<string, { line: InsuranceLine; checked: Set<string>;
+  externalStepConfirmed: boolean }>();
+const quoteOffers = new Map<string, QuoteOffer[]>();
 let selectedChannel: Channel | "all" = "all";
 let selectedId = brief.items[0]?.id ?? null;
 
@@ -260,6 +263,7 @@ function renderDetail(item: WorkItem) {
       reasonInput.value, new Date().toISOString());
     modelSuggestions.delete(item.id);
     quoteChecks.delete(item.id);
+    quoteOffers.delete(item.id);
     brief = buildMorningBrief(demoData);
     review.add(item.id);
     renderCounts();
@@ -305,25 +309,41 @@ function renderDetail(item: WorkItem) {
     intake.appendChild(el("p", "", "Marca solo datos verificados. Esta ficha no calcula una prima ni genera condiciones de aseguradora."));
     const line = item.message.insuranceLine;
     if (line && quoteChecks.get(item.id)?.line !== line) {
-      quoteChecks.set(item.id, { line, checked: new Set() });
+      quoteChecks.set(item.id, { line, checked: new Set(), externalStepConfirmed: false });
     }
-    const checked = line ? quoteChecks.get(item.id)!.checked : new Set<string>();
+    const state = line ? quoteChecks.get(item.id)! : null;
+    const checked = state?.checked ?? new Set<string>();
     const progress = el("p", "quote-progress");
+    let offerButton: HTMLButtonElement | null = null;
     const updateProgress = () => {
       const result = evaluateQuoteIntake({ line,
-        identityStatus: item.identityStatus, checkedIds: checked });
+        identityStatus: item.identityStatus, checkedIds: checked,
+        externalStepConfirmed: state?.externalStepConfirmed });
       const statusText = result.status === "identity_required" ? "Verifica primero la identidad y el expediente." :
         result.status === "line_required" ? "Clasifica primero el ramo." :
           result.status === "collecting" ? "Información preliminar pendiente." :
             result.status === "external_step_required" ? "Información preliminar registrada; queda el paso externo de la aseguradora." :
               "Información preliminar registrada; falta consultar y revisar una oferta real.";
       progress.textContent = `${result.checked}/${result.total} datos verificados · ${statusText}`;
+      if (offerButton) offerButton.disabled = result.status !== "preliminary_complete";
+      return result.status;
     };
     if (line) {
       const fields = el("div", "quote-fields");
       for (const requirement of quoteRequirements[line]) {
         if (requirement.externalOnly) {
           fields.appendChild(el("p", "quote-external", `${requirement.label}. No introduzcas datos de salud en esta demo.`));
+          const label = el("label", "quote-field quote-external-check");
+          const checkbox = el("input") as HTMLInputElement;
+          checkbox.type = "checkbox";
+          checkbox.checked = state!.externalStepConfirmed;
+          checkbox.disabled = item.identityStatus === "unidentified";
+          checkbox.addEventListener("change", () => {
+            state!.externalStepConfirmed = checkbox.checked;
+            updateProgress();
+          });
+          label.append(checkbox, el("span", "", "Confirmo que el paso externo se completó en el canal de la aseguradora"));
+          fields.appendChild(label);
           continue;
         }
         const label = el("label", "quote-field");
@@ -343,6 +363,81 @@ function renderDetail(item: WorkItem) {
     }
     updateProgress();
     intake.appendChild(progress);
+
+    if (line) {
+      const offerSection = el("div", "offer-section");
+      offerSection.appendChild(el("strong", "", "Ofertas recibidas de aseguradoras"));
+      offerSection.appendChild(el("p", "", "Introduce solo datos de un documento real. La demo no verifica el documento ni recomienda una póliza."));
+      const offerList = el("div", "offer-list");
+      const renderOffers = () => {
+        offerList.replaceChildren();
+        const offers = offersForCase(quoteOffers.get(item.id) ?? [], item.id, line);
+        if (!offers.length) {
+          offerList.appendChild(el("p", "", "Todavía no hay ofertas registradas para este caso."));
+          return;
+        }
+        for (const offer of offers) {
+          const card = el("div", "offer-card");
+          const premium = (offer.annualPremiumCents / 100).toLocaleString("es-ES", {
+            style: "currency", currency: "EUR" });
+          card.append(el("strong", "", `${offer.insurer} · ${premium}/año`),
+            el("span", "", `Ref. ${offer.insurerReference} · Válida hasta ${offer.validUntil}`),
+            el("p", "", `Cobertura declarada: ${offer.coverageSummary}`),
+            el("p", "", `Exclusiones declaradas: ${offer.exclusionsSummary}`),
+            el("small", "", `Fuente a comprobar: ${offer.sourceDocument} · Introducción manual, sin verificación automática`));
+          offerList.appendChild(card);
+        }
+      };
+      offerSection.appendChild(offerList);
+      const form = el("form", "offer-form");
+      const fields: Array<[keyof OfferEntry, string, string]> = [
+        ["insurer", "Aseguradora", "text"],
+        ["insurerReference", "Referencia de oferta", "text"],
+        ["sourceDocument", "Documento o localizador de origen", "text"],
+        ["annualPremium", "Prima anual en euros", "text"],
+        ["validUntil", "Válida hasta", "date"],
+        ["coverageSummary", "Coberturas según documento", "text"],
+        ["exclusionsSummary", "Exclusiones según documento", "text"]
+      ];
+      const inputs = {} as Record<keyof OfferEntry, HTMLInputElement>;
+      for (const [key, labelText, type] of fields) {
+        const label = el("label", "", labelText);
+        const input = el("input") as HTMLInputElement;
+        input.type = type;
+        input.required = true;
+        input.name = key;
+        if (key === "annualPremium") input.inputMode = "decimal";
+        label.appendChild(input);
+        form.appendChild(label);
+        inputs[key] = input;
+      }
+      const error = el("p", "offer-error");
+      offerButton = el("button", "offer-add", "Registrar oferta transcrita");
+      offerButton.type = "submit";
+      form.append(offerButton, error);
+      form.addEventListener("submit", event => {
+        event.preventDefault();
+        try {
+          const entry = Object.fromEntries(fields.map(([key]) => [key, inputs[key].value])) as unknown as OfferEntry;
+          const offer = recordQuoteOffer({ id: `${item.id}-offer-${Date.now()}`,
+            caseId: item.id, line, intakeStatus: updateProgress(), entry,
+            enteredAt: new Date().toISOString() });
+          const existing = quoteOffers.get(item.id) ?? [];
+          offersForCase([...existing, offer], item.id, line);
+          quoteOffers.set(item.id, [...existing, offer]);
+          form.reset();
+          error.textContent = "";
+          renderOffers();
+        } catch (cause) {
+          error.textContent = cause instanceof Error && cause.message === "DUPLICATE_OFFER_REFERENCE"
+            ? "Ya existe esa referencia para la aseguradora." : "Revisa la prima, fecha y los campos del documento original.";
+        }
+      });
+      updateProgress();
+      offerSection.appendChild(form);
+      intake.appendChild(offerSection);
+      renderOffers();
+    }
     detail.appendChild(intake);
   }
 

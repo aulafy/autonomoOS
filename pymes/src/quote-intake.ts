@@ -40,6 +40,7 @@ export function evaluateQuoteIntake(input: {
   line?: InsuranceLine;
   identityStatus: "linked" | "unidentified";
   checkedIds: ReadonlySet<string>;
+  externalStepConfirmed?: boolean;
 }): { status: IntakeStatus; checked: number; total: number; externalSteps: string[] } {
   if (!input.line) return { status: input.identityStatus === "unidentified"
     ? "identity_required" : "line_required", checked: 0, total: 0, externalSteps: [] };
@@ -54,6 +55,7 @@ export function evaluateQuoteIntake(input: {
     .map(requirement => requirement.label);
   const status: IntakeStatus = input.identityStatus === "unidentified" ? "identity_required" :
     checked < local.length ? "collecting" :
-      externalSteps.length ? "external_step_required" : "preliminary_complete";
+      externalSteps.length && !input.externalStepConfirmed ? "external_step_required" :
+        "preliminary_complete";
   return { status, checked, total: local.length, externalSteps };
 }
