@@ -18,6 +18,7 @@ export class SqliteWorkspaceRepository implements WorkspaceRepository {
       );
       CREATE TABLE IF NOT EXISTS workspace_inbox (
         id TEXT NOT NULL, tenant_id TEXT NOT NULL, state TEXT NOT NULL, summary TEXT NOT NULL,
+        version INTEGER NOT NULL DEFAULT 0, updated_at TEXT,
         PRIMARY KEY (tenant_id, id)
       );
       CREATE TABLE IF NOT EXISTS workspace_approvals (
@@ -25,6 +26,9 @@ export class SqliteWorkspaceRepository implements WorkspaceRepository {
         operation TEXT NOT NULL, approved_by TEXT NOT NULL, approved_at TEXT NOT NULL,
         reason TEXT NOT NULL, draft_hash TEXT NOT NULL
       );`);
+    // Keep databases created by the previous inbox schema readable.
+    try { this.db.exec("ALTER TABLE workspace_inbox ADD COLUMN version INTEGER NOT NULL DEFAULT 0"); } catch {}
+    try { this.db.exec("ALTER TABLE workspace_inbox ADD COLUMN updated_at TEXT"); } catch {}
   }
   provisionSession(token: string, principal: WorkspacePrincipal): void {
     this.db.prepare(`INSERT OR REPLACE INTO workspace_sessions
@@ -37,16 +41,18 @@ export class SqliteWorkspaceRepository implements WorkspaceRepository {
     return row ? { userId: row.user_id, tenantId: row.tenant_id, role: row.role } : null;
   }
   listInbox(tenantId: string): WorkspaceInboxRecord[] {
-    const rows = this.db.prepare(`SELECT id, tenant_id, state, summary FROM workspace_inbox
+    const rows = this.db.prepare(`SELECT id, tenant_id, state, summary, version, updated_at FROM workspace_inbox
       WHERE tenant_id = ? ORDER BY rowid`).all(tenantId) as Array<{ id: string; tenant_id: string;
-        state: WorkspaceInboxRecord["state"]; summary: string }>;
-    return rows.map(row => ({ id: row.id, tenantId: row.tenant_id, state: row.state, summary: row.summary }));
+        state: WorkspaceInboxRecord["state"]; summary: string; version: number; updated_at: string | null }>;
+    return rows.map(row => ({ id: row.id, tenantId: row.tenant_id, state: row.state, summary: row.summary,
+      version: row.version, ...(row.updated_at ? { updatedAt: row.updated_at } : {}) }));
   }
   appendInbox(record: WorkspaceInboxRecord): void {
     this.db.prepare(`INSERT OR REPLACE INTO workspace_inbox
-      (id, tenant_id, state, summary) VALUES (?, ?, ?, ?)`).run(record.id, record.tenantId,
-      record.state, record.summary);
+      (id, tenant_id, state, summary, version, updated_at) VALUES (?, ?, ?, ?, ?, ?)`).run(record.id, record.tenantId,
+      record.state, record.summary, record.version ?? 0, record.updatedAt ?? null);
   }
+  updateInbox(record: WorkspaceInboxRecord): void { this.appendInbox(record); }
   appendApproval(approval: ApprovalRecord): void {
     this.db.prepare(`INSERT INTO workspace_approvals
       (id, tenant_id, resource_id, operation, approved_by, approved_at, reason, draft_hash)

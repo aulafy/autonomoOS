@@ -1,14 +1,17 @@
 import { createApproval, requirePermission, type ApprovalRecord,
   type WorkspacePrincipal, type WorkspaceRole } from "./workspace-policy.js";
 import { ingestOpenClawIntoWorkspace } from "./workspace-ingress.js";
+import { transitionCase, type CaseState } from "./case-lifecycle.js";
 import type { OpenClawEnterpriseEnvelope, OpenClawEnterprisePolicy } from "./openclaw-gateway.js";
 export type { ApprovalRecord, WorkspacePrincipal } from "./workspace-policy.js";
 
 export interface WorkspaceInboxRecord {
   id: string;
   tenantId: string;
-  state: "received" | "pending_review" | "approved";
+  state: CaseState;
   summary: string;
+  version?: number;
+  updatedAt?: string;
 }
 
 export interface WorkspaceApiRequest {
@@ -28,6 +31,7 @@ export interface WorkspaceRepository {
   findSession(token: string): WorkspacePrincipal | null;
   listInbox(tenantId: string): WorkspaceInboxRecord[];
   appendInbox(record: WorkspaceInboxRecord): void;
+  updateInbox(record: WorkspaceInboxRecord): void;
   appendApproval(approval: ApprovalRecord): void;
   listApprovals(tenantId: string): ApprovalRecord[];
 }
@@ -50,6 +54,7 @@ export class InMemoryWorkspaceRepository implements WorkspaceRepository {
     const records = this.inbox.get(record.tenantId) ?? [];
     this.inbox.set(record.tenantId, [...records, structuredClone(record)]);
   }
+  updateInbox(record: WorkspaceInboxRecord): void { this.appendInbox(record); }
   appendApproval(approval: ApprovalRecord): void { this.approvals.push(structuredClone(approval)); }
   listApprovals(tenantId: string): ApprovalRecord[] {
     return this.approvals.filter(value => value.tenantId === tenantId)
@@ -139,6 +144,23 @@ export class WorkspaceApi {
       try { requirePermission(principal, "readInbox", resource); }
       catch { return { status: 403, body: { error: "WORKSPACE_PERMISSION_DENIED" } }; }
       return { status: 200, body: { tenantId, approvals: this.repository.listApprovals(tenantId) } };
+    }
+    if (request.method === "POST" && parts[3] === "cases" && parts[5] === "transition" && parts.length === 6) {
+      const body = jsonRecord(request.body);
+      if (!body || typeof body.to !== "string" || typeof body.at !== "string")
+        return { status: 400, body: { error: "INVALID_CASE_TRANSITION_BODY" } };
+      const item = this.repository.listInbox(tenantId).find(value => value.id === parts[4]);
+      if (!item) return { status: 404, body: { error: "CASE_NOT_FOUND" } };
+      try {
+        const next = transitionCase({ current: { id: item.id, tenantId, state: item.state,
+          version: item.version ?? 0, updatedAt: item.updatedAt ?? new Date(0).toISOString() },
+          to: body.to as CaseState, principal, at: body.at });
+        this.repository.updateInbox({ ...item, state: next.state, version: next.version, updatedAt: next.updatedAt });
+        return { status: 200, body: next as unknown as Record<string, unknown> };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "INVALID_CASE_TRANSITION";
+        return { status: message === "WORKSPACE_PERMISSION_DENIED" ? 403 : 400, body: { error: message } };
+      }
     }
     if (request.method === "POST" && parts[3] === "approvals" && parts.length === 4) {
       const body = jsonRecord(request.body);
