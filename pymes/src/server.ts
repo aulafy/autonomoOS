@@ -9,6 +9,7 @@ const host = process.env.PYMES_API_HOST ?? "127.0.0.1";
 const token = process.env.PYMES_API_BOOTSTRAP_TOKEN;
 const tenantId = process.env.PYMES_API_BOOTSTRAP_TENANT ?? "demo-agency";
 const userId = process.env.PYMES_API_BOOTSTRAP_USER ?? "demo-owner";
+const corsOrigins = (process.env.PYMES_API_CORS_ORIGINS ?? "http://127.0.0.1:5174,http://localhost:5174").split(",").map(value => value.trim()).filter(Boolean);
 
 if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error("INVALID_PYMES_API_PORT");
 if (!token || token.length < 16) {
@@ -59,7 +60,7 @@ const server = createServer(async (request, nodeResponse) => {
         headers: Object.entries(request.headers).flatMap(([key, value]) =>
           value === undefined ? [] : [[key, Array.isArray(value) ? value.join(",") : value] as [string, string]]),
         body: request.method === "POST" ? body : undefined });
-      const webResponse = await handlePymesRequest(api, webRequest);
+      const webResponse = await handlePymesRequest(api, webRequest, { allowedOrigins: corsOrigins });
       nodeResponse.statusCode = webResponse.status;
       webResponse.headers.forEach((value, key) => nodeResponse.setHeader(key, value));
       nodeResponse.end(Buffer.from(await webResponse.arrayBuffer()));

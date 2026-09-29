@@ -65,6 +65,13 @@ test("HTTP adapter supports restricted local CORS preflight", async () => {
   assert.equal(denied.headers.get("vary"), "Origin");
 });
 
+test("HTTP adapter accepts explicitly configured CORS origins", async () => {
+  const response = await handlePymesRequest(api(), new Request("http://localhost/healthz", {
+    headers: { origin: "https://agency.example" }
+  }), { allowedOrigins: ["https://agency.example"] });
+  assert.equal(response.headers.get("access-control-allow-origin"), "https://agency.example");
+});
+
 test("HTTP adapter returns JSON and enforces authentication", async () => {
   const response = await handlePymesRequest(api(), new Request("http://localhost/v1/workspaces/agency-1/inbox"));
   assert.equal(response.status, 401);
