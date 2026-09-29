@@ -31,6 +31,11 @@ La interfaz local se sirve en `http://127.0.0.1:5174/`. Para conectarla a un
 workspace, usa `?workspaceApi=http://127.0.0.1:8790&tenant=demo-agency` y guarda
 el token en `sessionStorage` como `pymes.workspace.token`.
 
+En producción, define `PYMES_API_CORS_ORIGINS` con una lista separada por
+comas de los dominios exactos de la interfaz (por ejemplo,
+`https://app.agencia.example`). No uses `*`: el API utiliza credenciales Bearer
+y debe mantener una allowlist explícita.
+
 ## OpenClaw Enterprise
 
 El ingress se activa con `PYMES_OPENCLAW_INGRESS_TOKEN` y las listas de control:
