@@ -36,6 +36,16 @@ comas de los dominios exactos de la interfaz (por ejemplo,
 `https://app.agencia.example`). No uses `*`: el API utiliza credenciales Bearer
 y debe mantener una allowlist explícita.
 
+Validación rápida desde el host de despliegue:
+
+```bash
+curl -i -X OPTIONS http://127.0.0.1:8790/healthz \
+  -H 'Origin: https://app.agencia.example' \
+  -H 'Access-Control-Request-Method: GET'
+```
+
+La respuesta debe incluir `Access-Control-Allow-Origin` con ese origen exacto.
+
 ## OpenClaw Enterprise
 
 El ingress se activa con `PYMES_OPENCLAW_INGRESS_TOKEN` y las listas de control:
