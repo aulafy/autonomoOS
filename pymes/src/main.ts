@@ -5,6 +5,7 @@ import { evaluateQuoteIntake, quoteRequirements } from "./quote-intake.js";
 import { offersForCase, recordQuoteOffer, type OfferEntry, type QuoteOffer } from "./quote-offers.js";
 import { createWorkspaceStore } from "./workspace-store.js";
 import { WorkspaceClient, WorkspaceConflictError } from "./workspace-client.js";
+import { MAX_EFFECT_RETRIES } from "./effects.js";
 import { buildCallPlan } from "./call-plan.js";
 import { acceptClassification, parseClassificationProposal,
   type ClassificationProposal } from "./classification.js";
@@ -265,7 +266,10 @@ function renderDetail(item: WorkItem) {
             block.appendChild(outcome);
           }
         }
-        if (effect.status === "failed") {
+        if (effect.status === "failed" && (effect.retryCount ?? 0) >= MAX_EFFECT_RETRIES) {
+          block.appendChild(el("p", "classification-reason", "Límite de reintentos alcanzado. Requiere revisión manual."));
+        }
+        if (effect.status === "failed" && (effect.retryCount ?? 0) < MAX_EFFECT_RETRIES) {
           const retry = el("button", "review-button", "Reintentar operación");
           retry.type = "button";
           retry.addEventListener("click", async () => {
