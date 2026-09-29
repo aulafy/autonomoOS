@@ -627,3 +627,4 @@ if (brief.items[0]) renderDetail(brief.items[0]);
 renderReviewQueue();
 renderAppointments();
 void checkRemoteWorkspace();
+window.setInterval(() => { void checkRemoteWorkspace(); }, 30_000);
