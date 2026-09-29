@@ -1,6 +1,7 @@
 import { createServer } from "node:http";
 import { WorkspaceApi } from "./workspace-api.js";
 import { handlePymesRequest } from "./api-server.js";
+import { SqliteWorkspaceRepository } from "./workspace-store-sqlite.js";
 
 const port = Number(process.env.PYMES_API_PORT ?? 8790);
 const host = process.env.PYMES_API_HOST ?? "127.0.0.1";
@@ -13,8 +14,9 @@ if (!token || token.length < 16) {
   throw new Error("PYMES_API_BOOTSTRAP_TOKEN_REQUIRED");
 }
 
-const api = new WorkspaceApi();
-api.addSession(token, { userId, tenantId, role: "owner" });
+const repository = new SqliteWorkspaceRepository(process.env.PYMES_API_DB_PATH ?? "./data/pymes-workspace.db");
+repository.provisionSession(token, { userId, tenantId, role: "owner" });
+const api = new WorkspaceApi(repository);
 const server = createServer(async (request, nodeResponse) => {
   const chunks: Buffer[] = [];
   let bytes = 0;

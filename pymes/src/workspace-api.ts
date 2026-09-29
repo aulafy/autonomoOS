@@ -1,5 +1,6 @@
 import { createApproval, requirePermission, type ApprovalRecord,
   type WorkspacePrincipal, type WorkspaceRole } from "./workspace-policy.js";
+export type { ApprovalRecord, WorkspacePrincipal } from "./workspace-policy.js";
 
 export interface WorkspaceInboxRecord {
   id: string;
@@ -18,6 +19,39 @@ export interface WorkspaceApiRequest {
 export interface WorkspaceApiResponse {
   status: 200 | 201 | 400 | 401 | 403 | 404;
   body: Record<string, unknown>;
+}
+
+export interface WorkspaceRepository {
+  findSession(token: string): WorkspacePrincipal | null;
+  listInbox(tenantId: string): WorkspaceInboxRecord[];
+  appendInbox(record: WorkspaceInboxRecord): void;
+  appendApproval(approval: ApprovalRecord): void;
+  listApprovals(tenantId: string): ApprovalRecord[];
+}
+
+export class InMemoryWorkspaceRepository implements WorkspaceRepository {
+  private readonly sessions = new Map<string, WorkspacePrincipal>();
+  private readonly inbox = new Map<string, WorkspaceInboxRecord[]>();
+  private readonly approvals: ApprovalRecord[] = [];
+  addSession(token: string, principal: WorkspacePrincipal): void {
+    this.sessions.set(token, structuredClone(principal));
+  }
+  findSession(token: string): WorkspacePrincipal | null {
+    const value = this.sessions.get(token);
+    return value ? structuredClone(value) : null;
+  }
+  listInbox(tenantId: string): WorkspaceInboxRecord[] {
+    return structuredClone(this.inbox.get(tenantId) ?? []);
+  }
+  appendInbox(record: WorkspaceInboxRecord): void {
+    const records = this.inbox.get(record.tenantId) ?? [];
+    this.inbox.set(record.tenantId, [...records, structuredClone(record)]);
+  }
+  appendApproval(approval: ApprovalRecord): void { this.approvals.push(structuredClone(approval)); }
+  listApprovals(tenantId: string): ApprovalRecord[] {
+    return this.approvals.filter(value => value.tenantId === tenantId)
+      .map(value => structuredClone(value));
+  }
 }
 
 interface ApprovalBody {
@@ -47,28 +81,25 @@ function tokenFrom(request: WorkspaceApiRequest): string | null {
  * response shaping; persistence can be replaced without changing callers.
  */
 export class WorkspaceApi {
-  private readonly sessions = new Map<string, WorkspacePrincipal>();
-  private readonly inbox = new Map<string, WorkspaceInboxRecord[]>();
-  private readonly approvals: ApprovalRecord[] = [];
+  constructor(readonly repository: WorkspaceRepository = new InMemoryWorkspaceRepository()) {}
 
   addSession(token: string, principal: WorkspacePrincipal): void {
     if (!token || token.length < 16) throw new Error("INVALID_SESSION_TOKEN");
-    this.sessions.set(token, structuredClone(principal));
+    if (this.repository instanceof InMemoryWorkspaceRepository) this.repository.addSession(token, principal);
+    else throw new Error("SESSION_PROVISIONING_REQUIRES_REPOSITORY_OWNER");
   }
 
   addInbox(record: WorkspaceInboxRecord): void {
-    const records = this.inbox.get(record.tenantId) ?? [];
-    this.inbox.set(record.tenantId, [...records, structuredClone(record)]);
+    this.repository.appendInbox(record);
   }
 
   approvalsForTenant(tenantId: string): ApprovalRecord[] {
-    return this.approvals.filter(approval => approval.tenantId === tenantId)
-      .map(approval => structuredClone(approval));
+    return this.repository.listApprovals(tenantId);
   }
 
   handle(request: WorkspaceApiRequest): WorkspaceApiResponse {
     const token = tokenFrom(request);
-    const principal = token ? this.sessions.get(token) : undefined;
+    const principal = token ? this.repository.findSession(token) : null;
     if (!principal) return { status: 401, body: { error: "UNAUTHENTICATED" } };
     const parts = pathParts(request.path);
     if (!parts || parts[0] !== "v1" || parts[1] !== "workspaces") {
@@ -82,7 +113,7 @@ export class WorkspaceApi {
     if (request.method === "GET" && parts[3] === "inbox" && parts.length === 4) {
       try { requirePermission(principal, "readInbox", resource); }
       catch { return { status: 403, body: { error: "WORKSPACE_PERMISSION_DENIED" } }; }
-      return { status: 200, body: { tenantId, items: structuredClone(this.inbox.get(tenantId) ?? []) } };
+      return { status: 200, body: { tenantId, items: this.repository.listInbox(tenantId) } };
     }
     if (request.method === "POST" && parts[3] === "approvals" && parts.length === 4) {
       const body = jsonRecord(request.body);
@@ -93,10 +124,10 @@ export class WorkspaceApi {
       const input: ApprovalBody = { resourceId: body.resourceId, reason: body.reason,
         draftHash: body.draftHash, approvedAt: body.approvedAt };
       try {
-        const approval = createApproval({ id: `approval-${this.approvals.length + 1}`,
+        const approval = createApproval({ id: `approval-${this.repository.listApprovals(tenantId).length + 1}`,
           principal, resource: { tenantId, id: input.resourceId }, operation: "approveOffer",
           approvedAt: input.approvedAt, reason: input.reason, draftHash: input.draftHash });
-        this.approvals.push(approval);
+        this.repository.appendApproval(approval);
         return { status: 201, body: structuredClone(approval) as unknown as Record<string, unknown> };
       } catch (error) {
         return { status: error instanceof Error && error.message === "WORKSPACE_PERMISSION_DENIED" ? 403 : 400,
