@@ -49,3 +49,13 @@ const server = createServer(async (request, nodeResponse) => {
   });
 });
 server.listen(port, host, () => console.log(`PYMES API listening on http://${host}:${port}`));
+
+function shutdown(signal: string): void {
+  console.log(`PYMES API received ${signal}; shutting down`);
+  server.close(error => {
+    repository.close();
+    if (error) { console.error(error); process.exitCode = 1; }
+  });
+}
+process.once("SIGTERM", () => shutdown("SIGTERM"));
+process.once("SIGINT", () => shutdown("SIGINT"));
