@@ -86,6 +86,7 @@ server.headersTimeout = 10_000;
 server.requestTimeout = 30_000;
 server.keepAliveTimeout = 5_000;
 server.maxHeadersCount = 100;
+server.maxRequestsPerSocket = 1_000;
 server.listen(port, host, () => console.log(`PYMES API listening on http://${host}:${port}`));
 
 function shutdown(signal: string): void {
