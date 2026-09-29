@@ -258,7 +258,8 @@ export class WorkspaceApi {
       try {
         requirePermission(principal, "executeEffect", { tenantId, id: effect.caseId });
         if (effect.status !== "failed" || Number.isNaN(Date.parse(body.requestedAt)) || body.reason.trim().length < 3 || body.reason.trim().length > 2000) throw new Error("EFFECT_NOT_RETRYABLE");
-        const retry = { ...effect, status: "pending" as const, requestedBy: principal.userId, requestedAt: body.requestedAt, executionNote: `Retry: ${body.reason.trim()}` };
+        const retry = { ...effect, status: "pending" as const, requestedBy: principal.userId, requestedAt: body.requestedAt,
+          executionNote: `${effect.executionNote ? `${effect.executionNote}\n` : ""}Reintento: ${body.reason.trim()}` };
         this.repository.updateEffect(retry);
         return { status: 200, body: retry as unknown as Record<string, unknown> };
       } catch (error) { const message = error instanceof Error ? error.message : "INVALID_EFFECT_RETRY"; return { status: message === "WORKSPACE_PERMISSION_DENIED" ? 403 : 400, body: { error: message } }; }

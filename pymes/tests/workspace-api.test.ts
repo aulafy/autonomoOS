@@ -93,6 +93,7 @@ test("effects require execute permission and explicit confirmation", () => {
     authorization: "Bearer owner-token-12345", body: { requestedAt: "2026-09-29T12:20:00Z", reason: "Cliente disponible" } });
   assert.equal(retry.status, 200);
   assert.equal((retry.body as { status: string }).status, "pending");
+  assert.match((retry.body as { executionNote: string }).executionNote, /No se pudo contactar.*Cliente disponible/s);
   assert.equal(value.handle({ method: "GET", path: "/v1/workspaces/agency-2/effects",
     authorization: "Bearer other-token-1234" }).status, 200);
   assert.deepEqual((value.handle({ method: "GET", path: "/v1/workspaces/agency-2/effects",
