@@ -225,6 +225,8 @@ function renderDetail(item: WorkItem) {
       for (const effect of own) {
         block.appendChild(el("p", "", `${effectKindNames[effect.kind] ?? effect.kind} · ${effectStatusNames[effect.status] ?? effect.status} · solicitada por ${effect.requestedBy}`));
         block.appendChild(el("small", "", `Requiere confirmación explícita antes de ejecutar · ${dayTime(effect.requestedAt)}`));
+        if (effect.executionNote) block.appendChild(el("p", "classification-reason", `Nota de ejecución: ${effect.executionNote}`));
+        if (effect.executedBy && effect.executedAt) block.appendChild(el("small", "", `Registrada por ${effect.executedBy} · ${dayTime(effect.executedAt)}`));
         if (effect.status === "pending") {
           const confirm = el("button", "review-button", "Confirmar operación");
           confirm.type = "button";
