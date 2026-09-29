@@ -34,3 +34,16 @@ jobs:
         run: docker compose -f pymes/docker-compose.yml config --quiet
       - name: Build deployment image
         run: docker build --file pymes/Dockerfile --tag pymes-workspace:ci .
+      - name: Smoke test deployment image
+        run: |
+          docker run --detach --rm --name pymes-ci -p 8790:8790 \
+            -e PYMES_API_BOOTSTRAP_TOKEN=ci-smoke-test-token \
+            -e PYMES_API_BOOTSTRAP_TENANT=ci-agency \
+            pymes-workspace:ci
+          trap 'docker stop pymes-ci' EXIT
+          for attempt in $(seq 1 20); do
+            if curl --fail --silent http://127.0.0.1:8790/readyz; then exit 0; fi
+            sleep 1
+          done
+          docker logs pymes-ci
+          exit 1
