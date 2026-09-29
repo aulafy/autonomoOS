@@ -65,6 +65,9 @@ requieren Bearer token y comprueban el tenant antes de leer o escribir.
 
 - Respaldar el fichero SQLite y su WAL como una unidad.
 - Mantener el token bootstrap fuera del repositorio.
+- El servicio Compose se ejecuta sin capacidades Linux y con
+  `no-new-privileges`; conservar estas restricciones en cualquier manifiesto
+  equivalente.
 - Configurar un supervisor que envíe `SIGTERM` para el apagado ordenado.
 - Monitorizar `/healthz` y revisar los efectos `failed` antes de reintentar.
 - El volumen Docker usa `/data/pymes-workspace.db`; conservarlo junto con sus
