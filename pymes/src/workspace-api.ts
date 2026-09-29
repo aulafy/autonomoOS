@@ -193,6 +193,11 @@ export class WorkspaceApi {
       try { requirePermission(principal, "readInbox", resource); } catch { return { status: 403, body: { error: "WORKSPACE_PERMISSION_DENIED" } }; }
       return { status: 200, body: { tenantId, effects: this.repository.listEffects(tenantId) } };
     }
+    if (request.method === "GET" && parts[3] === "effects" && parts.length === 5) {
+      try { requirePermission(principal, "readInbox", resource); } catch { return { status: 403, body: { error: "WORKSPACE_PERMISSION_DENIED" } }; }
+      const effect = this.repository.listEffects(tenantId).find(value => value.id === parts[4]);
+      return effect ? { status: 200, body: effect as unknown as Record<string, unknown> } : { status: 404, body: { error: "EFFECT_NOT_FOUND" } };
+    }
     if (request.method === "POST" && parts[3] === "effects" && parts.length === 4) {
       const body = jsonRecord(request.body);
       if (!body || typeof body.id !== "string" || typeof body.caseId !== "string" || typeof body.kind !== "string" || typeof body.requestedAt !== "string" || typeof body.draftHash !== "string" || jsonRecord(body.payload) === null)

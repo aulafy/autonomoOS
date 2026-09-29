@@ -11,6 +11,7 @@ La API es multi-tenant y requiere `Authorization: Bearer <token>` en todas las r
 - `GET /v1/workspaces/:tenant/inbox` — casos del tenant autenticado.
 - `GET /v1/workspaces/:tenant/approvals` — aprobaciones registradas.
 - `GET /v1/workspaces/:tenant/cases/:caseId/audit` — transiciones con actor, versión y fecha.
+- `GET /v1/workspaces/:tenant/effects/:effectId` — estado individual de una operación.
 - `POST /v1/workspaces/:tenant/cases/:caseId/transition` — cuerpo `{ "to": "...", "at": "ISO-8601" }`.
 
 ## Efectos externos
