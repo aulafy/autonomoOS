@@ -82,6 +82,12 @@ test("effects require execute permission and explicit confirmation", () => {
     authorization: "Bearer owner-token-12345", body: { confirm: true, confirmedAt: "2026-09-29T12:05:00Z" } });
   assert.equal(confirmed.status, 200);
   assert.equal((confirmed.body as { status: string }).status, "confirmed");
+  const failed = value.handle({ method: "POST", path: "/v1/workspaces/agency-1/effects/effect-1/result",
+    authorization: "Bearer owner-token-12345", body: { result: "failed", executedAt: "2026-09-29T12:06:00Z", note: "No se pudo contactar con el cliente" } });
+  assert.equal(failed.status, 200);
+  assert.equal((failed.body as { status: string }).status, "failed");
+  assert.equal(value.handle({ method: "POST", path: "/v1/workspaces/agency-1/effects/effect-1/result",
+    authorization: "Bearer owner-token-12345", body: { result: "succeeded", executedAt: "2026-09-29T12:07:00Z", note: "Reintento" } }).status, 400);
   assert.equal(value.handle({ method: "GET", path: "/v1/workspaces/agency-2/effects",
     authorization: "Bearer other-token-1234" }).status, 200);
   assert.deepEqual((value.handle({ method: "GET", path: "/v1/workspaces/agency-2/effects",
