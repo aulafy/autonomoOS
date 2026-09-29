@@ -101,4 +101,6 @@ test("effects require execute permission and explicit confirmation", () => {
     authorization: "Bearer other-token-1234" }).status, 404);
   assert.equal(value.handle({ method: "POST", path: "/v1/workspaces/agency-1/effects",
     authorization: "Bearer owner-token-12345", body: { ...draft, id: "effect-invalid", kind: "webhook" } }).status, 400);
+  assert.equal(value.handle({ method: "POST", path: "/v1/workspaces/agency-1/effects",
+    authorization: "Bearer owner-token-12345", body: { ...draft, id: "effect-large", payload: { data: "x".repeat(70000) } } }).status, 400);
 });
