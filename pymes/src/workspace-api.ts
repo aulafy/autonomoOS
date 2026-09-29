@@ -2,6 +2,7 @@ import { createApproval, requirePermission, type ApprovalRecord,
   type WorkspacePrincipal, type WorkspaceRole } from "./workspace-policy.js";
 import { ingestOpenClawIntoWorkspace } from "./workspace-ingress.js";
 import { transitionCase, type CaseState } from "./case-lifecycle.js";
+import { createPendingEffect, type EffectKind, type PendingEffect } from "./effects.js";
 import type { OpenClawEnterpriseEnvelope, OpenClawEnterprisePolicy } from "./openclaw-gateway.js";
 export type { ApprovalRecord, WorkspacePrincipal } from "./workspace-policy.js";
 
@@ -38,6 +39,8 @@ export interface WorkspaceRepository {
   updateInbox(record: WorkspaceInboxRecord): void;
   appendCaseAudit(record: CaseAuditRecord): void;
   listCaseAudit(tenantId: string, caseId: string): CaseAuditRecord[];
+  appendEffect(effect: PendingEffect): void;
+  listEffects(tenantId: string, caseId?: string): PendingEffect[];
   appendApproval(approval: ApprovalRecord): void;
   listApprovals(tenantId: string): ApprovalRecord[];
 }
@@ -66,6 +69,9 @@ export class InMemoryWorkspaceRepository implements WorkspaceRepository {
   listCaseAudit(tenantId: string, caseId: string): CaseAuditRecord[] {
     return this.audits.filter(value => value.tenantId === tenantId && value.caseId === caseId).map(value => structuredClone(value));
   }
+  private readonly effects: PendingEffect[] = [];
+  appendEffect(effect: PendingEffect): void { this.effects.push(structuredClone(effect)); }
+  listEffects(tenantId: string, caseId?: string): PendingEffect[] { return this.effects.filter(v => v.tenantId === tenantId && (!caseId || v.caseId === caseId)).map(v => structuredClone(v)); }
   appendApproval(approval: ApprovalRecord): void { this.approvals.push(structuredClone(approval)); }
   listApprovals(tenantId: string): ApprovalRecord[] {
     return this.approvals.filter(value => value.tenantId === tenantId)
@@ -180,6 +186,21 @@ export class WorkspaceApi {
       try { requirePermission(principal, "readInbox", { tenantId, id: parts[4] }); }
       catch { return { status: 403, body: { error: "WORKSPACE_PERMISSION_DENIED" } }; }
       return { status: 200, body: { tenantId, caseId: parts[4], audit: this.repository.listCaseAudit(tenantId, parts[4]) } };
+    }
+    if (request.method === "GET" && parts[3] === "effects" && parts.length === 4) {
+      try { requirePermission(principal, "readInbox", resource); } catch { return { status: 403, body: { error: "WORKSPACE_PERMISSION_DENIED" } }; }
+      return { status: 200, body: { tenantId, effects: this.repository.listEffects(tenantId) } };
+    }
+    if (request.method === "POST" && parts[3] === "effects" && parts.length === 4) {
+      const body = jsonRecord(request.body);
+      if (!body || typeof body.id !== "string" || typeof body.caseId !== "string" || typeof body.kind !== "string" || typeof body.requestedAt !== "string" || typeof body.draftHash !== "string" || jsonRecord(body.payload) === null)
+        return { status: 400, body: { error: "INVALID_EFFECT_BODY" } };
+      try {
+        const effect = createPendingEffect({ id: body.id, tenantId, caseId: body.caseId, kind: body.kind as EffectKind,
+          payload: jsonRecord(body.payload)!, principal, requestedAt: body.requestedAt, draftHash: body.draftHash });
+        this.repository.appendEffect(effect);
+        return { status: 201, body: effect as unknown as Record<string, unknown> };
+      } catch (error) { const message = error instanceof Error ? error.message : "INVALID_PENDING_EFFECT"; return { status: message === "WORKSPACE_PERMISSION_DENIED" ? 403 : 400, body: { error: message } }; }
     }
     if (request.method === "POST" && parts[3] === "approvals" && parts.length === 4) {
       const body = jsonRecord(request.body);
