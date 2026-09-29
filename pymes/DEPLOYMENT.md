@@ -71,6 +71,18 @@ requieren Bearer token y comprueban el tenant antes de leer o escribir.
 - El root filesystem es de solo lectura; `/data` es el único almacenamiento
   persistente y `/tmp` se monta como temporal.
 - Compose concede 30 segundos para el apagado ordenado y el cierre de SQLite.
+
+Backup consistente con el contenedor detenido:
+
+```bash
+docker compose stop pymes-workspace
+docker run --rm -v pymes-data:/data -v "$PWD/backups:/backup" \
+  alpine sh -c 'tar czf /backup/pymes-$(date +%Y%m%d-%H%M%S).tgz -C /data .'
+docker compose start pymes-workspace
+```
+
+Conserva el archivo generado fuera del host de ejecución y prueba una
+restauración periódicamente.
 - Configurar un supervisor que envíe `SIGTERM` para el apagado ordenado.
 - Monitorizar `/healthz` y revisar los efectos `failed` antes de reintentar.
 - El volumen Docker usa `/data/pymes-workspace.db`; conservarlo junto con sus
