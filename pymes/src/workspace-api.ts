@@ -243,7 +243,8 @@ export class WorkspaceApi {
       if (!effect) return { status: 404, body: { error: "EFFECT_NOT_FOUND" } };
       try {
         requirePermission(principal, "executeEffect", { tenantId, id: effect.caseId });
-        if (effect.status !== "confirmed" || Number.isNaN(Date.parse(body.executedAt)) || body.note.trim().length < 3 || body.note.trim().length > 2000) throw new Error("EFFECT_NOT_CONFIRMED");
+        if (effect.status !== "confirmed") throw new Error("EFFECT_NOT_CONFIRMED");
+        if (Number.isNaN(Date.parse(body.executedAt)) || body.note.trim().length < 3 || body.note.trim().length > 2000) throw new Error("INVALID_EFFECT_RESULT");
         const result = { ...effect, status: body.result as "succeeded" | "failed", executedBy: principal.userId, executedAt: body.executedAt, executionNote: body.note.trim() };
         this.repository.updateEffect(result);
         return { status: 200, body: result as unknown as Record<string, unknown> };
