@@ -3,3 +3,5 @@ dist
 data
 tests
 *.log
+.env*
+!.env.example
