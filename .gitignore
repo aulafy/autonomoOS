@@ -9,6 +9,8 @@ data/events/*.jsonl
 .env.*
 !.env.example
 pymes/data/
+pymes/backups/
+backups/
 *.db
 *.db-shm
 *.db-wal
