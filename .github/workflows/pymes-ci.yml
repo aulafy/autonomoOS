@@ -14,6 +14,9 @@ on:
       - "package-lock.json"
       - ".github/workflows/pymes-ci.yml"
 
+permissions:
+  contents: read
+
 jobs:
   check:
     runs-on: ubuntu-latest
