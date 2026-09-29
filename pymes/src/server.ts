@@ -38,14 +38,24 @@ const server = createServer(async (request, nodeResponse) => {
     if (bytes > 1_048_576) return;
     const url = `http://${request.headers.host ?? `${host}:${port}`}${request.url ?? "/"}`;
     const body = Buffer.concat(chunks);
-    const webRequest = new Request(url, { method: request.method ?? "GET",
-      headers: Object.entries(request.headers).flatMap(([key, value]) =>
-        value === undefined ? [] : [[key, Array.isArray(value) ? value.join(",") : value] as [string, string]]),
-      body: request.method === "POST" ? body : undefined });
-    const webResponse = await handlePymesRequest(api, webRequest);
-    nodeResponse.statusCode = webResponse.status;
-    webResponse.headers.forEach((value, key) => nodeResponse.setHeader(key, value));
-    nodeResponse.end(Buffer.from(await webResponse.arrayBuffer()));
+    try {
+      const webRequest = new Request(url, { method: request.method ?? "GET",
+        headers: Object.entries(request.headers).flatMap(([key, value]) =>
+          value === undefined ? [] : [[key, Array.isArray(value) ? value.join(",") : value] as [string, string]]),
+        body: request.method === "POST" ? body : undefined });
+      const webResponse = await handlePymesRequest(api, webRequest);
+      nodeResponse.statusCode = webResponse.status;
+      webResponse.headers.forEach((value, key) => nodeResponse.setHeader(key, value));
+      nodeResponse.end(Buffer.from(await webResponse.arrayBuffer()));
+    } catch (error) {
+      const requestId = request.headers["x-request-id"] ?? crypto.randomUUID();
+      nodeResponse.statusCode = 500;
+      nodeResponse.setHeader("content-type", "application/json; charset=utf-8");
+      nodeResponse.setHeader("cache-control", "no-store");
+      nodeResponse.setHeader("x-request-id", Array.isArray(requestId) ? requestId[0] : requestId);
+      nodeResponse.end(JSON.stringify({ error: "INTERNAL_SERVER_ERROR" }));
+      console.error("PYMES request failed", error);
+    }
   });
 });
 server.listen(port, host, () => console.log(`PYMES API listening on http://${host}:${port}`));
