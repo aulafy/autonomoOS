@@ -50,3 +50,8 @@ POST /v1/workspaces/:tenant/effects/:effectId/result
 ```
 
 Los resultados solo se aceptan después de confirmar el efecto. Cada ruta comprueba tenant, rol y estado actual.
+
+Los tipos de efecto permitidos son `call`, `calendar`, `message` y `crm_task`.
+El payload está limitado a 64 KiB; los identificadores y hashes también tienen
+límites de longitud. Las notas de ejecución deben tener entre 3 y 2.000
+caracteres.
