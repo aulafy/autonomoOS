@@ -39,6 +39,11 @@ jobs:
           tar czf "$tmp_dir/sample.tgz" -C "$tmp_dir" data.txt
           sha256sum "$tmp_dir/sample.tgz" > "$tmp_dir/sample.tgz.sha256"
           pymes/scripts/verify-backup.sh "$tmp_dir/sample.tgz"
+          printf 'corrupt' >> "$tmp_dir/sample.tgz"
+          if pymes/scripts/verify-backup.sh "$tmp_dir/sample.tgz"; then
+            echo 'Corrupted backup was incorrectly accepted' >&2
+            exit 1
+          fi
       - name: Validate deployment compose file
         env:
           PYMES_API_BOOTSTRAP_TOKEN: ci-compose-validation-token
