@@ -190,6 +190,16 @@ function renderDetail(item: WorkItem) {
   top.append(identity, el("span", `priority ${item.priority}`, priorityNames[item.priority]));
   detail.appendChild(top);
 
+  if (remoteWorkspaceClient) {
+    const trace = el("div", "detail-block", "CARGANDO TRAZABILIDAD DEL WORKSPACE…");
+    detail.appendChild(trace);
+    void remoteWorkspaceClient.audit(item.id).then(entries => {
+      trace.replaceChildren(el("strong", "", `Trazabilidad · ${entries.length} transiciones`));
+      if (!entries.length) trace.appendChild(el("p", "", "Todavía no hay cambios de estado registrados."));
+      for (const entry of entries) trace.appendChild(el("p", "", `v${entry.version} · ${entry.from} → ${entry.to} · ${entry.actorId} · ${dayTime(entry.at)}`));
+    }).catch(() => { trace.textContent = "Trazabilidad no disponible para este caso."; });
+  }
+
   const source = el("div", "detail-block");
   source.append(el("span", "", item.message.classificationSource === "human"
     ? "MENSAJE RECIBIDO · CLASIFICACIÓN CORREGIDA EN ESTA SESIÓN"

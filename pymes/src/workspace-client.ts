@@ -18,9 +18,12 @@ export interface RemoteApproval {
 export interface RemoteInboxRecord {
   id: string;
   tenantId: string;
-  state: "received" | "pending_review" | "approved";
+  state: string;
   summary: string;
+  version?: number;
+  updatedAt?: string;
 }
+export interface RemoteCaseAudit { id: string; caseId: string; from: string; to: string; actorId: string; at: string; version: number; }
 
 function validConfig(config: WorkspaceClientConfig): void {
   if (!config.baseUrl || !/^https?:\/\//.test(config.baseUrl) ||
@@ -60,5 +63,10 @@ export class WorkspaceClient {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input)
     });
     return body as unknown as RemoteApproval;
+  }
+  async audit(caseId: string): Promise<RemoteCaseAudit[]> {
+    const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/cases/${encodeURIComponent(caseId)}/audit`);
+    if (!Array.isArray(body.audit)) throw new Error("INVALID_WORKSPACE_AUDIT");
+    return body.audit as RemoteCaseAudit[];
   }
 }
