@@ -3,8 +3,8 @@ import { normalizeRequestId } from "./request-id.js";
 
 const MAX_BODY_BYTES = 1_048_576;
 const defaultCorsOrigins = ["http://127.0.0.1:5174", "http://localhost:5174"];
-export interface PymesHttpOptions { allowedOrigins?: readonly string[]; }
-const serviceVersion = process.env.PYMES_API_VERSION ?? "0.1.0";
+export interface PymesHttpOptions { allowedOrigins?: readonly string[]; serviceVersion?: string; }
+const defaultServiceVersion = process.env.PYMES_API_VERSION ?? "0.1.0";
 
 function response(status: number, body: Record<string, unknown>, requestId = normalizeRequestId(undefined), origin?: string, allowedOrigins: readonly string[] = defaultCorsOrigins): Response {
   const headers: Record<string, string> = { "content-type": "application/json; charset=utf-8", "x-request-id": requestId,
@@ -27,6 +27,7 @@ function response(status: number, body: Record<string, unknown>, requestId = nor
 /** Web-standard HTTP adapter; usable by Node, tests, or a future edge runtime. */
 export async function handlePymesRequest(api: WorkspaceApi, request: Request, options: PymesHttpOptions = {}): Promise<Response> {
   const allowedOrigins = options.allowedOrigins ?? defaultCorsOrigins;
+  const serviceVersion = options.serviceVersion ?? defaultServiceVersion;
   const requestId = normalizeRequestId(request.headers.get("x-request-id")?.trim());
   const pathname = new URL(request.url).pathname;
   const origin = request.headers.get("origin") ?? undefined;

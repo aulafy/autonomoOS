@@ -16,6 +16,12 @@ test("health endpoint is public and reports service identity", async () => {
   assert.deepEqual(await response.json(), { status: "ok", service: "pymes-workspace", version: "0.1.0" });
 });
 
+test("health endpoint exposes an injected release version", async () => {
+  const response = await handlePymesRequest(api(), new Request("http://localhost/healthz"), { serviceVersion: "2026.09.29" });
+  assert.equal(response.status, 200);
+  assert.equal((await response.json()).version, "2026.09.29");
+});
+
 test("request ids are bounded consistently", () => {
   assert.equal(normalizeRequestId("support-42"), "support-42");
   assert.equal(normalizeRequestId("  support-42  "), "support-42");
