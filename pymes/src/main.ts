@@ -220,6 +220,16 @@ function renderDetail(item: WorkItem) {
       for (const effect of own) {
         block.appendChild(el("p", "", `${effect.kind.toUpperCase()} · ${effect.status} · solicitada por ${effect.requestedBy}`));
         block.appendChild(el("small", "", `Requiere confirmación explícita antes de ejecutar · ${dayTime(effect.requestedAt)}`));
+        if (effect.status === "pending") {
+          const confirm = el("button", "review-button", "Confirmar operación");
+          confirm.type = "button";
+          confirm.addEventListener("click", async () => {
+            confirm.disabled = true;
+            try { await remoteWorkspaceClient!.confirmEffect(effect.id); await checkRemoteWorkspace(); renderDetail(item); }
+            catch (error) { confirm.disabled = false; confirm.textContent = error instanceof Error ? error.message : "No se pudo confirmar"; }
+          });
+          block.appendChild(confirm);
+        }
       }
       detail.insertBefore(block, source);
     }).catch(() => undefined);
