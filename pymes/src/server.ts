@@ -37,7 +37,9 @@ const server = createServer(async (request, nodeResponse) => {
   });
   request.on("end", async () => {
     if (bodyTooLarge || bytes > 1_048_576) {
-      const requestId = request.headers["x-request-id"] ?? crypto.randomUUID();
+      const suppliedRequestId = request.headers["x-request-id"];
+      const requestId = typeof suppliedRequestId === "string" && suppliedRequestId.length <= 200
+        ? suppliedRequestId : crypto.randomUUID();
       nodeResponse.statusCode = 413;
       nodeResponse.setHeader("content-type", "application/json; charset=utf-8");
       nodeResponse.setHeader("cache-control", "no-store");
@@ -46,7 +48,7 @@ const server = createServer(async (request, nodeResponse) => {
       nodeResponse.setHeader("content-security-policy", "default-src 'none'; frame-ancestors 'none'");
       nodeResponse.setHeader("cross-origin-resource-policy", "same-origin");
       nodeResponse.setHeader("cross-origin-opener-policy", "same-origin");
-      nodeResponse.setHeader("x-request-id", Array.isArray(requestId) ? requestId[0] : requestId);
+      nodeResponse.setHeader("x-request-id", requestId);
       nodeResponse.end(JSON.stringify({ error: "BODY_TOO_LARGE" }));
       return;
     }
@@ -62,7 +64,9 @@ const server = createServer(async (request, nodeResponse) => {
       webResponse.headers.forEach((value, key) => nodeResponse.setHeader(key, value));
       nodeResponse.end(Buffer.from(await webResponse.arrayBuffer()));
     } catch (error) {
-      const requestId = request.headers["x-request-id"] ?? crypto.randomUUID();
+      const suppliedRequestId = request.headers["x-request-id"];
+      const requestId = typeof suppliedRequestId === "string" && suppliedRequestId.length <= 200
+        ? suppliedRequestId : crypto.randomUUID();
       nodeResponse.statusCode = 500;
       nodeResponse.setHeader("content-type", "application/json; charset=utf-8");
       nodeResponse.setHeader("cache-control", "no-store");
@@ -71,7 +75,7 @@ const server = createServer(async (request, nodeResponse) => {
       nodeResponse.setHeader("content-security-policy", "default-src 'none'; frame-ancestors 'none'");
       nodeResponse.setHeader("cross-origin-resource-policy", "same-origin");
       nodeResponse.setHeader("cross-origin-opener-policy", "same-origin");
-      nodeResponse.setHeader("x-request-id", Array.isArray(requestId) ? requestId[0] : requestId);
+      nodeResponse.setHeader("x-request-id", requestId);
       nodeResponse.end(JSON.stringify({ error: "INTERNAL_SERVER_ERROR" }));
       console.error("PYMES request failed", error);
     }
