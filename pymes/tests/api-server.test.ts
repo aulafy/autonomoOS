@@ -39,6 +39,8 @@ test("HTTP adapter returns JSON and enforces authentication", async () => {
   const response = await handlePymesRequest(api(), new Request("http://localhost/v1/workspaces/agency-1/inbox"));
   assert.equal(response.status, 401);
   assert.equal(response.headers.get("content-type"), "application/json; charset=utf-8");
+  assert.equal(response.headers.get("cache-control"), "no-store");
+  assert.equal(response.headers.get("x-content-type-options"), "nosniff");
   assert.deepEqual(await response.json(), { error: "UNAUTHENTICATED" });
 });
 
