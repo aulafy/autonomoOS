@@ -60,6 +60,7 @@ test("HTTP adapter returns JSON and enforces authentication", async () => {
   assert.equal(response.headers.get("content-type"), "application/json; charset=utf-8");
   assert.equal(response.headers.get("cache-control"), "no-store");
   assert.equal(response.headers.get("x-content-type-options"), "nosniff");
+  assert.equal(response.headers.get("x-frame-options"), "DENY");
   assert.deepEqual(await response.json(), { error: "UNAUTHENTICATED" });
 });
 

@@ -5,7 +5,7 @@ const MAX_BODY_BYTES = 1_048_576;
 const newRequestId = (): string => crypto.randomUUID();
 function response(status: number, body: Record<string, unknown>, requestId = newRequestId(), origin?: string): Response {
   const headers: Record<string, string> = { "content-type": "application/json; charset=utf-8", "x-request-id": requestId,
-    "cache-control": "no-store", "x-content-type-options": "nosniff", "referrer-policy": "no-referrer" };
+    "cache-control": "no-store", "x-content-type-options": "nosniff", "x-frame-options": "DENY", "referrer-policy": "no-referrer" };
   if (origin && ["http://127.0.0.1:5174", "http://localhost:5174"].includes(origin)) {
     headers["access-control-allow-origin"] = origin;
     headers["access-control-allow-headers"] = "Authorization, Content-Type, X-PYMES-Ingress-Token, X-Request-Id";
