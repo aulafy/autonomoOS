@@ -36,6 +36,10 @@ services:
     mem_limit: 512m
     cpus: "1.0"
     pids_limit: 100
+    ulimits:
+      nofile:
+        soft: 4096
+        hard: 8192
 
 volumes:
   pymes-data:
