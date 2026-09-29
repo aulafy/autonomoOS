@@ -212,6 +212,17 @@ function renderDetail(item: WorkItem) {
         trace.appendChild(action);
       }
     }).catch(() => { trace.textContent = "Trazabilidad no disponible para este caso."; });
+    void remoteWorkspaceClient.effects().then(effects => {
+      const own = effects.filter(effect => effect.caseId === item.id);
+      const block = el("div", "detail-block");
+      block.appendChild(el("strong", "", `Operaciones pendientes · ${own.length}`));
+      if (!own.length) block.appendChild(el("p", "", "No hay efectos externos pendientes."));
+      for (const effect of own) {
+        block.appendChild(el("p", "", `${effect.kind.toUpperCase()} · ${effect.status} · solicitada por ${effect.requestedBy}`));
+        block.appendChild(el("small", "", `Requiere confirmación explícita antes de ejecutar · ${dayTime(effect.requestedAt)}`));
+      }
+      detail.insertBefore(block, source);
+    }).catch(() => undefined);
   }
 
   const source = el("div", "detail-block");

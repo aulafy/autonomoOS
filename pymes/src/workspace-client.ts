@@ -24,6 +24,7 @@ export interface RemoteInboxRecord {
   updatedAt?: string;
 }
 export interface RemoteCaseAudit { id: string; caseId: string; from: string; to: string; actorId: string; at: string; version: number; }
+export interface RemoteEffect { id: string; caseId: string; kind: string; status: string; requestedBy: string; requestedAt: string; payload: Record<string, unknown>; }
 
 function validConfig(config: WorkspaceClientConfig): void {
   if (!config.baseUrl || !/^https?:\/\//.test(config.baseUrl) ||
@@ -73,5 +74,10 @@ export class WorkspaceClient {
     await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/cases/${encodeURIComponent(caseId)}/transition`, {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to, at })
     });
+  }
+  async effects(): Promise<RemoteEffect[]> {
+    const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/effects`);
+    if (!Array.isArray(body.effects)) throw new Error("INVALID_WORKSPACE_EFFECTS");
+    return body.effects as RemoteEffect[];
   }
 }
