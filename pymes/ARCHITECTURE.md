@@ -110,3 +110,9 @@ Bearer token, impone el tenant de la sesión, permite leer la bandeja y registra
 aprobaciones con la política anterior. Su almacenamiento actual es sustituible;
 el siguiente adaptador lo conectará al runtime-store SQLite y al servidor del
 control plane.
+
+`src/workspace-ingress.ts` es el dueño del corte entre OpenClaw Enterprise y el
+workspace. Valida el sobre empresarial, consentimiento y pairing mediante el
+adaptador de gateway, deduplica por `openclaw:<eventId>` y persiste un caso
+`received`. El caso conserva el texto de entrada, pero no recibe identidad,
+intención ni borrador hasta pasar por el flujo PYMES.
