@@ -15,11 +15,12 @@ function api() {
 
 test("API authenticates and isolates inbox by tenant", () => {
   const value = api();
+  value.addInbox({ id: "msg-1", tenantId: "agency-1", state: "approved", summary: "Actualizado" });
   assert.equal(value.handle({ method: "GET", path: "/v1/workspaces/agency-1/inbox" }).status, 401);
   const own = value.handle({ method: "GET", path: "/v1/workspaces/agency-1/inbox",
     authorization: "Bearer reviewer-token-1234" });
   assert.equal(own.status, 200);
-  assert.deepEqual((own.body.items as Array<{ id: string }>).map(item => item.id), ["msg-1"]);
+  assert.deepEqual((own.body.items as Array<{ id: string; state: string }>).map(item => `${item.id}:${item.state}`), ["msg-1:approved"]);
   assert.equal(value.handle({ method: "GET", path: "/v1/workspaces/agency-2/inbox",
     authorization: "Bearer reviewer-token-1234" }).status, 403);
 });
