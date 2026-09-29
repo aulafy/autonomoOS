@@ -3,6 +3,8 @@ services:
     build:
       context: ..
       dockerfile: pymes/Dockerfile
+      args:
+        PYMES_API_VERSION: ${PYMES_API_VERSION:-0.1.0}
     ports:
       - "8790:8790"
     environment:

@@ -1,4 +1,8 @@
 FROM node:22-bookworm-slim
+ARG PYMES_API_VERSION=0.1.0
+LABEL org.opencontainers.image.title="PYMES workspace" \
+      org.opencontainers.image.version="${PYMES_API_VERSION}" \
+      org.opencontainers.image.description="Governed workspace for Spanish insurance agencies"
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY pymes/package.json pymes/package.json
