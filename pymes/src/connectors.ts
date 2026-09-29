@@ -45,10 +45,17 @@ function requireCredential(value: string): void {
   if (!value.trim()) throw new Error("MISSING_PROVIDER_CREDENTIAL");
 }
 
+function timeoutSignal(timeoutMs: number | undefined): AbortSignal {
+  const value = timeoutMs ?? 10_000;
+  if (!Number.isInteger(value) || value < 100 || value > 60_000) throw new Error("INVALID_PROVIDER_TIMEOUT");
+  return AbortSignal.timeout(value);
+}
+
 /** Exact phone and mobile lookups avoid downloading the entire contact book. */
 export async function findHoldedContactsByPhone(input: {
   apiKey: string;
   phone: string;
+  timeoutMs?: number;
   fetcher?: Fetcher;
 }): Promise<ExternalContact[]> {
   requireCredential(input.apiKey);
@@ -59,7 +66,8 @@ export async function findHoldedContactsByPhone(input: {
     const url = new URL("https://api.holded.com/api/invoicing/v1/contacts");
     url.searchParams.set(field, phone);
     const response = await (input.fetcher ?? fetch)(url, {
-      method: "GET", headers: { key: input.apiKey, Accept: "application/json" }
+      method: "GET", headers: { key: input.apiKey, Accept: "application/json" },
+      signal: timeoutSignal(input.timeoutMs)
     });
     if (!response.ok) throw new Error(`HOLDED_READ_FAILED:${response.status}`);
     const data: unknown = await response.json();
@@ -85,6 +93,7 @@ export async function listGoogleCalendarEvents(input: {
   calendarId: string;
   timeMin: string;
   timeMax: string;
+  timeoutMs?: number;
   fetcher?: Fetcher;
 }): Promise<ExternalCalendarEvent[]> {
   requireCredential(input.accessToken);
@@ -103,7 +112,8 @@ export async function listGoogleCalendarEvents(input: {
   const seenEvents = new Set<string>();
   for (let page = 0; page < 10; page++) {
     const response = await (input.fetcher ?? fetch)(url, {
-      method: "GET", headers: { Authorization: `Bearer ${input.accessToken}`, Accept: "application/json" }
+      method: "GET", headers: { Authorization: `Bearer ${input.accessToken}`, Accept: "application/json" },
+      signal: timeoutSignal(input.timeoutMs)
     });
     if (!response.ok) throw new Error(`GOOGLE_CALENDAR_READ_FAILED:${response.status}`);
     const data = record(await response.json());

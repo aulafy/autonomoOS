@@ -80,4 +80,6 @@ test("missing credentials and provider failures never become empty successful re
   /INVALID_CALENDAR_WINDOW/);
   await assert.rejects(() => findHoldedContactsByPhone({ apiKey: "key", phone: "+34600111222",
     fetcher: async () => new Response(null, { status: 403 }) }), /HOLDED_READ_FAILED:403/);
+  await assert.rejects(() => findHoldedContactsByPhone({ apiKey: "key", phone: "+34600111222", timeoutMs: 50,
+    fetcher: async () => new Response(null) }), /INVALID_PROVIDER_TIMEOUT/);
 });
