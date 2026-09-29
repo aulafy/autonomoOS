@@ -36,3 +36,14 @@ test("SQLite repository never returns another tenant's records", () => {
   assert.deepEqual(store.listApprovals("agency-1"), []);
   store.close();
 });
+
+test("SQLite inbox updates are explicit and duplicate inserts fail", () => {
+  const store = new SqliteWorkspaceRepository(":memory:");
+  const record = { id: "msg-1", tenantId: "agency-1", state: "received" as const, summary: "Inicial" };
+  store.appendInbox(record);
+  assert.throws(() => store.appendInbox(record));
+  store.updateInbox({ ...record, state: "classified", summary: "Actualizado", version: 2 });
+  assert.deepEqual(store.listInbox("agency-1"), [{ ...record, state: "classified", summary: "Actualizado", version: 2 }]);
+  assert.deepEqual(store.listInbox("agency-2"), []);
+  store.close();
+});
