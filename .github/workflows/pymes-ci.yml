@@ -1,0 +1,27 @@
+name: PYMES workspace CI
+
+on:
+  push:
+    paths:
+      - "pymes/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/pymes-ci.yml"
+  pull_request:
+    paths:
+      - "pymes/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/pymes-ci.yml"
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run check --workspace=@agent-world/pymes
