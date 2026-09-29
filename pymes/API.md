@@ -9,6 +9,7 @@ los orígenes a esos dos valores.
 Cada respuesta incluye `x-request-id`. Si el cliente envía uno, se conserva;
 si no, el API genera un UUID. Las respuestas usan `Cache-Control: no-store`,
 `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY` y
+`Content-Security-Policy: default-src 'none'; frame-ancestors 'none'` y
 `Referrer-Policy: no-referrer`.
 
 ## Salud
