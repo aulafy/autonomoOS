@@ -89,6 +89,12 @@ bash pymes/scripts/backup-volume.sh ./backups
 docker compose start pymes-workspace
 ```
 
+Para verificar un backup sin tocar producción:
+
+```bash
+bash pymes/scripts/verify-backup.sh ./backups/pymes-YYYYMMDD-HHMMSS.tgz
+```
+
 Conserva el archivo generado y su checksum fuera del host de ejecución y prueba una
 restauración periódicamente.
 
