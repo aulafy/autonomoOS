@@ -40,6 +40,11 @@ export class SqliteWorkspaceRepository implements WorkspaceRepository {
     // Keep databases created by the previous inbox schema readable.
     try { this.db.exec("ALTER TABLE workspace_inbox ADD COLUMN version INTEGER NOT NULL DEFAULT 0"); } catch {}
     try { this.db.exec("ALTER TABLE workspace_inbox ADD COLUMN updated_at TEXT"); } catch {}
+    try { this.db.exec("ALTER TABLE workspace_effects ADD COLUMN confirmed_by TEXT"); } catch {}
+    try { this.db.exec("ALTER TABLE workspace_effects ADD COLUMN confirmed_at TEXT"); } catch {}
+    try { this.db.exec("ALTER TABLE workspace_effects ADD COLUMN executed_by TEXT"); } catch {}
+    try { this.db.exec("ALTER TABLE workspace_effects ADD COLUMN executed_at TEXT"); } catch {}
+    try { this.db.exec("ALTER TABLE workspace_effects ADD COLUMN execution_note TEXT"); } catch {}
   }
   provisionSession(token: string, principal: WorkspacePrincipal): void {
     this.db.prepare(`INSERT OR REPLACE INTO workspace_sessions
