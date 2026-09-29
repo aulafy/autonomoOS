@@ -95,6 +95,7 @@ restauración periódicamente.
 Restauración de un backup:
 
 ```bash
+sha256sum --check backups/pymes-YYYYMMDD-HHMMSS.tgz.sha256
 docker compose stop pymes-workspace
 docker run --rm -v pymes-data:/data -v "$PWD/backups:/backup" \
   alpine sh -c 'rm -rf /data/* && tar xzf /backup/pymes-YYYYMMDD-HHMMSS.tgz -C /data'
