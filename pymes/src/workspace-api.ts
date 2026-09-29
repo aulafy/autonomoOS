@@ -76,7 +76,10 @@ export class InMemoryWorkspaceRepository implements WorkspaceRepository {
     return this.audits.filter(value => value.tenantId === tenantId && value.caseId === caseId).map(value => structuredClone(value));
   }
   private readonly effects: PendingEffect[] = [];
-  appendEffect(effect: PendingEffect): void { this.effects.push(structuredClone(effect)); }
+  appendEffect(effect: PendingEffect): void {
+    if (this.effects.some(value => value.tenantId === effect.tenantId && value.id === effect.id)) throw new Error("EFFECT_ALREADY_EXISTS");
+    this.effects.push(structuredClone(effect));
+  }
   updateEffect(effect: PendingEffect): void { const index = this.effects.findIndex(v => v.id === effect.id && v.tenantId === effect.tenantId); if (index >= 0) this.effects[index] = structuredClone(effect); }
   listEffects(tenantId: string, caseId?: string): PendingEffect[] { return this.effects.filter(v => v.tenantId === tenantId && (!caseId || v.caseId === caseId)).map(v => structuredClone(v)); }
   appendApproval(approval: ApprovalRecord): void { this.approvals.push(structuredClone(approval)); }

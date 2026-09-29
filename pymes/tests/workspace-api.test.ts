@@ -74,6 +74,8 @@ test("effects require execute permission and explicit confirmation", () => {
   const created = value.handle({ method: "POST", path: "/v1/workspaces/agency-1/effects",
     authorization: "Bearer owner-token-12345", body: draft });
   assert.equal(created.status, 201);
+  assert.equal(value.handle({ method: "POST", path: "/v1/workspaces/agency-1/effects",
+    authorization: "Bearer owner-token-12345", body: draft }).status, 400);
   assert.equal(value.handle({ method: "POST", path: "/v1/workspaces/agency-1/effects/effect-1/confirm",
     authorization: "Bearer owner-token-12345", body: { confirmedAt: "2026-09-29T12:05:00Z" } }).status, 400);
   const confirmed = value.handle({ method: "POST", path: "/v1/workspaces/agency-1/effects/effect-1/confirm",
