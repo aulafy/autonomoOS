@@ -44,6 +44,7 @@ async function checkRemoteWorkspace(): Promise<void> {
     status.className = "workspace-pill connected";
     status.textContent = `● WORKSPACE CONECTADO · ${inbox.length} casos · ${approvals.length} aprobaciones`;
     status.title = "Los casos y aprobaciones se leen del workspace remoto; los fixtures locales no se mezclan automáticamente.";
+    try { const effects = await client.effects(); $("effect-count").textContent = String(effects.filter(effect => effect.status === "pending" || effect.status === "confirmed").length); } catch { $("effect-count").textContent = "—"; }
   } catch {
     status.className = "workspace-pill error";
     status.textContent = "● WORKSPACE NO DISPONIBLE";
