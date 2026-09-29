@@ -31,3 +31,12 @@ test("internal ingress token and policy are not caller-controlled", async () => 
   }));
   assert.equal(response.status, 401);
 });
+
+test("internal ingress reports duplicate events as a conflict", async () => {
+  const api = new WorkspaceApi(undefined, { token: "ingress-token-123456", policy });
+  const init = { method: "POST", headers: { "x-pymes-ingress-token": "ingress-token-123456", "content-type": "application/json" }, body: JSON.stringify(envelope) } as const;
+  assert.equal((await handlePymesRequest(api, new Request("http://localhost/v1/workspaces/agency-1/ingress/openclaw", init))).status, 201);
+  const duplicate = await handlePymesRequest(api, new Request("http://localhost/v1/workspaces/agency-1/ingress/openclaw", init));
+  assert.equal(duplicate.status, 409);
+  assert.equal((await duplicate.json()).error, "DUPLICATE_EVENT");
+});

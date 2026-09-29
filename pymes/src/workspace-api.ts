@@ -28,7 +28,7 @@ export interface WorkspaceApiRequest {
 }
 
 export interface WorkspaceApiResponse {
-  status: 200 | 201 | 400 | 401 | 403 | 404;
+  status: 200 | 201 | 400 | 401 | 403 | 404 | 409;
   body: Record<string, unknown>;
 }
 
@@ -156,7 +156,7 @@ export class WorkspaceApi {
         repository: this.repository
       });
       if (result.accepted) return { status: 201, body: result.record as unknown as Record<string, unknown> };
-      return { status: result.reason === "DUPLICATE_EVENT" ? 400 : 400, body: { error: result.reason } };
+      return { status: result.reason === "DUPLICATE_EVENT" ? 409 : 400, body: { error: result.reason } };
     }
     const token = tokenFrom(request);
     const principal = token ? this.repository.findSession(token) : null;
