@@ -52,6 +52,12 @@ de autenticación de producción; la siguiente fase lo sustituirá por sesiones 
 persistencia de servidor. El servidor no arranca sin un token de al menos 16
 caracteres.
 
+El ingress interno de OpenClaw Enterprise se activa por separado con
+`PYMES_OPENCLAW_INGRESS_TOKEN` y listas de agente, recurso, canales, remitentes
+emparejados y conversaciones consentidas. Publica en
+`POST /v1/workspaces/:tenant/ingress/openclaw` usando el header
+`X-PYMES-Ingress-Token`; la política no se acepta dentro del cuerpo del evento.
+
 La cola de revisión y las ofertas transcritas se guardan ahora en un almacén
 versionado del navegador para no perder el trabajo al recargar. Sigue siendo
 almacenamiento local de la demo, no persistencia multiusuario: el producto real

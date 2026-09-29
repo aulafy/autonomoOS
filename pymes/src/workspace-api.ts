@@ -1,5 +1,7 @@
 import { createApproval, requirePermission, type ApprovalRecord,
   type WorkspacePrincipal, type WorkspaceRole } from "./workspace-policy.js";
+import { ingestOpenClawIntoWorkspace } from "./workspace-ingress.js";
+import type { OpenClawEnterpriseEnvelope, OpenClawEnterprisePolicy } from "./openclaw-gateway.js";
 export type { ApprovalRecord, WorkspacePrincipal } from "./workspace-policy.js";
 
 export interface WorkspaceInboxRecord {
@@ -13,6 +15,7 @@ export interface WorkspaceApiRequest {
   method: "GET" | "POST";
   path: string;
   authorization?: string;
+  ingressToken?: string;
   body?: unknown;
 }
 
@@ -81,7 +84,8 @@ function tokenFrom(request: WorkspaceApiRequest): string | null {
  * response shaping; persistence can be replaced without changing callers.
  */
 export class WorkspaceApi {
-  constructor(readonly repository: WorkspaceRepository = new InMemoryWorkspaceRepository()) {}
+  constructor(readonly repository: WorkspaceRepository = new InMemoryWorkspaceRepository(),
+    private readonly ingress?: { token: string; policy: OpenClawEnterprisePolicy }) {}
 
   addSession(token: string, principal: WorkspacePrincipal): void {
     if (!token || token.length < 16) throw new Error("INVALID_SESSION_TOKEN");
@@ -98,6 +102,22 @@ export class WorkspaceApi {
   }
 
   handle(request: WorkspaceApiRequest): WorkspaceApiResponse {
+    const ingressParts = pathParts(request.path);
+    if (request.method === "POST" && ingressParts?.[0] === "v1" &&
+      ingressParts[1] === "workspaces" && ingressParts[3] === "ingress" &&
+      ingressParts[4] === "openclaw" && ingressParts.length === 5) {
+      const tenantId = ingressParts[2];
+      if (!this.ingress || request.ingressToken !== this.ingress.token || tenantId !== this.ingress.policy.tenantId) {
+        return { status: 401, body: { error: "INGRESS_UNAUTHORIZED" } };
+      }
+      const result = ingestOpenClawIntoWorkspace({
+        envelope: request.body as OpenClawEnterpriseEnvelope,
+        policy: this.ingress.policy,
+        repository: this.repository
+      });
+      if (result.accepted) return { status: 201, body: result.record as unknown as Record<string, unknown> };
+      return { status: result.reason === "DUPLICATE_EVENT" ? 400 : 400, body: { error: result.reason } };
+    }
     const token = tokenFrom(request);
     const principal = token ? this.repository.findSession(token) : null;
     if (!principal) return { status: 401, body: { error: "UNAUTHENTICATED" } };

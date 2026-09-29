@@ -27,7 +27,8 @@ export async function handlePymesRequest(api: WorkspaceApi, request: Request): P
     catch { return response(400, { error: "INVALID_JSON" }); }
   }
   const input: WorkspaceApiRequest = { method: request.method, path: new URL(request.url).pathname,
-    authorization: request.headers.get("authorization") ?? undefined, body };
+    authorization: request.headers.get("authorization") ?? undefined,
+    ingressToken: request.headers.get("x-pymes-ingress-token") ?? undefined, body };
   const result = api.handle(input);
   return response(result.status, result.body);
 }

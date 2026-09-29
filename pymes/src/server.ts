@@ -16,7 +16,16 @@ if (!token || token.length < 16) {
 
 const repository = new SqliteWorkspaceRepository(process.env.PYMES_API_DB_PATH ?? "./data/pymes-workspace.db");
 repository.provisionSession(token, { userId, tenantId, role: "owner" });
-const api = new WorkspaceApi(repository);
+const ingressToken = process.env.PYMES_OPENCLAW_INGRESS_TOKEN;
+const csv = (value: string | undefined) => new Set((value ?? "").split(",").map(item => item.trim()).filter(Boolean));
+const api = new WorkspaceApi(repository, ingressToken ? { token: ingressToken, policy: {
+  tenantId,
+  allowedAgentIds: csv(process.env.PYMES_OPENCLAW_AGENT_IDS),
+  allowedResourceIds: csv(process.env.PYMES_OPENCLAW_RESOURCE_IDS),
+  allowedChannels: csv(process.env.PYMES_OPENCLAW_CHANNELS) as Set<"whatsapp" | "telegram" | "imessage" | "email">,
+  pairedSenderIds: csv(process.env.PYMES_OPENCLAW_PAIRED_SENDERS),
+  consentedConversationIds: csv(process.env.PYMES_OPENCLAW_CONSENTED_CONVERSATIONS)
+} } : undefined);
 const server = createServer(async (request, nodeResponse) => {
   const chunks: Buffer[] = [];
   let bytes = 0;
