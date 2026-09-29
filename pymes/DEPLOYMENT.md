@@ -77,6 +77,8 @@ requieren Bearer token y comprueban el tenant antes de leer o escribir.
   según el volumen real de mensajes y citas.
 - Tiene una reserva mínima de 128 MiB para mantener capacidad básica bajo
   presión del host.
+- El límite de swap coincide con el de memoria para evitar degradación
+  silenciosa por swapping.
 - El límite de procesos es 100 para contener fallos que creen procesos en
   cascada.
 - Los descriptores de archivo están limitados a 4.096 blandos y 8.192 duros;
