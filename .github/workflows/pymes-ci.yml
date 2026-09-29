@@ -29,3 +29,5 @@ jobs:
         env:
           PYMES_API_BOOTSTRAP_TOKEN: ci-compose-validation-token
         run: docker compose -f pymes/docker-compose.yml config --quiet
+      - name: Build deployment image
+        run: docker build --file pymes/Dockerfile --tag pymes-workspace:ci .
