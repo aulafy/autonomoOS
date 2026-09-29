@@ -6,6 +6,7 @@ function api() {
   const value = new WorkspaceApi();
   value.addSession("reviewer-token-1234", { userId: "u-reviewer", tenantId: "agency-1", role: "reviewer" });
   value.addSession("agent-token-12345", { userId: "u-agent", tenantId: "agency-1", role: "agent" });
+  value.addSession("owner-token-12345", { userId: "u-owner", tenantId: "agency-1", role: "owner" });
   value.addSession("other-token-1234", { userId: "u-other", tenantId: "agency-2", role: "reviewer" });
   value.addInbox({ id: "msg-1", tenantId: "agency-1", state: "pending_review", summary: "Propuesta de hogar" });
   value.addInbox({ id: "msg-2", tenantId: "agency-2", state: "received", summary: "Privado" });
@@ -62,4 +63,25 @@ test("case transition is authenticated and leaves an audit trail", () => {
   const audit = value.handle({ method: "GET", path: "/v1/workspaces/agency-1/cases/msg-1/audit",
     authorization: "Bearer reviewer-token-1234" });
   assert.equal((audit.body.audit as Array<unknown>).length, 1);
+});
+
+test("effects require execute permission and explicit confirmation", () => {
+  const value = api();
+  const draft = { id: "effect-1", caseId: "msg-1", kind: "call", payload: { phone: "+34600000000" },
+    requestedAt: "2026-09-29T12:00:00Z", draftHash: "sha256:effect" };
+  assert.equal(value.handle({ method: "POST", path: "/v1/workspaces/agency-1/effects",
+    authorization: "Bearer reviewer-token-1234", body: draft }).status, 403);
+  const created = value.handle({ method: "POST", path: "/v1/workspaces/agency-1/effects",
+    authorization: "Bearer owner-token-12345", body: draft });
+  assert.equal(created.status, 201);
+  assert.equal(value.handle({ method: "POST", path: "/v1/workspaces/agency-1/effects/effect-1/confirm",
+    authorization: "Bearer owner-token-12345", body: { confirmedAt: "2026-09-29T12:05:00Z" } }).status, 400);
+  const confirmed = value.handle({ method: "POST", path: "/v1/workspaces/agency-1/effects/effect-1/confirm",
+    authorization: "Bearer owner-token-12345", body: { confirm: true, confirmedAt: "2026-09-29T12:05:00Z" } });
+  assert.equal(confirmed.status, 200);
+  assert.equal((confirmed.body as { status: string }).status, "confirmed");
+  assert.equal(value.handle({ method: "GET", path: "/v1/workspaces/agency-2/effects",
+    authorization: "Bearer other-token-1234" }).status, 200);
+  assert.deepEqual((value.handle({ method: "GET", path: "/v1/workspaces/agency-2/effects",
+    authorization: "Bearer other-token-1234" }).body.effects), []);
 });
