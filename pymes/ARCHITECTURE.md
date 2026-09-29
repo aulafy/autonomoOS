@@ -89,3 +89,11 @@ vínculo permanecen pendientes y los vínculos duplicados o incompletos fallan.
 La disponibilidad y condiciones de conectores de WhatsApp, Telegram e iMessage
 deben verificarse para los sistemas concretos de la agencia. El prototipo no
 asume acceso a cuentas personales ni a conversaciones existentes.
+
+`src/openclaw-gateway.ts` es un adaptador opcional para un gateway OpenClaw.
+Adopta la idea de un único punto de entrada para canales, pero conserva la
+frontera PYMES: solo acepta canales permitidos, remitentes emparejados y
+conversaciones con consentimiento registrado. El evento entra con intención
+`unknown`, sin `contactId` y con `classificationSource: connector`. El gateway
+no puede aprobar, cotizar, modificar el CRM ni enviar mensajes desde este
+adaptador.

@@ -23,7 +23,7 @@ export interface IncomingMessage {
   topic: Topic;
   reportedIncident?: boolean;
   insuranceLine?: InsuranceLine;
-  classificationSource: "demo_fixture" | "human" | "model";
+  classificationSource: "demo_fixture" | "human" | "model" | "connector";
   classificationReview?: { reason: string; reviewedAt: string };
   dueAt?: string;
 }
