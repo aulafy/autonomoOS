@@ -24,6 +24,7 @@ const modelSuggestions = new Map<string, { proposal: ClassificationProposal; mod
 const quoteChecks = new Map<string, { line: InsuranceLine; checked: Set<string>;
   externalStepConfirmed: boolean }>();
 const quoteOffers = workspaceStore.loadOffers();
+let remoteWorkspaceClient: WorkspaceClient | null = null;
 let selectedChannel: Channel | "all" = "all";
 let selectedId = brief.items[0]?.id ?? null;
 
@@ -37,13 +38,21 @@ async function checkRemoteWorkspace(): Promise<void> {
   try {
     const client = new WorkspaceClient({ baseUrl, tenantId, token });
     const approvals = await client.approvals();
+    remoteWorkspaceClient = client;
     status.className = "workspace-pill connected";
     status.textContent = `● WORKSPACE CONECTADO · ${approvals.length} aprobaciones`;
     status.title = "La bandeja de esta demo sigue siendo local; las aprobaciones se leen del workspace remoto.";
   } catch {
     status.className = "workspace-pill error";
     status.textContent = "● WORKSPACE NO DISPONIBLE";
+    remoteWorkspaceClient = null;
   }
+}
+
+async function hashOffer(offer: QuoteOffer): Promise<string> {
+  const bytes = new TextEncoder().encode(JSON.stringify(offer));
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return `sha256:${[...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, "0")).join("")}`;
 }
 
 const channelNames: Record<Channel, string> = {
@@ -409,6 +418,24 @@ function renderDetail(item: WorkItem) {
             el("p", "", `Cobertura declarada: ${offer.coverageSummary}`),
             el("p", "", `Exclusiones declaradas: ${offer.exclusionsSummary}`),
             el("small", "", `Fuente a comprobar: ${offer.sourceDocument} · Introducción manual, sin verificación automática`));
+          if (remoteWorkspaceClient) {
+            const approve = el("button", "offer-approve", "Solicitar aprobación en workspace");
+            approve.type = "button";
+            approve.addEventListener("click", async () => {
+              approve.disabled = true;
+              approve.textContent = "Registrando aprobación…";
+              try {
+                await remoteWorkspaceClient!.approve({ resourceId: offer.id,
+                  reason: "Oferta revisada por el agente en PYMES/OS",
+                  draftHash: await hashOffer(offer), approvedAt: new Date().toISOString() });
+                approve.textContent = "Aprobación registrada ✓";
+              } catch {
+                approve.disabled = false;
+                approve.textContent = "Reintentar aprobación";
+              }
+            });
+            card.appendChild(approve);
+          }
           offerList.appendChild(card);
         }
       };
