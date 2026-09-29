@@ -19,6 +19,7 @@ devuelven `415 UNSUPPORTED_MEDIA_TYPE`.
 `GET /healthz` confirma que el proceso está vivo. `GET /readyz` comprueba
 además que el repositorio responde; devuelve `503` con `status: "not_ready"`
 si el almacenamiento no está disponible.
+En ese caso incluye `Retry-After: 5` para facilitar el backoff del orquestador.
 
 ## Ingress OpenClaw Enterprise
 

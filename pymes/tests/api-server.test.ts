@@ -30,6 +30,7 @@ test("readiness reports storage failures", async () => {
   const response = await handlePymesRequest(broken, new Request("http://localhost/readyz"));
   assert.equal(response.status, 503);
   assert.equal((await response.json()).status, "not_ready");
+  assert.equal(response.headers.get("retry-after"), "5");
 });
 
 test("HTTP adapter preserves or creates request correlation ids", async () => {
