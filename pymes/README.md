@@ -21,6 +21,12 @@ npm install
 npm run demo:pymes
 ```
 
+Antes de abrir una versión o desplegar cambios, ejecuta el gate completo:
+
+```bash
+npm run check --workspace=@agent-world/pymes
+```
+
 Abrir `http://127.0.0.1:5174/`. Se puede filtrar por canal, buscar un contacto,
 revisar el contexto CRM y marcar un borrador para revisión. Todo se queda en la
 sesión del navegador. La cola permite volver a los casos marcados; los mensajes
