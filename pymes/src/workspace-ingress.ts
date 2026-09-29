@@ -27,6 +27,14 @@ export function ingestOpenClawIntoWorkspace(input: {
     state: "received",
     summary: result.message.text
   };
-  input.repository.appendInbox(record);
+  try { input.repository.appendInbox(record); }
+  catch {
+    // A concurrent request may win the unique inbox insert between the read
+    // above and this write. Treat that race as the same idempotent duplicate.
+    if (input.repository.listInbox(input.envelope.tenantId).some(value => value.id === record.id)) {
+      return { accepted: false, reason: "DUPLICATE_EVENT" };
+    }
+    throw new Error("WORKSPACE_INGRESS_PERSIST_FAILED");
+  }
   return { accepted: true, record };
 }

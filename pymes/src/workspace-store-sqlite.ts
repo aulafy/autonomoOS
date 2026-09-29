@@ -65,11 +65,15 @@ export class SqliteWorkspaceRepository implements WorkspaceRepository {
       version: row.version, ...(row.updated_at ? { updatedAt: row.updated_at } : {}) }));
   }
   appendInbox(record: WorkspaceInboxRecord): void {
-    this.db.prepare(`INSERT OR REPLACE INTO workspace_inbox
+    this.db.prepare(`INSERT INTO workspace_inbox
       (id, tenant_id, state, summary, version, updated_at) VALUES (?, ?, ?, ?, ?, ?)`).run(record.id, record.tenantId,
       record.state, record.summary, record.version ?? 0, record.updatedAt ?? null);
   }
-  updateInbox(record: WorkspaceInboxRecord): void { this.appendInbox(record); }
+  updateInbox(record: WorkspaceInboxRecord): void {
+    this.db.prepare(`UPDATE workspace_inbox SET state = ?, summary = ?, version = ?, updated_at = ?
+      WHERE id = ? AND tenant_id = ?`).run(record.state, record.summary, record.version ?? 0,
+      record.updatedAt ?? null, record.id, record.tenantId);
+  }
   appendCaseAudit(record: CaseAuditRecord): void {
     this.db.prepare(`INSERT INTO workspace_case_audit
       (id, tenant_id, case_id, from_state, to_state, operation, actor_id, at, version)
