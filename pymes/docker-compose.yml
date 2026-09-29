@@ -35,6 +35,7 @@ services:
     stop_grace_period: 30s
     mem_limit: 512m
     cpus: "1.0"
+    pids_limit: 100
 
 volumes:
   pymes-data:

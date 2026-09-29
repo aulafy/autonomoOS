@@ -73,6 +73,8 @@ requieren Bearer token y comprueban el tenant antes de leer o escribir.
 - Compose concede 30 segundos para el apagado ordenado y el cierre de SQLite.
 - El servicio está limitado a 512 MiB de memoria y 1 CPU; ajusta estos límites
   según el volumen real de mensajes y citas.
+- El límite de procesos es 100 para contener fallos que creen procesos en
+  cascada.
 
 Backup consistente con el contenedor detenido:
 
