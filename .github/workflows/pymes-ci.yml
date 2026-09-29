@@ -33,6 +33,12 @@ jobs:
           bash -n pymes/scripts/backup-volume.sh pymes/scripts/verify-backup.sh
           test -x pymes/scripts/backup-volume.sh
           test -x pymes/scripts/verify-backup.sh
+          tmp_dir="$(mktemp -d)"
+          trap 'rm -rf "$tmp_dir"' EXIT
+          printf 'smoke\n' > "$tmp_dir/data.txt"
+          tar czf "$tmp_dir/sample.tgz" -C "$tmp_dir" data.txt
+          sha256sum "$tmp_dir/sample.tgz" > "$tmp_dir/sample.tgz.sha256"
+          pymes/scripts/verify-backup.sh "$tmp_dir/sample.tgz"
       - name: Validate deployment compose file
         env:
           PYMES_API_BOOTSTRAP_TOKEN: ci-compose-validation-token
