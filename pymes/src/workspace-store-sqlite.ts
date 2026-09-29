@@ -35,7 +35,7 @@ export class SqliteWorkspaceRepository implements WorkspaceRepository {
       CREATE TABLE IF NOT EXISTS workspace_effects (
         id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL, case_id TEXT NOT NULL, kind TEXT NOT NULL,
         payload TEXT NOT NULL, status TEXT NOT NULL, requested_by TEXT NOT NULL,
-        requested_at TEXT NOT NULL, confirmed_by TEXT, confirmed_at TEXT, draft_hash TEXT NOT NULL
+        requested_at TEXT NOT NULL, confirmed_by TEXT, confirmed_at TEXT, executed_by TEXT, executed_at TEXT, execution_note TEXT, draft_hash TEXT NOT NULL
       );`);
     // Keep databases created by the previous inbox schema readable.
     try { this.db.exec("ALTER TABLE workspace_inbox ADD COLUMN version INTEGER NOT NULL DEFAULT 0"); } catch {}
@@ -82,12 +82,12 @@ export class SqliteWorkspaceRepository implements WorkspaceRepository {
     (id, tenant_id, case_id, kind, payload, status, requested_by, requested_at, confirmed_by, confirmed_at, draft_hash)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(effect.id, effect.tenantId, effect.caseId, effect.kind,
     JSON.stringify(effect.payload), effect.status, effect.requestedBy, effect.requestedAt, effect.confirmedBy ?? null, effect.confirmedAt ?? null, effect.draftHash); }
-  updateEffect(effect: PendingEffect): void { this.db.prepare(`UPDATE workspace_effects SET status = ?, confirmed_by = ?, confirmed_at = ? WHERE id = ? AND tenant_id = ?`).run(effect.status, effect.confirmedBy ?? null, effect.confirmedAt ?? null, effect.id, effect.tenantId); }
+  updateEffect(effect: PendingEffect): void { this.db.prepare(`UPDATE workspace_effects SET status = ?, confirmed_by = ?, confirmed_at = ?, executed_by = ?, executed_at = ?, execution_note = ? WHERE id = ? AND tenant_id = ?`).run(effect.status, effect.confirmedBy ?? null, effect.confirmedAt ?? null, effect.executedBy ?? null, effect.executedAt ?? null, effect.executionNote ?? null, effect.id, effect.tenantId); }
   listEffects(tenantId: string, caseId?: string): PendingEffect[] {
-    const rows = this.db.prepare(`SELECT id, tenant_id, case_id, kind, payload, status, requested_by, requested_at, confirmed_by, confirmed_at, draft_hash FROM workspace_effects WHERE tenant_id = ? ${caseId ? "AND case_id = ?" : ""} ORDER BY rowid`).all(...(caseId ? [tenantId, caseId] : [tenantId])) as Array<any>;
+    const rows = this.db.prepare(`SELECT id, tenant_id, case_id, kind, payload, status, requested_by, requested_at, confirmed_by, confirmed_at, executed_by, executed_at, execution_note, draft_hash FROM workspace_effects WHERE tenant_id = ? ${caseId ? "AND case_id = ?" : ""} ORDER BY rowid`).all(...(caseId ? [tenantId, caseId] : [tenantId])) as Array<any>;
     return rows.map(row => ({ id: row.id, tenantId: row.tenant_id, caseId: row.case_id, kind: row.kind,
       payload: JSON.parse(row.payload), status: row.status, requestedBy: row.requested_by,
-      requestedAt: row.requested_at, ...(row.confirmed_by ? { confirmedBy: row.confirmed_by } : {}), ...(row.confirmed_at ? { confirmedAt: row.confirmed_at } : {}), draftHash: row.draft_hash }));
+      requestedAt: row.requested_at, ...(row.confirmed_by ? { confirmedBy: row.confirmed_by } : {}), ...(row.confirmed_at ? { confirmedAt: row.confirmed_at } : {}), ...(row.executed_by ? { executedBy: row.executed_by } : {}), ...(row.executed_at ? { executedAt: row.executed_at } : {}), ...(row.execution_note ? { executionNote: row.execution_note } : {}), draftHash: row.draft_hash }));
   }
   appendApproval(approval: ApprovalRecord): void {
     this.db.prepare(`INSERT INTO workspace_approvals

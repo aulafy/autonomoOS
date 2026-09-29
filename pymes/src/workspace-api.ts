@@ -217,6 +217,19 @@ export class WorkspaceApi {
         return { status: 200, body: confirmed as unknown as Record<string, unknown> };
       } catch (error) { const message = error instanceof Error ? error.message : "EFFECT_CONFIRMATION_FAILED"; return { status: message === "WORKSPACE_PERMISSION_DENIED" ? 403 : 400, body: { error: message } }; }
     }
+    if (request.method === "POST" && parts[3] === "effects" && parts[5] === "result" && parts.length === 6) {
+      const body = jsonRecord(request.body);
+      if (!body || (body.result !== "succeeded" && body.result !== "failed") || typeof body.executedAt !== "string" || typeof body.note !== "string") return { status: 400, body: { error: "INVALID_EFFECT_RESULT" } };
+      const effect = this.repository.listEffects(tenantId).find(value => value.id === parts[4]);
+      if (!effect) return { status: 404, body: { error: "EFFECT_NOT_FOUND" } };
+      try {
+        requirePermission(principal, "executeEffect", { tenantId, id: effect.caseId });
+        if (effect.status !== "confirmed" || Number.isNaN(Date.parse(body.executedAt)) || body.note.trim().length < 3) throw new Error("EFFECT_NOT_CONFIRMED");
+        const result = { ...effect, status: body.result as "succeeded" | "failed", executedBy: principal.userId, executedAt: body.executedAt, executionNote: body.note.trim() };
+        this.repository.updateEffect(result);
+        return { status: 200, body: result as unknown as Record<string, unknown> };
+      } catch (error) { const message = error instanceof Error ? error.message : "EFFECT_RESULT_FAILED"; return { status: message === "WORKSPACE_PERMISSION_DENIED" ? 403 : 400, body: { error: message } }; }
+    }
     if (request.method === "POST" && parts[3] === "approvals" && parts.length === 4) {
       const body = jsonRecord(request.body);
       if (!body || typeof body.resourceId !== "string" || typeof body.reason !== "string" ||
