@@ -29,13 +29,20 @@ const api = new WorkspaceApi(repository, ingressToken ? { token: ingressToken, p
 const server = createServer(async (request, nodeResponse) => {
   const chunks: Buffer[] = [];
   let bytes = 0;
+  let bodyTooLarge = false;
   request.on("data", chunk => {
     bytes += chunk.length;
     if (bytes <= 1_048_576) chunks.push(chunk);
-    else request.destroy();
+    else bodyTooLarge = true;
   });
   request.on("end", async () => {
-    if (bytes > 1_048_576) return;
+    if (bodyTooLarge || bytes > 1_048_576) {
+      nodeResponse.statusCode = 413;
+      nodeResponse.setHeader("content-type", "application/json; charset=utf-8");
+      nodeResponse.setHeader("cache-control", "no-store");
+      nodeResponse.end(JSON.stringify({ error: "BODY_TOO_LARGE" }));
+      return;
+    }
     const url = `http://${request.headers.host ?? `${host}:${port}`}${request.url ?? "/"}`;
     const body = Buffer.concat(chunks);
     try {
