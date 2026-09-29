@@ -53,6 +53,7 @@ test("HTTP adapter supports restricted local CORS preflight", async () => {
     method: "OPTIONS", headers: { origin: "https://attacker.example" }
   }));
   assert.equal(denied.headers.get("access-control-allow-origin"), null);
+  assert.equal(denied.headers.get("vary"), "Origin");
 });
 
 test("HTTP adapter returns JSON and enforces authentication", async () => {
