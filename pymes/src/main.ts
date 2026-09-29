@@ -42,7 +42,8 @@ async function checkRemoteWorkspace(): Promise<void> {
     remoteWorkspaceClient = client;
     remoteInbox = new Map(inbox.map(item => [item.id, item]));
     status.className = "workspace-pill connected";
-    status.textContent = `● WORKSPACE CONECTADO · ${inbox.length} casos · ${approvals.length} aprobaciones`;
+    const syncedAt = new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    status.textContent = `● WORKSPACE CONECTADO · ${inbox.length} casos · ${approvals.length} aprobaciones · sync ${syncedAt}`;
     status.title = "Los casos y aprobaciones se leen del workspace remoto; los fixtures locales no se mezclan automáticamente.";
     try { const effects = await client.effects(); $("effect-count").textContent = String(effects.filter(effect => effect.status === "pending" || effect.status === "confirmed").length); } catch { $("effect-count").textContent = "—"; }
     const selected = brief.items.find(item => item.id === selectedId);
