@@ -99,4 +99,6 @@ test("effects require execute permission and explicit confirmation", () => {
   assert.equal((own.body as { id: string }).id, "effect-1");
   assert.equal(value.handle({ method: "GET", path: "/v1/workspaces/agency-2/effects/effect-1",
     authorization: "Bearer other-token-1234" }).status, 404);
+  assert.equal(value.handle({ method: "POST", path: "/v1/workspaces/agency-1/effects",
+    authorization: "Bearer owner-token-12345", body: { ...draft, id: "effect-invalid", kind: "webhook" } }).status, 400);
 });
