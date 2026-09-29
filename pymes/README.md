@@ -40,6 +40,10 @@ iMessage, correo, CRM y calendario aparecen como fuentes y destinos previstos;
 
 ## API local de workspace
 
+Para desplegar con configuración reproducible, copia [.env.example](.env.example)
+y consulta la [guía de despliegue](DEPLOYMENT.md). También puedes usar
+[Docker Compose](docker-compose.yml) con un volumen persistente para SQLite.
+
 La primera API de PYMES se puede ejecutar con un token de desarrollo explícito:
 
 ```bash
