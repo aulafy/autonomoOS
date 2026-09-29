@@ -1,0 +1,44 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { WorkspaceApi } from "../src/workspace-api.js";
+
+function api() {
+  const value = new WorkspaceApi();
+  value.addSession("reviewer-token-1234", { userId: "u-reviewer", tenantId: "agency-1", role: "reviewer" });
+  value.addSession("agent-token-12345", { userId: "u-agent", tenantId: "agency-1", role: "agent" });
+  value.addSession("other-token-1234", { userId: "u-other", tenantId: "agency-2", role: "reviewer" });
+  value.addInbox({ id: "msg-1", tenantId: "agency-1", state: "pending_review", summary: "Propuesta de hogar" });
+  value.addInbox({ id: "msg-2", tenantId: "agency-2", state: "received", summary: "Privado" });
+  return value;
+}
+
+test("API authenticates and isolates inbox by tenant", () => {
+  const value = api();
+  assert.equal(value.handle({ method: "GET", path: "/v1/workspaces/agency-1/inbox" }).status, 401);
+  const own = value.handle({ method: "GET", path: "/v1/workspaces/agency-1/inbox",
+    authorization: "Bearer reviewer-token-1234" });
+  assert.equal(own.status, 200);
+  assert.deepEqual((own.body.items as Array<{ id: string }>).map(item => item.id), ["msg-1"]);
+  assert.equal(value.handle({ method: "GET", path: "/v1/workspaces/agency-2/inbox",
+    authorization: "Bearer reviewer-token-1234" }).status, 403);
+});
+
+test("agent cannot approve; reviewer approval is recorded", () => {
+  const value = api();
+  const body = { resourceId: "offer-1", reason: "Revisada con el documento original",
+    draftHash: "sha256:offer-v1", approvedAt: "2026-09-29T11:00:00Z" };
+  assert.equal(value.handle({ method: "POST", path: "/v1/workspaces/agency-1/approvals",
+    authorization: "Bearer agent-token-12345", body }).status, 403);
+  const response = value.handle({ method: "POST", path: "/v1/workspaces/agency-1/approvals",
+    authorization: "Bearer reviewer-token-1234", body });
+  assert.equal(response.status, 201);
+  assert.equal(value.approvalsForTenant("agency-1").length, 1);
+});
+
+test("malformed approval is rejected without creating state", () => {
+  const value = api();
+  const response = value.handle({ method: "POST", path: "/v1/workspaces/agency-1/approvals",
+    authorization: "Bearer reviewer-token-1234", body: { resourceId: "offer-1" } });
+  assert.equal(response.status, 400);
+  assert.equal(value.approvalsForTenant("agency-1").length, 0);
+});

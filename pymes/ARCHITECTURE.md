@@ -104,3 +104,9 @@ no aprueba ni ejecuta; un revisor aprueba y exporta, pero no administra
 conectores. Las aprobaciones guardan actor, tenant, recurso, motivo, fecha y
 hash del borrador para que la API futura y OpenClaw Enterprise no dupliquen
 reglas distintas.
+
+`src/workspace-api.ts` expone el primer contrato HTTP puro de PYMES. Requiere
+Bearer token, impone el tenant de la sesión, permite leer la bandeja y registra
+aprobaciones con la política anterior. Su almacenamiento actual es sustituible;
+el siguiente adaptador lo conectará al runtime-store SQLite y al servidor del
+control plane.
