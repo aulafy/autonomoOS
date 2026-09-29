@@ -97,3 +97,10 @@ conversaciones con consentimiento registrado. El evento entra con intención
 `unknown`, sin `contactId` y con `classificationSource: connector`. El gateway
 no puede aprobar, cotizar, modificar el CRM ni enviar mensajes desde este
 adaptador.
+
+`src/workspace-policy.ts` es la política común de tenant y roles. El propietario
+puede administrar la agencia y ejecutar efectos; un agente prepara trabajo pero
+no aprueba ni ejecuta; un revisor aprueba y exporta, pero no administra
+conectores. Las aprobaciones guardan actor, tenant, recurso, motivo, fecha y
+hash del borrador para que la API futura y OpenClaw Enterprise no dupliquen
+reglas distintas.
