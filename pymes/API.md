@@ -53,6 +53,13 @@ POST /v1/workspaces/:tenant/effects/:effectId/result
 { "result": "succeeded | failed", "executedAt": "2026-09-29T12:10:00Z", "note": "..." }
 ```
 
+Un efecto fallido puede reintentarse explícitamente:
+
+```json
+POST /v1/workspaces/:tenant/effects/:effectId/retry
+{ "requestedAt": "2026-09-29T12:20:00Z", "reason": "Cliente disponible para reintento" }
+```
+
 Los resultados solo se aceptan después de confirmar el efecto. Cada ruta comprueba tenant, rol y estado actual.
 
 Los tipos de efecto permitidos son `call`, `calendar`, `message` y `crm_task`.

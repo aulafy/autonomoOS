@@ -102,4 +102,10 @@ export class WorkspaceClient {
     });
     return body as unknown as RemoteEffect;
   }
+  async retryEffect(effectId: string, reason: string, requestedAt = new Date().toISOString()): Promise<RemoteEffect> {
+    const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/effects/${encodeURIComponent(effectId)}/retry`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reason, requestedAt })
+    });
+    return body as unknown as RemoteEffect;
+  }
 }

@@ -250,6 +250,19 @@ export class WorkspaceApi {
         return { status: 200, body: result as unknown as Record<string, unknown> };
       } catch (error) { const message = error instanceof Error ? error.message : "EFFECT_RESULT_FAILED"; return { status: message === "WORKSPACE_PERMISSION_DENIED" ? 403 : 400, body: { error: message } }; }
     }
+    if (request.method === "POST" && parts[3] === "effects" && parts[5] === "retry" && parts.length === 6) {
+      const body = jsonRecord(request.body);
+      if (!body || typeof body.requestedAt !== "string" || typeof body.reason !== "string") return { status: 400, body: { error: "INVALID_EFFECT_RETRY" } };
+      const effect = this.repository.listEffects(tenantId).find(value => value.id === parts[4]);
+      if (!effect) return { status: 404, body: { error: "EFFECT_NOT_FOUND" } };
+      try {
+        requirePermission(principal, "executeEffect", { tenantId, id: effect.caseId });
+        if (effect.status !== "failed" || Number.isNaN(Date.parse(body.requestedAt)) || body.reason.trim().length < 3 || body.reason.trim().length > 2000) throw new Error("EFFECT_NOT_RETRYABLE");
+        const retry = { ...effect, status: "pending" as const, requestedBy: principal.userId, requestedAt: body.requestedAt, executionNote: `Retry: ${body.reason.trim()}` };
+        this.repository.updateEffect(retry);
+        return { status: 200, body: retry as unknown as Record<string, unknown> };
+      } catch (error) { const message = error instanceof Error ? error.message : "INVALID_EFFECT_RETRY"; return { status: message === "WORKSPACE_PERMISSION_DENIED" ? 403 : 400, body: { error: message } }; }
+    }
     if (request.method === "POST" && parts[3] === "approvals" && parts.length === 4) {
       const body = jsonRecord(request.body);
       if (!body || typeof body.resourceId !== "string" || typeof body.reason !== "string" ||

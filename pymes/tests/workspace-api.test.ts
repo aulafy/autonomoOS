@@ -89,6 +89,10 @@ test("effects require execute permission and explicit confirmation", () => {
   assert.equal((failed.body as { status: string }).status, "failed");
   assert.equal(value.handle({ method: "POST", path: "/v1/workspaces/agency-1/effects/effect-1/result",
     authorization: "Bearer owner-token-12345", body: { result: "succeeded", executedAt: "2026-09-29T12:07:00Z", note: "Reintento" } }).status, 400);
+  const retry = value.handle({ method: "POST", path: "/v1/workspaces/agency-1/effects/effect-1/retry",
+    authorization: "Bearer owner-token-12345", body: { requestedAt: "2026-09-29T12:20:00Z", reason: "Cliente disponible" } });
+  assert.equal(retry.status, 200);
+  assert.equal((retry.body as { status: string }).status, "pending");
   assert.equal(value.handle({ method: "GET", path: "/v1/workspaces/agency-2/effects",
     authorization: "Bearer other-token-1234" }).status, 200);
   assert.deepEqual((value.handle({ method: "GET", path: "/v1/workspaces/agency-2/effects",
