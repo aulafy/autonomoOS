@@ -187,6 +187,10 @@ export class WorkspaceApi {
       const item = this.repository.listInbox(tenantId).find(value => value.id === parts[4]);
       if (!item) return { status: 404, body: { error: "CASE_NOT_FOUND" } };
       try {
+        if (body.expectedVersion !== undefined &&
+          (!Number.isInteger(body.expectedVersion) || body.expectedVersion !== (item.version ?? 0))) {
+          return { status: 409, body: { error: "CASE_VERSION_CONFLICT", currentVersion: item.version ?? 0 } };
+        }
         const next = transitionCase({ current: { id: item.id, tenantId, state: item.state,
           version: item.version ?? 0, updatedAt: item.updatedAt ?? new Date(0).toISOString() },
           to: body.to as CaseState, principal, at: body.at });

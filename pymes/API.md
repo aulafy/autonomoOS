@@ -33,6 +33,7 @@ mismo.
 - `GET /v1/workspaces/:tenant/effects/:effectId` — estado individual de una operación.
 - `GET /v1/workspaces/:tenant/cases/:caseId/effects` — operaciones de un caso.
 - `POST /v1/workspaces/:tenant/cases/:caseId/transition` — cuerpo `{ "to": "...", "at": "ISO-8601" }`.
+  Puede incluir `expectedVersion`; si la versión ya cambió, devuelve `409 CASE_VERSION_CONFLICT`.
 
 ## Efectos externos
 

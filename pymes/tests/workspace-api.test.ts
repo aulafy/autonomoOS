@@ -61,6 +61,10 @@ test("case transition is authenticated and leaves an audit trail", () => {
   const allowed = value.handle({ method: "POST", path: "/v1/workspaces/agency-1/cases/msg-1/transition",
     authorization: "Bearer reviewer-token-1234", body: { to: "approved", at: "2026-09-29T12:00:00Z" } });
   assert.equal(allowed.status, 200);
+  const stale = value.handle({ method: "POST", path: "/v1/workspaces/agency-1/cases/msg-1/transition",
+    authorization: "Bearer reviewer-token-1234", body: { to: "executing", at: "2026-09-29T12:01:00Z", expectedVersion: 0 } });
+  assert.equal(stale.status, 409);
+  assert.equal((stale.body as { error: string }).error, "CASE_VERSION_CONFLICT");
   const audit = value.handle({ method: "GET", path: "/v1/workspaces/agency-1/cases/msg-1/audit",
     authorization: "Bearer reviewer-token-1234" });
   assert.equal((audit.body.audit as Array<unknown>).length, 1);
