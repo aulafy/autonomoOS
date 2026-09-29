@@ -34,6 +34,7 @@ test("workspace client reads an individual effect", async () => {
   const effect = await value.effect("effect-client");
   assert.equal(effect.kind, "crm_task");
   assert.equal(effect.status, "pending");
+  assert.equal((await value.effectsForCase("case-1")).length, 1);
 });
 
 test("workspace client performs an authenticated case transition", async () => {

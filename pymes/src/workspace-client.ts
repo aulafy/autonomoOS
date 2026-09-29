@@ -80,6 +80,11 @@ export class WorkspaceClient {
     if (!Array.isArray(body.effects)) throw new Error("INVALID_WORKSPACE_EFFECTS");
     return body.effects as RemoteEffect[];
   }
+  async effectsForCase(caseId: string): Promise<RemoteEffect[]> {
+    const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/cases/${encodeURIComponent(caseId)}/effects`);
+    if (!Array.isArray(body.effects)) throw new Error("INVALID_WORKSPACE_EFFECTS");
+    return body.effects as RemoteEffect[];
+  }
   async effect(effectId: string): Promise<RemoteEffect> {
     const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/effects/${encodeURIComponent(effectId)}`);
     if (typeof body.id !== "string" || typeof body.status !== "string") throw new Error("INVALID_WORKSPACE_EFFECT");

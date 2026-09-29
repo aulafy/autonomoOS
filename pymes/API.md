@@ -16,6 +16,7 @@ los orígenes a esos dos valores.
 - `GET /v1/workspaces/:tenant/approvals` — aprobaciones registradas.
 - `GET /v1/workspaces/:tenant/cases/:caseId/audit` — transiciones con actor, versión y fecha.
 - `GET /v1/workspaces/:tenant/effects/:effectId` — estado individual de una operación.
+- `GET /v1/workspaces/:tenant/cases/:caseId/effects` — operaciones de un caso.
 - `POST /v1/workspaces/:tenant/cases/:caseId/transition` — cuerpo `{ "to": "...", "at": "ISO-8601" }`.
 
 ## Efectos externos
