@@ -4,7 +4,7 @@ import { insuranceLines, pilotConfig, type InsuranceLine } from "./config.js";
 import { evaluateQuoteIntake, quoteRequirements } from "./quote-intake.js";
 import { offersForCase, recordQuoteOffer, type OfferEntry, type QuoteOffer } from "./quote-offers.js";
 import { createWorkspaceStore } from "./workspace-store.js";
-import { WorkspaceClient } from "./workspace-client.js";
+import { WorkspaceClient, WorkspaceConflictError } from "./workspace-client.js";
 import { buildCallPlan } from "./call-plan.js";
 import { acceptClassification, parseClassificationProposal,
   type ClassificationProposal } from "./classification.js";
@@ -216,7 +216,17 @@ function renderDetail(item: WorkItem) {
         action.addEventListener("click", async () => {
           action.disabled = true;
           try { await remoteWorkspaceClient!.transition(item.id, next, new Date().toISOString(), remote?.version); await checkRemoteWorkspace(); renderDetail(item); }
-          catch (error) { action.disabled = false; action.textContent = error instanceof Error ? error.message : "No se pudo avanzar"; }
+          catch (error) {
+            if (error instanceof WorkspaceConflictError) {
+              await checkRemoteWorkspace();
+              action.disabled = false;
+              action.textContent = `Caso actualizado a v${error.currentVersion}; revisar`;
+              renderDetail(item);
+              return;
+            }
+            action.disabled = false;
+            action.textContent = error instanceof Error ? error.message : "No se pudo avanzar";
+          }
         });
         trace.appendChild(action);
       }
