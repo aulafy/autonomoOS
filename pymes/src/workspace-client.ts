@@ -24,7 +24,7 @@ export interface RemoteInboxRecord {
   updatedAt?: string;
 }
 export interface RemoteCaseAudit { id: string; caseId: string; from: string; to: string; actorId: string; at: string; version: number; }
-export interface RemoteEffect { id: string; caseId: string; kind: string; status: string; requestedBy: string; requestedAt: string; payload: Record<string, unknown>; executionNote?: string; executedBy?: string; executedAt?: string; }
+export interface RemoteEffect { id: string; caseId: string; kind: string; status: string; requestedBy: string; requestedAt: string; retryCount?: number; payload: Record<string, unknown>; executionNote?: string; executedBy?: string; executedAt?: string; }
 
 function validConfig(config: WorkspaceClientConfig): void {
   if (!config.baseUrl || !/^https?:\/\//.test(config.baseUrl) ||
