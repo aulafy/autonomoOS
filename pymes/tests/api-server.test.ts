@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { handlePymesRequest } from "../src/api-server.js";
 import { WorkspaceApi } from "../src/workspace-api.js";
+import { normalizeRequestId } from "../src/request-id.js";
 
 function api() {
   const value = new WorkspaceApi();
@@ -13,6 +14,11 @@ test("health endpoint is public and reports service identity", async () => {
   const response = await handlePymesRequest(api(), new Request("http://localhost/healthz"));
   assert.equal(response.status, 200);
   assert.deepEqual(await response.json(), { status: "ok", service: "pymes-workspace", version: "0.1.0" });
+});
+
+test("request ids are bounded consistently", () => {
+  assert.equal(normalizeRequestId("support-42"), "support-42");
+  assert.match(normalizeRequestId("x".repeat(201)), /^[0-9a-f-]{36}$/);
 });
 
 test("readiness endpoint is public", async () => {

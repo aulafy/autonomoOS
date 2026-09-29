@@ -1,9 +1,9 @@
 import { WorkspaceApi, type WorkspaceApiRequest } from "./workspace-api.js";
+import { normalizeRequestId } from "./request-id.js";
 
 const MAX_BODY_BYTES = 1_048_576;
 
-const newRequestId = (): string => crypto.randomUUID();
-function response(status: number, body: Record<string, unknown>, requestId = newRequestId(), origin?: string): Response {
+function response(status: number, body: Record<string, unknown>, requestId = normalizeRequestId(undefined), origin?: string): Response {
   const headers: Record<string, string> = { "content-type": "application/json; charset=utf-8", "x-request-id": requestId,
     "cache-control": "no-store", "vary": "Origin", "x-content-type-options": "nosniff", "x-frame-options": "DENY",
     "content-security-policy": "default-src 'none'; frame-ancestors 'none'",
@@ -23,8 +23,7 @@ function response(status: number, body: Record<string, unknown>, requestId = new
 
 /** Web-standard HTTP adapter; usable by Node, tests, or a future edge runtime. */
 export async function handlePymesRequest(api: WorkspaceApi, request: Request): Promise<Response> {
-  const suppliedRequestId = request.headers.get("x-request-id")?.trim();
-  const requestId = suppliedRequestId && suppliedRequestId.length <= 200 ? suppliedRequestId : newRequestId();
+  const requestId = normalizeRequestId(request.headers.get("x-request-id")?.trim());
   const pathname = new URL(request.url).pathname;
   const origin = request.headers.get("origin") ?? undefined;
   if (request.method === "OPTIONS") return response(200, { status: "ok" }, requestId, origin);

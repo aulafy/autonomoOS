@@ -2,6 +2,7 @@ import { createServer } from "node:http";
 import { WorkspaceApi } from "./workspace-api.js";
 import { handlePymesRequest } from "./api-server.js";
 import { SqliteWorkspaceRepository } from "./workspace-store-sqlite.js";
+import { normalizeRequestId } from "./request-id.js";
 
 const port = Number(process.env.PYMES_API_PORT ?? 8790);
 const host = process.env.PYMES_API_HOST ?? "127.0.0.1";
@@ -37,9 +38,7 @@ const server = createServer(async (request, nodeResponse) => {
   });
   request.on("end", async () => {
     if (bodyTooLarge || bytes > 1_048_576) {
-      const suppliedRequestId = request.headers["x-request-id"];
-      const requestId = typeof suppliedRequestId === "string" && suppliedRequestId.length <= 200
-        ? suppliedRequestId : crypto.randomUUID();
+      const requestId = normalizeRequestId(typeof request.headers["x-request-id"] === "string" ? request.headers["x-request-id"] : undefined);
       nodeResponse.statusCode = 413;
       nodeResponse.setHeader("connection", "close");
       nodeResponse.setHeader("content-type", "application/json; charset=utf-8");
@@ -65,9 +64,7 @@ const server = createServer(async (request, nodeResponse) => {
       webResponse.headers.forEach((value, key) => nodeResponse.setHeader(key, value));
       nodeResponse.end(Buffer.from(await webResponse.arrayBuffer()));
     } catch (error) {
-      const suppliedRequestId = request.headers["x-request-id"];
-      const requestId = typeof suppliedRequestId === "string" && suppliedRequestId.length <= 200
-        ? suppliedRequestId : crypto.randomUUID();
+      const requestId = normalizeRequestId(typeof request.headers["x-request-id"] === "string" ? request.headers["x-request-id"] : undefined);
       nodeResponse.statusCode = 500;
       nodeResponse.setHeader("content-type", "application/json; charset=utf-8");
       nodeResponse.setHeader("cache-control", "no-store");
