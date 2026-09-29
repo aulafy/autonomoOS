@@ -68,6 +68,7 @@ const topicNames: Record<Topic, string> = {
   appointment: "Cita", service: "Gestión", unknown: "Sin clasificar" };
 const priorityNames = { urgent: "URGENTE", high: "PRÓXIMA", normal: "NORMAL" };
 const effectStatusNames: Record<string, string> = { pending: "Pendiente", confirmed: "Confirmada", succeeded: "Realizada", failed: "Fallida" };
+const effectKindNames: Record<string, string> = { call: "Llamada", calendar: "Cita", message: "Mensaje", crm_task: "Tarea CRM" };
 const contactName = (item: WorkItem) => item.contact?.name ?? "Contacto sin identificar";
 const dayTime = (iso: string) => new Date(iso).toLocaleString("es-ES", {
   day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
@@ -222,7 +223,7 @@ function renderDetail(item: WorkItem) {
       block.appendChild(el("strong", "", `Operaciones pendientes · ${own.length}`));
       if (!own.length) block.appendChild(el("p", "", "No hay efectos externos pendientes."));
       for (const effect of own) {
-        block.appendChild(el("p", "", `${effect.kind.toUpperCase()} · ${effectStatusNames[effect.status] ?? effect.status} · solicitada por ${effect.requestedBy}`));
+        block.appendChild(el("p", "", `${effectKindNames[effect.kind] ?? effect.kind} · ${effectStatusNames[effect.status] ?? effect.status} · solicitada por ${effect.requestedBy}`));
         block.appendChild(el("small", "", `Requiere confirmación explícita antes de ejecutar · ${dayTime(effect.requestedAt)}`));
         if (effect.status === "pending") {
           const confirm = el("button", "review-button", "Confirmar operación");
