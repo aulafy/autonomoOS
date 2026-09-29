@@ -1,3 +1,4 @@
 export function normalizeRequestId(value: string | null | undefined): string {
-  return value && value.length <= 200 ? value : crypto.randomUUID();
+  const normalized = value?.trim();
+  return normalized && normalized.length <= 200 ? normalized : crypto.randomUUID();
 }

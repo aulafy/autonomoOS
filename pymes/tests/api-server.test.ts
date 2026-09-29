@@ -18,6 +18,7 @@ test("health endpoint is public and reports service identity", async () => {
 
 test("request ids are bounded consistently", () => {
   assert.equal(normalizeRequestId("support-42"), "support-42");
+  assert.equal(normalizeRequestId("  support-42  "), "support-42");
   assert.match(normalizeRequestId("x".repeat(201)), /^[0-9a-f-]{36}$/);
 });
 
