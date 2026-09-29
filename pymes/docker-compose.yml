@@ -42,6 +42,11 @@ services:
       nofile:
         soft: 4096
         hard: 8192
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
 
 volumes:
   pymes-data:

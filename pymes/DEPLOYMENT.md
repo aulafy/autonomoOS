@@ -78,6 +78,8 @@ requieren Bearer token y comprueban el tenant antes de leer o escribir.
 - Los descriptores de archivo están limitados a 4.096 blandos y 8.192 duros;
   ajústalos si el volumen de conexiones lo requiere.
 - Compose usa un init ligero para recoger procesos hijos y evitar zombies.
+- Los logs se rotan en tres archivos de 10 MiB para no llenar el disco del
+  host; envía los registros a tu plataforma central si necesitas retención.
 
 Backup consistente con el contenedor detenido:
 
