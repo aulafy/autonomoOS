@@ -227,6 +227,7 @@ function renderDetail(item: WorkItem) {
       if (!own.length) block.appendChild(el("p", "", "No hay efectos externos pendientes."));
       for (const effect of own) {
         block.appendChild(el("p", "", `${effectKindNames[effect.kind] ?? effect.kind} · ${effectStatusNames[effect.status] ?? effect.status} · solicitada por ${effect.requestedBy}`));
+        if (effect.retryCount) block.appendChild(el("small", "", `Intentos de reejecución: ${effect.retryCount}`));
         block.appendChild(el("small", "", `Requiere confirmación explícita antes de ejecutar · ${dayTime(effect.requestedAt)}`));
         if (effect.executionNote) block.appendChild(el("p", "classification-reason", `Nota de ejecución: ${effect.executionNote}`));
         if (effect.executedBy && effect.executedAt) block.appendChild(el("small", "", `Registrada por ${effect.executedBy} · ${dayTime(effect.executedAt)}`));
