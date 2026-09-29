@@ -19,6 +19,9 @@ services:
       PYMES_OPENCLAW_CONSENTED_CONVERSATIONS: ${PYMES_OPENCLAW_CONSENTED_CONVERSATIONS:-}
     volumes:
       - pymes-data:/data
+    read_only: true
+    tmpfs:
+      - /tmp
     security_opt:
       - no-new-privileges:true
     cap_drop:

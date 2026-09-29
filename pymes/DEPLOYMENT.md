@@ -68,6 +68,8 @@ requieren Bearer token y comprueban el tenant antes de leer o escribir.
 - El servicio Compose se ejecuta sin capacidades Linux y con
   `no-new-privileges`; conservar estas restricciones en cualquier manifiesto
   equivalente.
+- El root filesystem es de solo lectura; `/data` es el único almacenamiento
+  persistente y `/tmp` se monta como temporal.
 - Configurar un supervisor que envíe `SIGTERM` para el apagado ordenado.
 - Monitorizar `/healthz` y revisar los efectos `failed` antes de reintentar.
 - El volumen Docker usa `/data/pymes-workspace.db`; conservarlo junto con sus
