@@ -6,6 +6,10 @@ La interfaz local puede llamar al API desde `http://127.0.0.1:5174` o
 `http://localhost:5174`; el adaptador responde al preflight `OPTIONS` y limita
 los orígenes a esos dos valores.
 
+Cada respuesta incluye `x-request-id`. Si el cliente envía uno, se conserva;
+si no, el API genera un UUID. Las respuestas usan `Cache-Control: no-store`,
+`X-Content-Type-Options: nosniff` y `Referrer-Policy: no-referrer`.
+
 ## Salud
 
 `GET /healthz` devuelve `{ "status": "ok", "service": "pymes-workspace", "version": "0.1.0" }`.
