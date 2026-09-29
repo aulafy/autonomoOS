@@ -5,3 +5,10 @@ dist
 data/events/*.jsonl
 
 *.log
+.env
+.env.*
+!.env.example
+pymes/data/
+*.db
+*.db-shm
+*.db-wal
