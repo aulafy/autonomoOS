@@ -6,7 +6,8 @@ const newRequestId = (): string => crypto.randomUUID();
 function response(status: number, body: Record<string, unknown>, requestId = newRequestId(), origin?: string): Response {
   const headers: Record<string, string> = { "content-type": "application/json; charset=utf-8", "x-request-id": requestId,
     "cache-control": "no-store", "vary": "Origin", "x-content-type-options": "nosniff", "x-frame-options": "DENY",
-    "content-security-policy": "default-src 'none'; frame-ancestors 'none'", "referrer-policy": "no-referrer" };
+    "content-security-policy": "default-src 'none'; frame-ancestors 'none'",
+    "cross-origin-resource-policy": "same-origin", "referrer-policy": "no-referrer" };
   if (origin && ["http://127.0.0.1:5174", "http://localhost:5174"].includes(origin)) {
     headers["access-control-allow-origin"] = origin;
     headers["access-control-allow-headers"] = "Authorization, Content-Type, X-PYMES-Ingress-Token, X-Request-Id";
