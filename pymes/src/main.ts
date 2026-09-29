@@ -31,11 +31,12 @@ let selectedId = brief.items[0]?.id ?? null;
 
 async function checkRemoteWorkspace(): Promise<void> {
   const status = $("workspace-status");
+  status.setAttribute("aria-busy", "true");
   const params = new URLSearchParams(window.location.search);
   const baseUrl = params.get("workspaceApi");
   const tenantId = params.get("tenant");
   const token = sessionStorage.getItem("pymes.workspace.token");
-  if (!baseUrl || !tenantId || !token) return;
+  if (!baseUrl || !tenantId || !token) { status.setAttribute("aria-busy", "false"); return; }
   try {
     const client = new WorkspaceClient({ baseUrl, tenantId, token });
     const [approvals, inbox] = await Promise.all([client.approvals(), client.inbox()]);
@@ -52,6 +53,8 @@ async function checkRemoteWorkspace(): Promise<void> {
     status.className = "workspace-pill error";
     status.textContent = "● WORKSPACE NO DISPONIBLE";
     remoteWorkspaceClient = null;
+  } finally {
+    status.setAttribute("aria-busy", "false");
   }
 }
 
