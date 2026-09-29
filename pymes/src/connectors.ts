@@ -57,7 +57,13 @@ async function providerFetch(fetcher: Fetcher, input: RequestInfo | URL, init: R
     const response = await fetcher(input, { ...init, signal: timeoutSignal(timeoutMs) });
     lastResponse = response;
     if (response.status !== 429 && (response.status < 500 || response.status >= 600)) return response;
-    if (attempt < 2) await new Promise(resolve => setTimeout(resolve, 25 * (attempt + 1)));
+    if (attempt < 2) {
+      const retryAfter = Number(response.headers.get("retry-after"));
+      const delayMs = Number.isFinite(retryAfter) && retryAfter >= 0
+        ? Math.min(retryAfter * 1_000, 2_000)
+        : 25 * (attempt + 1);
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+    }
   }
   return lastResponse!;
 }
