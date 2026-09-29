@@ -60,6 +60,9 @@ POST /v1/workspaces/:tenant/effects/:effectId/retry
 { "requestedAt": "2026-09-29T12:20:00Z", "reason": "Cliente disponible para reintento" }
 ```
 
+La respuesta incluye `retryCount`, que empieza en `0` y aumenta en cada
+reintento gobernado. La nota anterior se conserva y se añade el motivo nuevo.
+
 Los resultados solo se aceptan después de confirmar el efecto. Cada ruta comprueba tenant, rol y estado actual.
 
 Los tipos de efecto permitidos son `call`, `calendar`, `message` y `crm_task`.
