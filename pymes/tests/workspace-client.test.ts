@@ -58,6 +58,14 @@ test("workspace client preserves retry-after metadata", async () => {
   await assert.rejects(() => value.inbox(), (error: unknown) => error instanceof WorkspaceHttpError && error.status === 503 && error.retryAfter === "5" && error.requestId === "retry-42");
 });
 
+test("workspace client rejects malformed connector registry", async () => {
+  const fetcher: typeof fetch = async () => new Response(JSON.stringify({ connectors: [{ id: "bad" }] }), {
+    status: 200, headers: { "content-type": "application/json" }
+  });
+  const value = new WorkspaceClient({ baseUrl: "http://workspace.local", tenantId: "agency-1", token: "owner-token-123456" }, fetcher);
+  await assert.rejects(() => value.connectors(), /INVALID_WORKSPACE_CONNECTORS/);
+});
+
 test("workspace client reads an individual effect", async () => {
   const api = new WorkspaceApi();
   api.addSession("owner-token-123456", { userId: "owner", tenantId: "agency-1", role: "owner" });
