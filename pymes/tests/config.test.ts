@@ -27,4 +27,5 @@ test("CORS origins use safe defaults and reject wildcard", () => {
   assert.deepEqual(parseCorsOrigins(",,,"), ["http://127.0.0.1:5174", "http://localhost:5174"]);
   assert.throws(() => parseCorsOrigins("*"), /INVALID_PYMES_API_CORS_ORIGINS/);
   assert.throws(() => parseCorsOrigins("ftp://agency.example"), /INVALID_PYMES_API_CORS_ORIGINS/);
+  assert.throws(() => parseCorsOrigins("https://user:pass@agency.example"), /INVALID_PYMES_API_CORS_ORIGINS/);
 });

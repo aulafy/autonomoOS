@@ -10,7 +10,7 @@ export function parseCorsOrigins(value: string | undefined): string[] {
   const origins = rawOrigins.map(origin => {
     let parsed: URL;
     try { parsed = new URL(origin); } catch { throw new Error("INVALID_PYMES_API_CORS_ORIGINS"); }
-    if (parsed.protocol !== "http:" && parsed.protocol !== "https:" || parsed.pathname !== "/" || parsed.search || parsed.hash) {
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:" || parsed.username || parsed.password || parsed.pathname !== "/" || parsed.search || parsed.hash) {
       throw new Error("INVALID_PYMES_API_CORS_ORIGINS");
     }
     return parsed.origin;
