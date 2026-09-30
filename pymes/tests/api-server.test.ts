@@ -117,6 +117,20 @@ test("HTTP adapter returns JSON and enforces authentication", async () => {
   assert.deepEqual(await response.json(), { error: "UNAUTHENTICATED" });
 });
 
+test("HTTP adapter contains unexpected workspace failures", async () => {
+  const broken = new WorkspaceApi({
+    findSession() { throw new Error("DB_DOWN"); }, listInbox() { return []; }, revokeSession() {},
+    appendInbox() {}, updateInbox() {}, appendApproval() {}, listApprovals() { return []; },
+    appendCaseAudit() {}, listCaseAudit() { return []; }, appendEffect() {}, updateEffect() {}, listEffects() { return []; }
+  });
+  const response = await handlePymesRequest(broken, new Request("http://localhost/v1/workspaces/agency-1/inbox", {
+    headers: { authorization: "Bearer owner-token-123456" }
+  }));
+  assert.equal(response.status, 500);
+  assert.deepEqual(await response.json(), { error: "INTERNAL_SERVER_ERROR" });
+  assert.match(response.headers.get("x-request-id") ?? "", /^[0-9a-f-]{36}$/);
+});
+
 test("HTTP adapter accepts an approval JSON document", async () => {
   const response = await handlePymesRequest(api(), new Request("http://localhost/v1/workspaces/agency-1/approvals", {
     method: "POST", headers: { authorization: "Bearer owner-token-123456", "content-type": "application/json" },
