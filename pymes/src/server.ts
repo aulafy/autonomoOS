@@ -86,6 +86,10 @@ const server = createServer(async (request, nodeResponse) => {
     }
   });
 });
+server.on("clientError", (_error, socket) => {
+  if (!socket.writable) return;
+  socket.end("HTTP/1.1 400 Bad Request\r\nConnection: close\r\nContent-Length: 0\r\n\r\n");
+});
 // Boundaries for production clients and reverse proxies.
 server.headersTimeout = 10_000;
 server.requestTimeout = 30_000;
