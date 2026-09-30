@@ -19,6 +19,8 @@ si no, el API genera un UUID. Las respuestas usan `Cache-Control: no-store`,
 `Cross-Origin-Resource-Policy: same-origin`, `Cross-Origin-Opener-Policy:
 same-origin`, además de
 `Referrer-Policy: no-referrer`.
+El cliente remoto exige una URL base HTTP/HTTPS sin credenciales, query ni
+fragmento y con un máximo de 2.048 caracteres.
 Las rutas `POST` requieren `Content-Type: application/json`; otros tipos
 devuelven `415 UNSUPPORTED_MEDIA_TYPE`.
 Un método no permitido devuelve `405` con la cabecera `Allow` correspondiente.
