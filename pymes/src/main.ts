@@ -172,6 +172,11 @@ async function checkRemoteWorkspace(): Promise<void> {
     const selected = brief.items.find(item => item.id === selectedId);
     if (selected) renderDetail(selected);
   } catch (error: unknown) {
+    const metricsUpdated = document.getElementById("workspace-metrics-updated");
+    if (metricsUpdated && metricsUpdated.textContent !== "Sin sincronizar") {
+      metricsUpdated.textContent = "Sin conexión · datos potencialmente desactualizados";
+      metricsUpdated.dataset.stale = "true";
+    }
     workspaceFailureCount = Math.min(workspaceFailureCount + 1, 999);
     status.className = "workspace-pill error";
     status.dataset.state = error instanceof Error && error.message === "WORKSPACE_NOT_READY" ? "starting" : "error";
