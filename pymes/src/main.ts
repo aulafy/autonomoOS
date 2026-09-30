@@ -32,6 +32,7 @@ const quoteOffers = workspaceStore.loadOffers();
 let remoteWorkspaceClient: WorkspaceClient | null = null;
 let remoteInbox = new Map<string, { state: string; version?: number }>();
 let workspaceRetryTimer: number | null = null;
+let workspaceSyncInFlight = false;
 
 let selectedChannel: Channel | "all" = "all";
 const channelLabels: Record<Channel, string> = {
@@ -40,6 +41,7 @@ const channelLabels: Record<Channel, string> = {
 let selectedId = brief.items[0]?.id ?? null;
 
 async function checkRemoteWorkspace(): Promise<void> {
+  if (workspaceSyncInFlight) return;
   const status = $("workspace-status");
   status.setAttribute("aria-busy", "true");
   const params = new URLSearchParams(window.location.search);
@@ -47,6 +49,7 @@ async function checkRemoteWorkspace(): Promise<void> {
   const tenantId = params.get("tenant");
   const token = sessionStorage.getItem("pymes.workspace.token");
   if (!baseUrl || !tenantId || !token) { status.setAttribute("aria-busy", "false"); return; }
+  workspaceSyncInFlight = true;
   try {
     const client = new WorkspaceClient({ baseUrl, tenantId, token });
     const readiness = await client.ready();
@@ -140,6 +143,7 @@ async function checkRemoteWorkspace(): Promise<void> {
     }
   } finally {
     status.setAttribute("aria-busy", "false");
+    workspaceSyncInFlight = false;
   }
 }
 
