@@ -486,6 +486,12 @@ test("workspace client drops oversized retry metadata", async () => {
   await assert.rejects(async () => value.health(), error => error instanceof WorkspaceHttpError && error.retryAfter === null);
 });
 
+test("workspace client bounds remote HTTP error messages", async () => {
+  const fetcher: typeof fetch = async () => new Response(JSON.stringify({ error: "x".repeat(201) }), { status: 503, headers: { "content-type": "application/json" } });
+  const value = new WorkspaceClient({ baseUrl: "http://workspace.local", tenantId: "agency-1", token: "owner-token-123456" }, fetcher);
+  await assert.rejects(async () => value.health(), error => error instanceof WorkspaceHttpError && error.message === "WORKSPACE_REQUEST_FAILED");
+});
+
 test("workspace client drops oversized response correlation ids", async () => {
   const fetcher: typeof fetch = async () => new Response(JSON.stringify({ status: "ok", service: "pymes-workspace", version: "0.1.0" }), { status: 200, headers: { "content-type": "application/json", "x-request-id": "x".repeat(201) } });
   const value = new WorkspaceClient({ baseUrl: "http://workspace.local", tenantId: "agency-1", token: "owner-token-123456" }, fetcher);

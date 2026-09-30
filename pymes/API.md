@@ -46,6 +46,9 @@ intermedio de datos sensibles del workspace.
 Los fallos HTTP del cliente se exponen como `WorkspaceHttpError`, con `status`,
 `message`, `requestId` y `retryAfter` para decidir reautenticación, reintento,
 backoff o soporte.
+El mensaje remoto se limita a 200 caracteres y se sustituye por
+`WORKSPACE_REQUEST_FAILED` si es vacío, contiene controles o es demasiado
+largo.
 `retryAfter` se limita a 200 caracteres y se descarta si contiene controles.
 Su `requestId` usa el mismo saneamiento que `lastResponseRequestId`.
 Las rutas `POST` requieren `Content-Type: application/json`; otros tipos
