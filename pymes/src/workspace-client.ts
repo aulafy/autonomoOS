@@ -25,6 +25,9 @@ export interface RemoteInboxRecord {
   tenantId: string;
   state: string;
   summary: string;
+  sourceEventId?: string;
+  sourceExternalMessageId?: string;
+  sourceChannel?: string;
   version?: number;
   updatedAt?: string;
 }
@@ -197,6 +200,9 @@ export class WorkspaceClient {
       return record.tenantId !== this.config.tenantId || typeof record.id !== "string" || !record.id ||
         typeof record.state !== "string" || !validInputText(record.state, 100) ||
         typeof record.summary !== "string" || !validInputText(record.summary, 4_000) ||
+        (record.sourceEventId !== undefined && (typeof record.sourceEventId !== "string" || !validResourceId(record.sourceEventId))) ||
+        (record.sourceExternalMessageId !== undefined && (typeof record.sourceExternalMessageId !== "string" || !validResourceId(record.sourceExternalMessageId))) ||
+        (record.sourceChannel !== undefined && (typeof record.sourceChannel !== "string" || !validInputText(record.sourceChannel, 100))) ||
         (record.version !== undefined && (!Number.isInteger(record.version) || (record.version as number) < 0)) ||
         (record.updatedAt !== undefined && (typeof record.updatedAt !== "string" || !validTimestamp(record.updatedAt)));
     }) || new Set(body.items.map(item => (item as Record<string, unknown>).id)).size !== body.items.length) throw new Error("INVALID_WORKSPACE_INBOX");
