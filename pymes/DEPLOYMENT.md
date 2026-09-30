@@ -24,6 +24,8 @@ permite fijar la versión visible en `/healthz` y `/readyz` sin recompilar; por
 defecto es `0.1.0`.
 `PYMES_API_BOOTSTRAP_TOKEN` se recorta al arrancar y debe tener al menos 16
 caracteres efectivos, con un máximo de 4.096.
+`PYMES_API_HOST` se recorta, se limita a 255 caracteres y rechaza caracteres de
+control antes de abrir el socket de escucha.
 `PYMES_API_BOOTSTRAP_TENANT` y `PYMES_API_BOOTSTRAP_USER` también se recortan al
 arrancar para evitar espacios accidentales en el namespace inicial.
 Las sesiones persistidas guardan un hash SHA-256 del token; las bases creadas
