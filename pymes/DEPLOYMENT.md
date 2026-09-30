@@ -26,6 +26,8 @@ defecto es `0.1.0`.
 caracteres efectivos.
 `PYMES_API_BOOTSTRAP_TENANT` y `PYMES_API_BOOTSTRAP_USER` también se recortan al
 arrancar para evitar espacios accidentales en el namespace inicial.
+Las sesiones persistidas guardan un hash SHA-256 del token; las bases creadas
+con versiones anteriores migran el valor legado al primer uso válido.
 La misma versión se guarda en el label OCI
 `org.opencontainers.image.version`, para identificar el artefacto en un
 registry o inventario de contenedores sin arrancarlo.
