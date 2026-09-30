@@ -89,3 +89,11 @@ test("workspace client can revoke its current session", async () => {
   await value.revokeSession();
   await assert.rejects(() => value.inbox(), /UNAUTHENTICATED/);
 });
+
+test("workspace client trims endpoint and credential configuration", async () => {
+  const api = new WorkspaceApi();
+  api.addSession("owner-token-123456", { userId: "owner", tenantId: "agency-1", role: "owner" });
+  const fetcher: typeof fetch = (input, init) => handlePymesRequest(api, new Request(String(input), init));
+  const value = new WorkspaceClient({ baseUrl: " http://workspace.local/ ", tenantId: " agency-1 ", token: " owner-token-123456 " }, fetcher);
+  assert.equal((await value.inbox()).length, 0);
+});
