@@ -47,6 +47,14 @@ test("workspace client preserves HTTP error status and request id", async () => 
   await assert.rejects(() => value.inbox(), (error: unknown) => error instanceof WorkspaceHttpError && error.status === 401 && typeof error.requestId === "string" && error.retryAfter === null);
 });
 
+test("workspace client preserves retry-after metadata", async () => {
+  const fetcher: typeof fetch = async () => new Response(JSON.stringify({ error: "TEMPORARY" }), {
+    status: 503, headers: { "content-type": "application/json", "x-request-id": "retry-42", "retry-after": "5" }
+  });
+  const value = new WorkspaceClient({ baseUrl: "http://workspace.local", tenantId: "agency-1", token: "owner-token-123456" }, fetcher);
+  await assert.rejects(() => value.inbox(), (error: unknown) => error instanceof WorkspaceHttpError && error.status === 503 && error.retryAfter === "5" && error.requestId === "retry-42");
+});
+
 test("workspace client reads an individual effect", async () => {
   const api = new WorkspaceApi();
   api.addSession("owner-token-123456", { userId: "owner", tenantId: "agency-1", role: "owner" });
