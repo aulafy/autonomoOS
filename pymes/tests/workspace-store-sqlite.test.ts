@@ -93,3 +93,11 @@ test("SQLite inbox enforces external message idempotency", () => {
   assert.throws(() => store.appendInbox({ id: "event-2", tenantId: "agency-1", state: "received", summary: "Reintento", sourceExternalMessageId: "wa-1", sourceChannel: "whatsapp" }));
   store.close();
 });
+
+test("SQLite effects fail closed when stored payload is corrupt", () => {
+  const store = new SqliteWorkspaceRepository(":memory:");
+  store.db.prepare(`INSERT INTO workspace_effects (id, tenant_id, case_id, kind, payload, status, requested_by, requested_at, retry_count, draft_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+    "effect-1", "agency-1", "case-1", "call", "not-json", "pending", "owner", "2026-09-30T10:00:00Z", 0, "sha256:test");
+  assert.deepEqual(store.listEffects("agency-1"), []);
+  store.close();
+});

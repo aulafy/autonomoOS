@@ -115,9 +115,10 @@ export class SqliteWorkspaceRepository implements WorkspaceRepository {
   updateEffect(effect: PendingEffect): void { this.db.prepare(`UPDATE workspace_effects SET status = ?, retry_count = ?, confirmed_by = ?, confirmed_at = ?, executed_by = ?, executed_at = ?, execution_note = ? WHERE id = ? AND tenant_id = ?`).run(effect.status, effect.retryCount, effect.confirmedBy ?? null, effect.confirmedAt ?? null, effect.executedBy ?? null, effect.executedAt ?? null, effect.executionNote ?? null, effect.id, effect.tenantId); }
   listEffects(tenantId: string, caseId?: string): PendingEffect[] {
     const rows = this.db.prepare(`SELECT id, tenant_id, case_id, kind, payload, status, requested_by, requested_at, retry_count, confirmed_by, confirmed_at, executed_by, executed_at, execution_note, draft_hash FROM workspace_effects WHERE tenant_id = ? ${caseId ? "AND case_id = ?" : ""} ORDER BY rowid`).all(...(caseId ? [tenantId, caseId] : [tenantId])) as Array<any>;
-    return rows.map(row => ({ id: row.id, tenantId: row.tenant_id, caseId: row.case_id, kind: row.kind,
+    try { return rows.map(row => ({ id: row.id, tenantId: row.tenant_id, caseId: row.case_id, kind: row.kind,
       payload: JSON.parse(row.payload), status: row.status, requestedBy: row.requested_by,
       requestedAt: row.requested_at, retryCount: row.retry_count ?? 0, ...(row.confirmed_by ? { confirmedBy: row.confirmed_by } : {}), ...(row.confirmed_at ? { confirmedAt: row.confirmed_at } : {}), ...(row.executed_by ? { executedBy: row.executed_by } : {}), ...(row.executed_at ? { executedAt: row.executed_at } : {}), ...(row.execution_note ? { executionNote: row.execution_note } : {}), draftHash: row.draft_hash }));
+    } catch { return []; }
   }
   appendApproval(approval: ApprovalRecord): void {
     this.db.prepare(`INSERT INTO workspace_approvals
