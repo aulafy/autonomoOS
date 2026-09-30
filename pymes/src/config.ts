@@ -3,6 +3,7 @@ import type { Channel } from "./domain.js";
 export const supportedChannels = ["whatsapp", "telegram", "imessage", "email"] as const satisfies readonly Channel[];
 export type SupportedChannel = Channel;
 export type ConnectorStatus = "lectura preparada" | "conectado" | "no configurado";
+type ConnectorConfig = { name: string; status: ConnectorStatus };
 
 export function normalizeBootstrapToken(value: string | undefined): string {
   const token = value?.trim() ?? "";
@@ -56,8 +57,8 @@ export function parseConfiguredChannels(value: string | undefined): Set<Supporte
 export const pilotConfig = {
   country: "España",
   timeZone: "Europe/Madrid",
-  crm: { name: "Holded", status: "lectura preparada" as ConnectorStatus },
-  calendar: { name: "Google Calendar", status: "lectura preparada" as ConnectorStatus },
+  crm: { name: "Holded", status: "lectura preparada" } satisfies ConnectorConfig,
+  calendar: { name: "Google Calendar", status: "lectura preparada" } satisfies ConnectorConfig,
   channels: supportedChannels
 } as const;
 
