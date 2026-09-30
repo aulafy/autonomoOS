@@ -31,7 +31,7 @@ export class WorkspaceConflictError extends Error {
 
 function validConfig(config: WorkspaceClientConfig): void {
   if (!config.baseUrl || !/^https?:\/\//.test(config.baseUrl) ||
-    !config.tenantId || !config.token) throw new Error("INVALID_WORKSPACE_CLIENT_CONFIG");
+    !config.tenantId || config.token.length < 16 || config.token.length > 4096) throw new Error("INVALID_WORKSPACE_CLIENT_CONFIG");
 }
 
 export class WorkspaceClient {

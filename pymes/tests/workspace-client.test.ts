@@ -75,6 +75,10 @@ test("workspace client retries a failed effect through the API", async () => {
 test("workspace client rejects invalid configuration", () => {
   assert.throws(() => new WorkspaceClient({ baseUrl: "", tenantId: "a", token: "t" }),
     /INVALID_WORKSPACE_CLIENT_CONFIG/);
+  assert.throws(() => new WorkspaceClient({ baseUrl: "http://workspace.local", tenantId: "a", token: "short" }),
+    /INVALID_WORKSPACE_CLIENT_CONFIG/);
+  assert.throws(() => new WorkspaceClient({ baseUrl: "http://workspace.local", tenantId: "a", token: "x".repeat(4097) }),
+    /INVALID_WORKSPACE_CLIENT_CONFIG/);
 });
 
 test("workspace client can revoke its current session", async () => {
