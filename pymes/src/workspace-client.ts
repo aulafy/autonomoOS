@@ -173,7 +173,7 @@ export class WorkspaceClient {
       const audit = item as Record<string, unknown>;
       return typeof audit.id !== "string" || !audit.id || audit.caseId !== caseId ||
         typeof audit.from !== "string" || !audit.from || typeof audit.to !== "string" || !audit.to ||
-        typeof audit.actorId !== "string" || !audit.actorId || typeof audit.at !== "string" || !audit.at ||
+        typeof audit.actorId !== "string" || !audit.actorId || typeof audit.at !== "string" || !validTimestamp(audit.at) ||
         !Number.isInteger(audit.version) || (audit.version as number) < 0;
     })) throw new Error("INVALID_WORKSPACE_AUDIT");
     return body.audit as RemoteCaseAudit[];

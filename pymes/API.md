@@ -75,6 +75,8 @@ envolvente de otro workspace o de otro caso se rechaza con
 `INVALID_WORKSPACE_AUDIT`.
 Cada entrada debe incluir transición, actor, fecha y una versión entera no
 negativa; las entradas incoherentes se rechazan antes de mostrarse.
+La fecha de cada entrada debe ser parseable; los timestamps inválidos también
+invalidan la respuesta de auditoría completa.
 Cada efecto individual debe incluir como mínimo `id`, `caseId`, `kind`,
 `status`, `requestedBy` y `requestedAt`; el cliente rechaza efectos incompletos
 con `INVALID_WORKSPACE_EFFECT` antes de permitir confirmaciones o reintentos.
