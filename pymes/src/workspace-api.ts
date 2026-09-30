@@ -71,6 +71,10 @@ export class InMemoryWorkspaceRepository implements WorkspaceRepository {
   }
   appendInbox(record: WorkspaceInboxRecord): void {
     const records = this.inbox.get(record.tenantId) ?? [];
+    if (record.sourceExternalMessageId && record.sourceChannel && records.some(value =>
+      value.sourceExternalMessageId === record.sourceExternalMessageId && value.sourceChannel === record.sourceChannel && value.id !== record.id)) {
+      throw new Error("INBOX_EXTERNAL_MESSAGE_ALREADY_EXISTS");
+    }
     const index = records.findIndex(value => value.id === record.id);
     if (index >= 0) this.inbox.set(record.tenantId, records.map((value, position) => position === index ? structuredClone(record) : value));
     else this.inbox.set(record.tenantId, [...records, structuredClone(record)]);

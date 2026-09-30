@@ -43,6 +43,12 @@ test("same external message with a new gateway event id is deduplicated", () => 
   assert.equal(repository.listInbox("agency-1").length, 1);
 });
 
+test("in-memory inbox enforces external message uniqueness", () => {
+  const repository = new InMemoryWorkspaceRepository();
+  repository.appendInbox({ id: "event-1", tenantId: "agency-1", state: "received", summary: "Mensaje", sourceExternalMessageId: "wa-1", sourceChannel: "whatsapp" });
+  assert.throws(() => repository.appendInbox({ id: "event-2", tenantId: "agency-1", state: "received", summary: "Reintento", sourceExternalMessageId: "wa-1", sourceChannel: "whatsapp" }));
+});
+
 test("tenant mismatch is rejected before persistence", () => {
   const repository = new InMemoryWorkspaceRepository();
   const result = ingestOpenClawIntoWorkspace({ envelope: { ...envelope, tenantId: "agency-2" }, policy, repository });
