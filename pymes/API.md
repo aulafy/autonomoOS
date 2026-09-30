@@ -47,6 +47,7 @@ ingress queda sin canales permitidos y bloquea esos eventos.
 
 ## Bandeja y trazabilidad
 
+- `POST /v1/workspaces/:tenant/session/revoke` — revoca el token Bearer actual y devuelve `{ "status": "revoked" }`. Las siguientes llamadas con ese token reciben `401`.
 - `GET /v1/workspaces/:tenant/inbox` — casos del tenant autenticado.
 - `GET /v1/workspaces/:tenant/approvals` — aprobaciones registradas.
 - `GET /v1/workspaces/:tenant/cases/:caseId/audit` — transiciones con actor, versión y fecha.
