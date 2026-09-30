@@ -435,6 +435,29 @@ function renderDetail(item: WorkItem) {
       const block = el("div", "detail-block");
       block.appendChild(el("strong", "", `Operaciones pendientes · ${own.length}`));
       if (!own.length) block.appendChild(el("p", "", "No hay efectos externos pendientes."));
+      if (item.identityStatus === "linked") {
+        const task = el("button", "review-button", "Preparar tarea CRM");
+        task.type = "button";
+        task.title = "Crea un borrador de seguimiento; requiere confirmación antes de ejecutarse";
+        task.addEventListener("click", async () => {
+          task.disabled = true;
+          try {
+            await remoteWorkspaceClient!.createEffect({
+              id: `crm-${item.id}-${Date.now()}`,
+              caseId: item.id,
+              kind: "crm_task",
+              payload: { title: item.nextAction, contactId: item.contact!.id, sourceMessageId: item.message.id },
+              draftHash: `sha256:crm-${item.id}`
+            });
+            await checkRemoteWorkspace();
+            renderDetail(item);
+          } catch (error) {
+            task.disabled = false;
+            task.textContent = error instanceof Error ? error.message : "No se pudo preparar la tarea";
+          }
+        });
+        block.appendChild(task);
+      }
       for (const effect of own) {
         block.appendChild(el("p", "", `${effectKindNames[effect.kind] ?? effect.kind} · ${effectStatusNames[effect.status] ?? effect.status} · solicitada por ${effect.requestedBy}`));
         if (effect.retryCount) block.appendChild(el("small", "", `Intentos de reejecución: ${effect.retryCount}`));
