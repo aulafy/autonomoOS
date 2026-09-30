@@ -57,6 +57,12 @@ test("evento OpenClaw rechaza timestamps fuera de ventana", () => {
   assert.deepEqual(ingestOpenClawEvent({ ...event, receivedAt: future }, policy), { accepted: false, reason: "INVALID_EVENT" });
 });
 
+test("la política OpenClaw permite ajustar la ventana con límites seguros", () => {
+  const accepted = ingestOpenClawEvent({ ...event, receivedAt: new Date(Date.now() - 60_000).toISOString() }, { ...policy, maxEventAgeMs: 120_000 });
+  assert.equal(accepted.accepted, true);
+  assert.deepEqual(ingestOpenClawEvent(event, { ...policy, maxEventAgeMs: -1 }), { accepted: false, reason: "INVALID_EVENT" });
+});
+
 test("la envolvente Enterprise impone tenant, agente y recurso", () => {
   const enterprisePolicy = { ...policy, tenantId: "agency-1",
     allowedAgentIds: new Set(["agent-1"]), allowedResourceIds: new Set(["resource-inbox-1"]) };

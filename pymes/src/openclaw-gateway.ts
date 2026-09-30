@@ -18,6 +18,8 @@ export interface OpenClawIngressPolicy {
   allowedChannels: ReadonlySet<Channel>;
   pairedSenderIds: ReadonlySet<string>;
   consentedConversationIds: ReadonlySet<string>;
+  maxEventAgeMs?: number;
+  maxFutureSkewMs?: number;
 }
 
 export interface OpenClawEnterpriseEnvelope {
@@ -62,10 +64,16 @@ const MAX_FUTURE_SKEW_MS = 10 * 60 * 1000;
  */
 export function ingestOpenClawEvent(event: OpenClawInboundEvent,
   policy: OpenClawIngressPolicy): OpenClawIngressResult {
+  const maxAge = policy.maxEventAgeMs ?? MAX_EVENT_AGE_MS;
+  const maxFuture = policy.maxFutureSkewMs ?? MAX_FUTURE_SKEW_MS;
+  if (!Number.isFinite(maxAge) || maxAge < 0 || maxAge > 30 * 24 * 60 * 60 * 1000 ||
+    !Number.isFinite(maxFuture) || maxFuture < 0 || maxFuture > 24 * 60 * 60 * 1000) {
+    return { accepted: false, reason: "INVALID_EVENT" };
+  }
   if (!safeMetadata(event.eventId, 200) || !safeMetadata(event.externalMessageId, 200) ||
     !safeMetadata(event.conversationId, 200) || !safeMetadata(event.senderId, 200) ||
     !safeText(event.text, 10_000) || !safeText(event.receivedAt, 100) || !validTimestamp(event.receivedAt) ||
-    Date.now() - Date.parse(event.receivedAt) > MAX_EVENT_AGE_MS || Date.parse(event.receivedAt) - Date.now() > MAX_FUTURE_SKEW_MS) {
+    Date.now() - Date.parse(event.receivedAt) > maxAge || Date.parse(event.receivedAt) - Date.now() > maxFuture) {
     return { accepted: false, reason: "INVALID_EVENT" };
   }
   if (!policy.allowedChannels.has(event.channel)) {
