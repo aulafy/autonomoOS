@@ -46,6 +46,8 @@ let selectedId = brief.items[0]?.id ?? null;
 async function checkRemoteWorkspace(): Promise<void> {
   if (workspaceSyncInFlight) return;
   const status = $("workspace-status");
+  status.setAttribute("role", "status");
+  status.setAttribute("aria-live", "polite");
   status.setAttribute("aria-busy", "true");
   const params = new URLSearchParams(window.location.search);
   const baseUrl = params.get("workspaceApi");
