@@ -8,6 +8,12 @@ export type ConnectorConfig = { id: string; name: string; status: ConnectorStatu
 export function isConnectorStatus(value: unknown): value is ConnectorStatus {
   return typeof value === "string" && connectorStatuses.includes(value as ConnectorStatus);
 }
+export function isConnectorConfig(value: unknown): value is ConnectorConfig {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
+  const config = value as Record<string, unknown>;
+  return typeof config.id === "string" && config.id.length > 0 &&
+    typeof config.name === "string" && config.name.length > 0 && isConnectorStatus(config.status);
+}
 
 export function normalizeBootstrapToken(value: string | undefined): string {
   const token = value?.trim() ?? "";
