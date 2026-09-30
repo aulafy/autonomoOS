@@ -3,6 +3,12 @@ import type { Channel } from "./domain.js";
 export const supportedChannels = ["whatsapp", "telegram", "imessage", "email"] as const satisfies readonly Channel[];
 export type SupportedChannel = Channel;
 
+export function normalizeBootstrapToken(value: string | undefined): string {
+  const token = value?.trim() ?? "";
+  if (token.length < 16) throw new Error("PYMES_API_BOOTSTRAP_TOKEN_REQUIRED");
+  return token;
+}
+
 /** Missing/blank input uses safe local defaults; wildcard input is rejected. */
 export function parseCorsOrigins(value: string | undefined): string[] {
   const configured = value?.trim() ? value : "http://127.0.0.1:5174,http://localhost:5174";
