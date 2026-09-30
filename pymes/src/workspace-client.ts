@@ -356,7 +356,7 @@ export class WorkspaceClient {
     const payloadShapeValid = input?.kind === "message"
       ? (payload?.channel === "whatsapp" || payload?.channel === "telegram" || payload?.channel === "imessage" || payload?.channel === "email") && typeof payload.text === "string" && validMultilineText(payload.text, 4_000)
       : input?.kind === "calendar"
-        ? typeof payload?.title === "string" && validInputText(payload.title, 500) && typeof payload.startsAt === "string" && validTimestamp(payload.startsAt)
+        ? typeof payload?.title === "string" && validInputText(payload.title, 500) && typeof payload.startsAt === "string" && validTimestamp(payload.startsAt) && typeof payload.endsAt === "string" && validTimestamp(payload.endsAt) && Date.parse(payload.endsAt) > Date.parse(payload.startsAt)
         : input?.kind === "crm_task"
           ? typeof payload?.title === "string" && validInputText(payload.title, 500) && typeof payload.contactId === "string" && validResourceId(payload.contactId)
           : input?.kind === "call"
