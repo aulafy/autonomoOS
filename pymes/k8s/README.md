@@ -11,6 +11,17 @@
      --namespace="$NAMESPACE"
    ```
 
+   Si vas a activar OpenClaw Enterprise, añade las claves al mismo Secret:
+
+   ```bash
+   kubectl create secret generic pymes-workspace-secrets \
+     --from-literal=bootstrap-token="$PYMES_API_BOOTSTRAP_TOKEN" \
+     --from-literal=tenant="$PYMES_API_BOOTSTRAP_TENANT" \
+     --from-literal=openclaw-ingress-token="$PYMES_OPENCLAW_INGRESS_TOKEN" \
+     --from-literal=openclaw-signing-secret="$PYMES_OPENCLAW_SIGNING_SECRET" \
+     --namespace="$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
+   ```
+
 3. Ajusta la imagen y `cors-origins` en `deployment.yaml` o en un overlay.
 4. Aplica la base:
 
