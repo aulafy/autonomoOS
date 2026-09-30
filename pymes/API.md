@@ -97,6 +97,8 @@ También mide el cuerpo real cuando la cabecera falta o no es fiable.
 Si el cuerpo no es JSON válido, normaliza el fallo a
 `INVALID_WORKSPACE_RESPONSE` para que la interfaz no dependa de errores del
 parser.
+Si el servidor declara otro tipo de contenido, devuelve
+`INVALID_WORKSPACE_CONTENT_TYPE` sin intentar procesarlo.
 Cada efecto individual debe incluir como mínimo `id`, `caseId`, `kind`,
 `status`, `requestedBy` y `requestedAt`; el cliente rechaza efectos incompletos
 con `INVALID_WORKSPACE_EFFECT` antes de permitir confirmaciones o reintentos.

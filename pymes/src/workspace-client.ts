@@ -108,6 +108,8 @@ export class WorkspaceClient {
     if (contentLength && (/^\d+$/.test(contentLength) === false || Number(contentLength) > MAX_REMOTE_RESPONSE_BYTES)) {
       throw new Error("WORKSPACE_RESPONSE_TOO_LARGE");
     }
+    const contentType = response.headers.get("content-type")?.split(";", 1)[0].trim().toLowerCase();
+    if (contentType && contentType !== "application/json") throw new Error("INVALID_WORKSPACE_CONTENT_TYPE");
     let body: unknown;
     try {
       const raw = await response.text();

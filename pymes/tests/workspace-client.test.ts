@@ -290,6 +290,12 @@ test("workspace client measures response body when content length is absent", as
   await assert.rejects(() => client.inbox(), /WORKSPACE_RESPONSE_TOO_LARGE/);
 });
 
+test("workspace client rejects a declared non-JSON response", async () => {
+  const fetcher: typeof fetch = async () => new Response("<html></html>", { status: 200, headers: { "content-type": "text/html" } });
+  const client = new WorkspaceClient({ baseUrl: "http://127.0.0.1:8799", tenantId: "agency-1", token: "token-1234567890" }, fetcher);
+  await assert.rejects(() => client.inbox(), /INVALID_WORKSPACE_CONTENT_TYPE/);
+});
+
 test("workspace client reads an individual effect", async () => {
   const api = new WorkspaceApi();
   api.addSession("owner-token-123456", { userId: "owner", tenantId: "agency-1", role: "owner" });
