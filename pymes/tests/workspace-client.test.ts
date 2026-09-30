@@ -37,6 +37,13 @@ test("workspace client validates tenant-scoped operational metrics", async () =>
   assert.deepEqual(metrics.effects, { total: 0, byStatus: {} });
 });
 
+test("workspace client consumes the tenant attention queue", async () => {
+  const value = client();
+  const items = await value.attention();
+  assert.deepEqual(items.map(item => item.id), ["msg-remote"]);
+  assert.equal(items[0]?.state, "pending_review");
+});
+
 test("HTTP metrics route authenticates and preserves tenant isolation", async () => {
   const api = new WorkspaceApi();
   api.addSession("owner-token-123456", { userId: "owner", tenantId: "agency-1", role: "owner" });

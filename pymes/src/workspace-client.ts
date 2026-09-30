@@ -240,6 +240,19 @@ export class WorkspaceClient {
     }) || new Set(body.items.map(item => (item as Record<string, unknown>).id)).size !== body.items.length) throw new Error("INVALID_WORKSPACE_INBOX");
     return body.items as RemoteInboxRecord[];
   }
+  async attention(): Promise<RemoteInboxRecord[]> {
+    const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/attention`);
+    if (body.tenantId !== this.config.tenantId || !Array.isArray(body.items) || body.items.length > 100 || body.items.some(item => {
+      if (item === null || typeof item !== "object" || Array.isArray(item)) return true;
+      const record = item as Record<string, unknown>;
+      return record.tenantId !== this.config.tenantId || typeof record.id !== "string" || !validResourceId(record.id) ||
+        (record.state !== "pending_review" && record.state !== "uncertain") || typeof record.summary !== "string" || !validInputText(record.summary, 4_000) ||
+        (record.updatedAt !== undefined && (typeof record.updatedAt !== "string" || !validTimestamp(record.updatedAt)));
+    }) || new Set(body.items.map(item => (item as Record<string, unknown>).id)).size !== body.items.length) {
+      throw new Error("INVALID_WORKSPACE_ATTENTION");
+    }
+    return body.items as RemoteInboxRecord[];
+  }
   async connectors(): Promise<RemoteConnector[]> {
     const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/connectors`);
     if (body.tenantId !== this.config.tenantId || !Array.isArray(body.connectors) || body.connectors.length > 100 || !body.connectors.every(isConnectorConfig) ||

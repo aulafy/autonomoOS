@@ -537,7 +537,7 @@ function renderDetail(item: WorkItem) {
       }
       for (const effect of own) {
         block.appendChild(el("p", "", `${effectKindNames[effect.kind] ?? effect.kind} · ${effectStatusNames[effect.status] ?? effect.status} · solicitada por ${effect.requestedBy}`));
-        const payload = effect.payload as Record<string, unknown>;
+        const payload = effect.payload as unknown as Record<string, unknown>;
         const summary = effect.kind === "message"
           ? `${String(payload.channel ?? "canal desconocido")} · ${String(payload.text ?? "sin texto")}`
           : effect.kind === "calendar"
