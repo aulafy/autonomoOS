@@ -7,7 +7,7 @@ import { parseConfiguredChannels, parseCorsOrigins } from "./config.js";
 
 const port = Number(process.env.PYMES_API_PORT ?? 8790);
 const host = process.env.PYMES_API_HOST ?? "127.0.0.1";
-const token = process.env.PYMES_API_BOOTSTRAP_TOKEN;
+const token = process.env.PYMES_API_BOOTSTRAP_TOKEN?.trim();
 const tenantId = process.env.PYMES_API_BOOTSTRAP_TENANT ?? "demo-agency";
 const userId = process.env.PYMES_API_BOOTSTRAP_USER ?? "demo-owner";
 const corsOrigins = parseCorsOrigins(process.env.PYMES_API_CORS_ORIGINS);
