@@ -36,6 +36,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Verify lockfile remains clean
+        run: git diff --exit-code -- package.json package-lock.json
       - name: Verify supported Node runtime
         run: node -e "if (Number(process.versions.node.split('.')[0]) < 22) throw new Error('Node 22+ required')"
       - name: Verify npm engine policy
