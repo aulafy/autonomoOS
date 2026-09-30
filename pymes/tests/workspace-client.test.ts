@@ -398,7 +398,7 @@ test("workspace client reads an individual effect", async () => {
   const api = new WorkspaceApi();
   api.addSession("owner-token-123456", { userId: "owner", tenantId: "agency-1", role: "owner" });
   api.handle({ method: "POST", path: "/v1/workspaces/agency-1/effects", authorization: "Bearer owner-token-123456",
-    body: { id: "effect-client", caseId: "case-1", kind: "crm_task", payload: { title: "Llamar" },
+    body: { id: "effect-client", caseId: "case-1", kind: "crm_task", payload: { title: "Llamar", contactId: "contact-1" },
       requestedAt: "2026-09-29T14:00:00Z", draftHash: "sha256:test" } });
   const fetcher: typeof fetch = (input, init) => handlePymesRequest(api, new Request(String(input), init));
   const value = new WorkspaceClient({ baseUrl: "http://workspace.local", tenantId: "agency-1", token: "owner-token-123456" }, fetcher);
@@ -429,6 +429,15 @@ test("workspace client rejects unknown remote effect states", async () => {
 test("workspace client rejects oversized remote effect payloads", async () => {
   const effect = { tenantId: "agency-1", id: "effect-large", caseId: "case-1", kind: "call", status: "pending",
     requestedBy: "owner", requestedAt: "2026-09-29T14:00:00Z", retryCount: 0, draftHash: "sha256:x", payload: { text: "x".repeat(66_000) } };
+  const fetcher: typeof fetch = async () => new Response(JSON.stringify({ tenantId: "agency-1", effects: [effect] }), {
+    status: 200, headers: { "content-type": "application/json" } });
+  const value = new WorkspaceClient({ baseUrl: "http://workspace.local", tenantId: "agency-1", token: "owner-token-123456" }, fetcher);
+  await assert.rejects(() => value.effects(), /INVALID_WORKSPACE_EFFECTS/);
+});
+
+test("workspace client rejects remote effects with an invalid kind payload", async () => {
+  const effect = { tenantId: "agency-1", id: "effect-message", caseId: "case-1", kind: "message", status: "pending",
+    requestedBy: "owner", requestedAt: "2026-09-29T14:00:00Z", retryCount: 0, draftHash: "sha256:x", payload: { text: "Falta el canal" } };
   const fetcher: typeof fetch = async () => new Response(JSON.stringify({ tenantId: "agency-1", effects: [effect] }), {
     status: 200, headers: { "content-type": "application/json" } });
   const value = new WorkspaceClient({ baseUrl: "http://workspace.local", tenantId: "agency-1", token: "owner-token-123456" }, fetcher);

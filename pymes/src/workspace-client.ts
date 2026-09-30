@@ -54,7 +54,7 @@ function isRemoteEffect(value: unknown, tenantId: string): value is RemoteEffect
     typeof effect.requestedBy === "string" && validInputText(effect.requestedBy, 200) &&
     typeof effect.requestedAt === "string" && validTimestamp(effect.requestedAt) &&
     (effect.draftHash === undefined || (typeof effect.draftHash === "string" && validInputText(effect.draftHash, 512))) &&
-    validEffectPayload(effect.payload) &&
+    validRemoteEffectPayload(effect.kind as string, effect.payload) &&
     (effect.retryCount === undefined || (Number.isInteger(effect.retryCount) && (effect.retryCount as number) >= 0 && (effect.retryCount as number) <= 1_000)) &&
     (effect.executionNote === undefined || (typeof effect.executionNote === "string" && validMultilineText(effect.executionNote, 2_000))) &&
     (effect.executedBy === undefined || (typeof effect.executedBy === "string" && validInputText(effect.executedBy, 200))) &&
@@ -89,6 +89,15 @@ function validEffectPayload(value: unknown): value is Record<string, unknown> {
   if (value === null || typeof value !== "object" || Array.isArray(value) || Object.keys(value).length === 0) return false;
   try { return new TextEncoder().encode(JSON.stringify(value)).byteLength <= 65536; }
   catch { return false; }
+}
+function validRemoteEffectPayload(kind: string, value: unknown): value is Record<string, unknown> {
+  if (!validEffectPayload(value)) return false;
+  const payload = value as Record<string, unknown>;
+  if (kind === "message") return (payload.channel === "whatsapp" || payload.channel === "telegram" || payload.channel === "imessage" || payload.channel === "email") && typeof payload.text === "string" && validMultilineText(payload.text, 4_000);
+  if (kind === "calendar") return typeof payload.title === "string" && validInputText(payload.title, 500) && typeof payload.startsAt === "string" && validTimestamp(payload.startsAt);
+  if (kind === "crm_task") return typeof payload.title === "string" && validInputText(payload.title, 500) && typeof payload.contactId === "string" && validResourceId(payload.contactId);
+  return (typeof payload.objective === "string" && validInputText(payload.objective, 2_000) && Array.isArray(payload.questions) && payload.questions.length <= 100 && payload.questions.every(value => typeof value === "string" && validInputText(value, 500))) ||
+    (typeof payload.phone === "string" && validInputText(payload.phone, 100));
 }
 function safeHeaderValue(value: string | null, maxLength = 200): string | null {
   const normalized = value?.trim() ?? "";
