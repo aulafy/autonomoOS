@@ -182,6 +182,7 @@ export class WorkspaceClient {
     return body as unknown as RemoteEffect;
   }
   async confirmEffect(effectId: string, confirmedAt = new Date().toISOString()): Promise<RemoteEffect> {
+    if (!effectId.trim() || !confirmedAt.trim()) throw new Error("INVALID_WORKSPACE_EFFECT_INPUT");
     const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/effects/${encodeURIComponent(effectId)}/confirm`, {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ confirm: true, confirmedAt })
     });
@@ -189,6 +190,7 @@ export class WorkspaceClient {
     return body;
   }
   async reportEffectResult(effectId: string, result: "succeeded" | "failed", note: string): Promise<RemoteEffect> {
+    if (!effectId.trim() || (result !== "succeeded" && result !== "failed") || !note.trim()) throw new Error("INVALID_WORKSPACE_EFFECT_INPUT");
     const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/effects/${encodeURIComponent(effectId)}/result`, {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ result, note, executedAt: new Date().toISOString() })
     });
@@ -196,6 +198,7 @@ export class WorkspaceClient {
     return body;
   }
   async retryEffect(effectId: string, reason: string, requestedAt = new Date().toISOString()): Promise<RemoteEffect> {
+    if (!effectId.trim() || !reason.trim() || !requestedAt.trim()) throw new Error("INVALID_WORKSPACE_EFFECT_INPUT");
     const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/effects/${encodeURIComponent(effectId)}/retry`, {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reason, requestedAt })
     });

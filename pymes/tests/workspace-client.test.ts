@@ -148,6 +148,16 @@ test("workspace client rejects empty approval input before network access", asyn
   assert.equal(calls, 0);
 });
 
+test("workspace client rejects empty effect commands before network access", async () => {
+  let calls = 0;
+  const fetcher: typeof fetch = async () => { calls += 1; return new Response("{}", { status: 500 }); };
+  const value = new WorkspaceClient({ baseUrl: "http://127.0.0.1:8799", tenantId: "agency-1", token: "token-1234567890" }, fetcher);
+  await assert.rejects(() => value.confirmEffect(""), /INVALID_WORKSPACE_EFFECT_INPUT/);
+  await assert.rejects(() => value.reportEffectResult("effect-1", "succeeded", ""), /INVALID_WORKSPACE_EFFECT_INPUT/);
+  await assert.rejects(() => value.retryEffect("effect-1", ""), /INVALID_WORKSPACE_EFFECT_INPUT/);
+  assert.equal(calls, 0);
+});
+
 test("workspace client reads an individual effect", async () => {
   const api = new WorkspaceApi();
   api.addSession("owner-token-123456", { userId: "owner", tenantId: "agency-1", role: "owner" });

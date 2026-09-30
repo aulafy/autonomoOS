@@ -50,6 +50,9 @@ pertenecer al tenant actual; una creación malformada se rechaza con
 `approve()` valida también sus datos de entrada localmente y devuelve
 `INVALID_WORKSPACE_APPROVAL_INPUT` sin abrir una petición si falta el recurso,
 el motivo, el hash o la fecha.
+Las mutaciones de efectos aplican la misma barrera y devuelven
+`INVALID_WORKSPACE_EFFECT_INPUT` sin transporte si falta el identificador, la
+confirmación, el resultado, la nota o el motivo requerido.
 Las colecciones de efectos también deben devolver el `tenantId` del workspace;
 `effectsForCase()` verifica además que el `caseId` de la envolvente coincida
 con el caso solicitado y rechaza cualquier desalineación.
