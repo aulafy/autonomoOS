@@ -32,6 +32,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Verify supported Node runtime
+        run: node -e "if (Number(process.versions.node.split('.')[0]) < 22) throw new Error('Node 22+ required')"
       - name: Validate repository diff
         run: git diff --check
       - run: npm run check:pymes
