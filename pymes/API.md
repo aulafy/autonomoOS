@@ -28,6 +28,8 @@ de 10.000 ms por defecto; `requestTimeoutMs` permite ajustar entre 100 y 60.000
 ms. Cuando se agota, el cliente expone `WORKSPACE_REQUEST_TIMEOUT`.
 Cada petición del cliente genera un `X-Request-Id` para correlacionar logs y
 diagnósticos; `WorkspaceClient.lastRequestId` expone el último valor enviado.
+Los fallos HTTP del cliente se exponen como `WorkspaceHttpError`, con `status`,
+`message` y `requestId` para decidir reautenticación, reintento o soporte.
 Las rutas `POST` requieren `Content-Type: application/json`; otros tipos
 devuelven `415 UNSUPPORTED_MEDIA_TYPE`.
 Un método no permitido devuelve `405` con la cabecera `Allow` correspondiente.
