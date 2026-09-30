@@ -1,5 +1,7 @@
-export const supportedChannels = ["whatsapp", "telegram", "imessage", "email"] as const;
-export type SupportedChannel = typeof supportedChannels[number];
+import type { Channel } from "./domain.js";
+
+export const supportedChannels = ["whatsapp", "telegram", "imessage", "email"] as const satisfies readonly Channel[];
+export type SupportedChannel = Channel;
 
 export function parseConfiguredChannels(value: string | undefined): Set<SupportedChannel> {
   const allowed = new Set<SupportedChannel>(supportedChannels);
