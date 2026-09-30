@@ -124,6 +124,12 @@ conoce credenciales ni SDKs de proveedores y devuelve una nota acotada para la
 auditoría; el servidor decide después si registra el resultado como succeeded o
 failed.
 
+`src/effect-worker.ts` coordina una ejecución remota completa: obtiene un
+efecto confirmado, invoca el handler correspondiente y publica el resultado en
+la API como `succeeded` o `failed`. Un worker puede usarlo desde un proceso
+separado sin conceder al proveedor acceso directo al repositorio ni a las
+transiciones del caso.
+
 `src/case-lifecycle.ts` define los estados y transiciones de un caso. Cada
 transición exige el rol adecuado y aumenta una versión monotónica; los saltos
 directos a aprobación o ejecución fallan. Un resultado `uncertain` solo puede
