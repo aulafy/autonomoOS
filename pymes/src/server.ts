@@ -100,7 +100,10 @@ server.maxHeadersCount = 100;
 server.maxRequestsPerSocket = 1_000;
 server.listen(port, host, () => console.log(`PYMES API listening on http://${host}:${port}`));
 
+let shuttingDown = false;
 function shutdown(signal: string): void {
+  if (shuttingDown) return;
+  shuttingDown = true;
   console.log(`PYMES API received ${signal}; shutting down`);
   const forceExit = setTimeout(() => {
     console.error("PYMES API shutdown timed out");
