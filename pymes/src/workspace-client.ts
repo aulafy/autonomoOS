@@ -116,4 +116,9 @@ export class WorkspaceClient {
     });
     return body as unknown as RemoteEffect;
   }
+  async revokeSession(): Promise<void> {
+    await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/session/revoke`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: "{}"
+    });
+  }
 }

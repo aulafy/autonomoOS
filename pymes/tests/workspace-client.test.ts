@@ -76,3 +76,12 @@ test("workspace client rejects invalid configuration", () => {
   assert.throws(() => new WorkspaceClient({ baseUrl: "", tenantId: "a", token: "t" }),
     /INVALID_WORKSPACE_CLIENT_CONFIG/);
 });
+
+test("workspace client can revoke its current session", async () => {
+  const api = new WorkspaceApi();
+  api.addSession("owner-token-123456", { userId: "owner", tenantId: "agency-1", role: "owner" });
+  const fetcher: typeof fetch = (input, init) => handlePymesRequest(api, new Request(String(input), init));
+  const value = new WorkspaceClient({ baseUrl: "http://workspace.local", tenantId: "agency-1", token: "owner-token-123456" }, fetcher);
+  await value.revokeSession();
+  await assert.rejects(() => value.inbox(), /UNAUTHENTICATED/);
+});
