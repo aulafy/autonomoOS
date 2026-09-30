@@ -69,6 +69,8 @@ Los adaptadores nuevos pueden reutilizar el tipo exportado `ConnectorConfig`
 junto con `ConnectorStatus` para mantener la misma semántica.
 Para datos dinámicos pueden usar también `isConnectorStatus()` antes de
 aceptar un estado recibido desde una API o configuración externa.
+`isConnectorConfig()` valida el objeto completo antes de incorporarlo al
+registro de integraciones.
 Los conectores del piloto usan los IDs estables `holded` y `google_calendar`;
 los nombres visibles pueden cambiar sin romper esas referencias.
 
