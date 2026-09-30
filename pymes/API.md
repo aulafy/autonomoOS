@@ -26,6 +26,8 @@ El cliente remoto exige una URL base HTTP/HTTPS sin credenciales, query ni
 fragmento y con un máximo de 2.048 caracteres. Sus peticiones usan un timeout
 de 10.000 ms por defecto; `requestTimeoutMs` permite ajustar entre 100 y 60.000
 ms. Cuando se agota, el cliente expone `WORKSPACE_REQUEST_TIMEOUT`.
+El tenant y el token también rechazan caracteres de control antes de formar
+cabeceras o rutas HTTP.
 El mismo timeout permanece activo mientras se lee y parsea el cuerpo de la
 respuesta, no solo durante la conexión inicial.
 Cada petición del cliente genera un `X-Request-Id` para correlacionar logs y
