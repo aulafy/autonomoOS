@@ -126,9 +126,10 @@ async function checkRemoteWorkspace(): Promise<void> {
       unavailable.retryAfter = readiness.retryAfter ?? "5s";
       throw unavailable;
     }
-    const [approvals, inbox, connectors, metrics] = await Promise.all([client.approvals(), client.inbox(), client.connectors(), client.metrics()]);
+    const [approvals, inbox, attention, connectors, metrics] = await Promise.all([client.approvals(), client.inbox(), client.attention(), client.connectors(), client.metrics()]);
     remoteWorkspaceClient = client;
     remoteInbox = new Map(inbox.map(item => [item.id, item]));
+    $("attention-count").textContent = String(attention.length);
     renderWorkspaceMetrics(metrics);
     workspaceFailureCount = 0;
     status.dataset.connectorCount = String(connectors.length);
@@ -187,6 +188,7 @@ async function checkRemoteWorkspace(): Promise<void> {
     if (selected) renderDetail(selected);
   } catch (error: unknown) {
     document.getElementById("workspace-alerts")?.replaceChildren();
+    $("attention-count").textContent = "—";
     const metricsUpdated = document.getElementById("workspace-metrics-updated");
     if (metricsUpdated && metricsUpdated.textContent !== "Sin sincronizar") {
       metricsUpdated.textContent = "Sin conexión · datos potencialmente desactualizados";
