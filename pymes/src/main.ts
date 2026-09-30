@@ -93,6 +93,8 @@ async function checkRemoteWorkspace(): Promise<void> {
       retry.addEventListener("click", () => { retry!.disabled = true; void checkRemoteWorkspace(); });
       status.parentElement?.appendChild(retry);
     }
+    retry.disabled = false;
+    retry.removeAttribute("aria-busy");
     remoteWorkspaceClient = null;
     document.getElementById("workspace-logout")?.remove();
   } finally {
