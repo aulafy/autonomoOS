@@ -209,3 +209,29 @@ export async function createGoogleCalendarEvent(input: {
   if (!externalId || !returnedStart || !returnedEnd || Date.parse(returnedEnd) <= Date.parse(returnedStart)) throw new Error("GOOGLE_CALENDAR_INVALID_CREATED_EVENT");
   return { provider: "google_calendar", externalId, title: nonempty(item?.summary) ?? input.title.trim(), startsAt: returnedStart, endsAt: returnedEnd, allDay: false };
 }
+
+export async function sendMessageWebhook(input: {
+  endpoint: string;
+  token: string;
+  channel: "whatsapp" | "telegram" | "imessage" | "email";
+  text: string;
+  contactId?: string;
+  idempotencyKey?: string;
+  timeoutMs?: number;
+  fetcher?: Fetcher;
+}): Promise<{ externalId: string }> {
+  requireCredential(input.token);
+  if (!input.text.trim() || input.text.length > 4_000 || /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(input.text)) throw new Error("INVALID_MESSAGE_TEXT");
+  let url: URL;
+  try { url = new URL(input.endpoint); } catch { throw new Error("INVALID_MESSAGE_ENDPOINT"); }
+  if (url.protocol !== "https:" && !(url.protocol === "http:" && (url.hostname === "127.0.0.1" || url.hostname === "localhost"))) throw new Error("UNSAFE_MESSAGE_ENDPOINT");
+  const response = await providerFetch(input.fetcher ?? fetch, url, {
+    method: "POST", headers: { Authorization: `Bearer ${input.token}`, Accept: "application/json", "Content-Type": "application/json", ...(input.idempotencyKey ? { "Idempotency-Key": input.idempotencyKey } : {}) },
+    body: JSON.stringify({ channel: input.channel, text: input.text, ...(input.contactId ? { contactId: input.contactId } : {}) }),
+  }, input.timeoutMs);
+  if (!response.ok) throw new Error(`MESSAGE_PROVIDER_FAILED:${response.status}`);
+  const data = record(await response.json());
+  const externalId = nonempty(data?.externalId) ?? nonempty(data?.id);
+  if (!externalId || externalId.length > 200) throw new Error("INVALID_MESSAGE_PROVIDER_RESPONSE");
+  return { externalId };
+}
