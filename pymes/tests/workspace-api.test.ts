@@ -186,12 +186,12 @@ test("effects require execute permission and explicit confirmation", () => {
 test("effect requests leave an auditable case entry", () => {
   const value = api();
   const response = value.handle({ method: "POST", path: "/v1/workspaces/agency-1/effects",
-    authorization: "Bearer owner-token-12345", body: { id: "audited-effect", caseId: "msg-1", kind: "crm_task",
+    authorization: "Bearer owner-token-12345", requestId: "req-effect-1", body: { id: "audited-effect", caseId: "msg-1", kind: "crm_task",
       payload: { title: "Seguimiento" }, requestedAt: "2026-09-30T10:00:00Z", draftHash: "sha256:audit" } });
   assert.equal(response.status, 201);
   const audit = value.handle({ method: "GET", path: "/v1/workspaces/agency-1/cases/msg-1/audit",
     authorization: "Bearer reviewer-token-1234" });
-  assert.deepEqual((audit.body.audit as Array<{ operation: string; actorId: string }>).map(entry => [entry.operation, entry.actorId]), [["effect_requested", "u-owner"]]);
+  assert.deepEqual((audit.body.audit as Array<{ operation: string; actorId: string; requestId?: string }>).map(entry => [entry.operation, entry.actorId, entry.requestId]), [["effect_requested", "u-owner", "req-effect-1"]]);
 });
 
 test("audit versions remain monotonic across effects and transitions", () => {

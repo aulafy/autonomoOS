@@ -174,12 +174,12 @@ export class WorkspaceApi {
     return this.repository.listApprovals(tenantId);
   }
 
-  private auditEffect(tenantId: string, effect: PendingEffect, operation: string, at: string, actorId: string): void {
+  private auditEffect(tenantId: string, effect: PendingEffect, operation: string, at: string, actorId: string, requestId?: string): void {
     const currentCase = this.repository.listInbox(tenantId).find(value => value.id === effect.caseId);
     const priorAudit = this.repository.listCaseAudit(tenantId, effect.caseId);
     this.repository.appendCaseAudit({ id: `audit-${tenantId}-${effect.caseId}-${operation}-${effect.id}-${priorAudit.length}`, tenantId,
       caseId: effect.caseId, from: currentCase?.state ?? "received", to: currentCase?.state ?? "received",
-      operation, actorId, at, version: priorAudit.length ? priorAudit[priorAudit.length - 1]!.version + 1 : currentCase?.version ?? 0 });
+      operation, actorId, at, requestId, version: priorAudit.length ? priorAudit[priorAudit.length - 1]!.version + 1 : currentCase?.version ?? 0 });
   }
 
   handle(request: WorkspaceApiRequest): WorkspaceApiResponse {
@@ -318,7 +318,7 @@ export class WorkspaceApi {
         const effect = createPendingEffect({ id: body.id, tenantId, caseId: body.caseId, kind: body.kind as EffectKind,
           payload: jsonRecord(body.payload)!, principal, requestedAt: body.requestedAt, draftHash: body.draftHash });
         this.repository.appendEffect(effect);
-        this.auditEffect(tenantId, effect, "effect_requested", effect.requestedAt, principal.userId);
+        this.auditEffect(tenantId, effect, "effect_requested", effect.requestedAt, principal.userId, safeRequestId(request.requestId));
         return { status: 201, body: effect as unknown as Record<string, unknown> };
       } catch (error) { const message = error instanceof Error ? error.message : "INVALID_PENDING_EFFECT"; return { status: message === "WORKSPACE_PERMISSION_DENIED" ? 403 : 400, body: { error: message } }; }
     }
@@ -332,7 +332,7 @@ export class WorkspaceApi {
         if (effect.status !== "pending" || Number.isNaN(Date.parse(body.confirmedAt))) throw new Error("EFFECT_NOT_PENDING");
         const confirmed = { ...effect, status: "confirmed" as const, confirmedBy: principal.userId, confirmedAt: body.confirmedAt };
         this.repository.updateEffect(confirmed);
-        this.auditEffect(tenantId, confirmed, "effect_confirmed", body.confirmedAt, principal.userId);
+        this.auditEffect(tenantId, confirmed, "effect_confirmed", body.confirmedAt, principal.userId, safeRequestId(request.requestId));
         return { status: 200, body: confirmed as unknown as Record<string, unknown> };
       } catch (error) { const message = error instanceof Error ? error.message : "EFFECT_CONFIRMATION_FAILED"; return { status: message === "WORKSPACE_PERMISSION_DENIED" ? 403 : 400, body: { error: message } }; }
     }
@@ -347,7 +347,7 @@ export class WorkspaceApi {
         if (Number.isNaN(Date.parse(body.executedAt)) || body.note.trim().length < 3 || body.note.trim().length > 2000) throw new Error("INVALID_EFFECT_RESULT");
         const result = { ...effect, status: body.result as "succeeded" | "failed", executedBy: principal.userId, executedAt: body.executedAt, executionNote: body.note.trim() };
         this.repository.updateEffect(result);
-        this.auditEffect(tenantId, result, `effect_${body.result}`, body.executedAt, principal.userId);
+        this.auditEffect(tenantId, result, `effect_${body.result}`, body.executedAt, principal.userId, safeRequestId(request.requestId));
         return { status: 200, body: result as unknown as Record<string, unknown> };
       } catch (error) { const message = error instanceof Error ? error.message : "EFFECT_RESULT_FAILED"; return { status: message === "WORKSPACE_PERMISSION_DENIED" ? 403 : 400, body: { error: message } }; }
     }
@@ -362,7 +362,7 @@ export class WorkspaceApi {
         const retry = { ...effect, status: "pending" as const, retryCount: effect.retryCount + 1, requestedBy: principal.userId, requestedAt: body.requestedAt,
           executionNote: `${effect.executionNote ? `${effect.executionNote}\n` : ""}Reintento: ${body.reason.trim()}` };
         this.repository.updateEffect(retry);
-        this.auditEffect(tenantId, retry, "effect_retried", body.requestedAt, principal.userId);
+        this.auditEffect(tenantId, retry, "effect_retried", body.requestedAt, principal.userId, safeRequestId(request.requestId));
         return { status: 200, body: retry as unknown as Record<string, unknown> };
       } catch (error) { const message = error instanceof Error ? error.message : "INVALID_EFFECT_RETRY"; return { status: message === "WORKSPACE_PERMISSION_DENIED" ? 403 : 400, body: { error: message } }; }
     }
