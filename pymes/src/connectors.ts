@@ -45,16 +45,24 @@ function requireCredential(value: string): void {
   if (!value.trim()) throw new Error("MISSING_PROVIDER_CREDENTIAL");
 }
 
-function timeoutSignal(timeoutMs: number | undefined): AbortSignal {
+function timeoutValue(timeoutMs: number | undefined): number {
   const value = timeoutMs ?? 10_000;
   if (!Number.isInteger(value) || value < 100 || value > 60_000) throw new Error("INVALID_PROVIDER_TIMEOUT");
-  return AbortSignal.timeout(value);
+  return value;
 }
 
 async function providerFetch(fetcher: Fetcher, input: RequestInfo | URL, init: RequestInit, timeoutMs: number | undefined): Promise<Response> {
+  const timeout = timeoutValue(timeoutMs);
   let lastResponse: Response | undefined;
   for (let attempt = 0; attempt < 3; attempt++) {
-    const response = await fetcher(input, { ...init, signal: timeoutSignal(timeoutMs) });
+    let response: Response;
+    try {
+      response = await fetcher(input, { ...init, signal: AbortSignal.timeout(timeout) });
+    } catch (error) {
+      if (attempt === 2) throw error;
+      await new Promise(resolve => setTimeout(resolve, 25 * (attempt + 1)));
+      continue;
+    }
     lastResponse = response;
     if (response.status !== 429 && (response.status < 500 || response.status >= 600)) return response;
     if (attempt < 2) {

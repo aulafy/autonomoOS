@@ -83,6 +83,20 @@ test("provider retry recovers from transient Holded failures", async () => {
   assert.equal(contacts[0]?.externalId, "c-1");
 });
 
+test("provider retry recovers from transient transport failures", async () => {
+  let calls = 0;
+  const contacts = await findHoldedContactsByPhone({
+    apiKey: "demo-key", phone: "+34600111222", timeoutMs: 1_000,
+    fetcher: async () => {
+      calls += 1;
+      if (calls === 1) throw new Error("ECONNRESET");
+      return Response.json([{ id: "c-1", name: "Ana Ruiz" }]);
+    }
+  });
+  assert.equal(calls, 3);
+  assert.equal(contacts[0]?.externalId, "c-1");
+});
+
 test("missing credentials and provider failures never become empty successful reads", async () => {
   await assert.rejects(() => findHoldedContactsByPhone({ apiKey: "", phone: "+34600111222" }),
     /MISSING_PROVIDER_CREDENTIAL/);
