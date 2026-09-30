@@ -66,6 +66,15 @@ test("workspace client rejects malformed connector registry", async () => {
   await assert.rejects(() => value.connectors(), /INVALID_WORKSPACE_CONNECTORS/);
 });
 
+test("workspace client rejects a connector registry for another tenant", async () => {
+  const fetcher: typeof fetch = async () => new Response(JSON.stringify({ tenantId: "agency-2", connectors: [{ id: "holded", name: "Holded", status: "lectura preparada" }] }), {
+    status: 200,
+    headers: { "content-type": "application/json" }
+  });
+  const value = new WorkspaceClient({ baseUrl: "http://127.0.0.1:8799", tenantId: "agency-1", token: "token-1234567890" }, fetcher);
+  await assert.rejects(() => value.connectors(), /INVALID_WORKSPACE_CONNECTORS/);
+});
+
 test("workspace client reads an individual effect", async () => {
   const api = new WorkspaceApi();
   api.addSession("owner-token-123456", { userId: "owner", tenantId: "agency-1", role: "owner" });
