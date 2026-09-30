@@ -30,7 +30,9 @@ export class WorkspaceConflictError extends Error {
 }
 
 function validConfig(config: WorkspaceClientConfig): void {
-  if (!config.baseUrl || !/^https?:\/\//.test(config.baseUrl.trim()) ||
+  let base: URL;
+  try { base = new URL(config.baseUrl.trim()); } catch { throw new Error("INVALID_WORKSPACE_CLIENT_CONFIG"); }
+  if ((base.protocol !== "http:" && base.protocol !== "https:") || base.username || base.password ||
     !config.tenantId.trim() || config.tenantId.trim().length > 200 || config.token.trim().length < 16 || config.token.trim().length > 4096) throw new Error("INVALID_WORKSPACE_CLIENT_CONFIG");
 }
 
@@ -38,7 +40,7 @@ export class WorkspaceClient {
   constructor(private readonly config: WorkspaceClientConfig,
     private readonly fetcher: typeof fetch = fetch) {
     validConfig(config);
-    this.config = { baseUrl: config.baseUrl.trim().replace(/\/$/, ""), tenantId: config.tenantId.trim(), token: config.token.trim() };
+    this.config = { baseUrl: new URL(config.baseUrl.trim()).toString().replace(/\/$/, ""), tenantId: config.tenantId.trim(), token: config.token.trim() };
   }
 
   private async request(path: string, init: RequestInit = {}): Promise<Record<string, unknown>> {
