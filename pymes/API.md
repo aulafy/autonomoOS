@@ -55,6 +55,8 @@ El indicador visual expone además `data-state="connected|starting|error"` para
 automatización y pruebas de interfaz sin depender del texto localizado.
 Cuando está conectado añade `data-last-sync` con una fecha ISO-8601; el
 atributo se elimina al entrar en error o perder la sesión.
+El contador visible de fallos consecutivos se satura en `999` para mantener un
+valor acotado durante sesiones largas.
 El indicador usa `role="status"`, `aria-live="polite"` y `aria-atomic="true"`
 para anunciar cambios completos de conexión sin interrumpir la tarea activa.
 
