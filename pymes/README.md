@@ -27,6 +27,8 @@ Antes de abrir una versión o desplegar cambios, ejecuta el gate completo:
 npm run check --workspace=@agent-world/pymes
 ```
 
+Desde la raíz también se puede ejecutar `npm run check:pymes`.
+
 El mismo gate se ejecuta automáticamente en GitHub Actions mediante
 `.github/workflows/pymes-ci.yml` para cada cambio que afecte a PYMES.
 
