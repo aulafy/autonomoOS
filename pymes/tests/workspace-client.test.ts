@@ -687,3 +687,13 @@ test("workspace client rejects cross-tenant or malformed metrics", async () => {
     await assert.rejects(() => value.metrics(), /INVALID_WORKSPACE_METRICS/);
   }
 });
+
+test("workspace client exposes only confirmed effects for workers", async () => {
+  const base = { tenantId: "agency-1", caseId: "case-1", kind: "crm_task", requestedBy: "owner-1", requestedAt: "2026-09-30T08:00:00Z", payload: { title: "Task", contactId: "contact-1" } };
+  const body = { tenantId: "agency-1", effects: [
+    { ...base, id: "effect-1", status: "confirmed" },
+    { ...base, id: "effect-2", status: "pending" },
+  ] };
+  const value = new WorkspaceClient({ baseUrl: "http://workspace.local", tenantId: "agency-1", token: "owner-token-123456" }, async () => new Response(JSON.stringify(body), { status: 200, headers: { "content-type": "application/json" } }));
+  assert.deepEqual((await value.confirmedEffects()).map(effect => effect.id), ["effect-1"]);
+});

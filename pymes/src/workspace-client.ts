@@ -341,6 +341,9 @@ export class WorkspaceClient {
       new Set(body.effects.map(item => item.id)).size !== body.effects.length) throw new Error("INVALID_WORKSPACE_EFFECTS");
     return body.effects as RemoteEffect[];
   }
+  async confirmedEffects(): Promise<RemoteEffect[]> {
+    return (await this.effects()).filter(effect => effect.status === "confirmed");
+  }
   async effectsForCase(caseId: string): Promise<RemoteEffect[]> {
     if (!validResourceId(caseId)) throw new Error("INVALID_WORKSPACE_CASE_INPUT");
     const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/cases/${encodeURIComponent(caseId)}/effects`);
