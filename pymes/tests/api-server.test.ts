@@ -34,6 +34,12 @@ test("readiness endpoint is public", async () => {
   assert.equal((await response.json()).status, "ok");
 });
 
+test("readiness endpoint exposes the injected release version", async () => {
+  const response = await handlePymesRequest(api(), new Request("http://localhost/readyz"), { serviceVersion: "2026.09.30" });
+  assert.equal(response.status, 200);
+  assert.equal((await response.json()).version, "2026.09.30");
+});
+
 test("readiness reports storage failures", async () => {
   const broken = new WorkspaceApi({
     findSession() { return null; }, listInbox() { throw new Error("DB_DOWN"); },
