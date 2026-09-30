@@ -1,1 +1,1 @@
-.workspace-refresh{border:1px solid #d8e1ef;border-radius:999px;background:#f7faff;color:#375a87;padding:7px 10px;font-size:10px;font-weight:700}.workspace-refresh:hover{background:#edf4ff}.workspace-refresh:disabled{opacity:.55;cursor:wait}
+.workspace-refresh{border:1px solid #d8e1ef;border-radius:999px;background:#f7faff;color:#375a87;padding:7px 10px;font-size:10px;font-weight:700}.workspace-refresh:hover{background:#edf4ff}.workspace-refresh:focus-visible{outline:3px solid #375a87;outline-offset:2px}.workspace-refresh:disabled{opacity:.55;cursor:wait}

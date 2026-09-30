@@ -9,4 +9,5 @@
 }
 
 .workspace-logout:hover { background: #eef7ef; }
+.workspace-logout:focus-visible { outline: 3px solid #4d7560; outline-offset: 2px; }
 .workspace-logout:disabled { opacity: .55; cursor: wait; }
