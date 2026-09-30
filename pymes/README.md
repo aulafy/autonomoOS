@@ -1,5 +1,7 @@
 # PYMES · agente de trabajo para seguros
 
+El historial de cambios del producto está en [CHANGELOG.md](CHANGELOG.md).
+
 Esta carpeta inicia un producto vertical para una agencia o correduría de
 seguros. El problema inicial es la primera hora de cada mañana: mensajes
 dispersos, incidencias, solicitudes de propuesta, renovaciones, citas y cambios
