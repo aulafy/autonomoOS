@@ -73,6 +73,8 @@ con el caso solicitado y rechaza cualquier desalineación.
 La auditoría aplica la misma comprobación a `tenantId` y `caseId`; una
 envolvente de otro workspace o de otro caso se rechaza con
 `INVALID_WORKSPACE_AUDIT`.
+Cada entrada debe incluir transición, actor, fecha y una versión entera no
+negativa; las entradas incoherentes se rechazan antes de mostrarse.
 Cada efecto individual debe incluir como mínimo `id`, `caseId`, `kind`,
 `status`, `requestedBy` y `requestedAt`; el cliente rechaza efectos incompletos
 con `INVALID_WORKSPACE_EFFECT` antes de permitir confirmaciones o reintentos.

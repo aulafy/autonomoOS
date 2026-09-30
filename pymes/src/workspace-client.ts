@@ -168,7 +168,14 @@ export class WorkspaceClient {
   async audit(caseId: string): Promise<RemoteCaseAudit[]> {
     if (!validResourceId(caseId)) throw new Error("INVALID_WORKSPACE_CASE_INPUT");
     const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/cases/${encodeURIComponent(caseId)}/audit`);
-    if (body.tenantId !== this.config.tenantId || body.caseId !== caseId || !Array.isArray(body.audit)) throw new Error("INVALID_WORKSPACE_AUDIT");
+    if (body.tenantId !== this.config.tenantId || body.caseId !== caseId || !Array.isArray(body.audit) || body.audit.some(item => {
+      if (item === null || typeof item !== "object" || Array.isArray(item)) return true;
+      const audit = item as Record<string, unknown>;
+      return typeof audit.id !== "string" || !audit.id || audit.caseId !== caseId ||
+        typeof audit.from !== "string" || !audit.from || typeof audit.to !== "string" || !audit.to ||
+        typeof audit.actorId !== "string" || !audit.actorId || typeof audit.at !== "string" || !audit.at ||
+        !Number.isInteger(audit.version) || (audit.version as number) < 0;
+    })) throw new Error("INVALID_WORKSPACE_AUDIT");
     return body.audit as RemoteCaseAudit[];
   }
   async transition(caseId: string, to: string, at = new Date().toISOString(), expectedVersion?: number): Promise<void> {
