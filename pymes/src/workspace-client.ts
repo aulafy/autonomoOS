@@ -234,9 +234,9 @@ export class WorkspaceClient {
     if (body.tenantId !== this.config.tenantId || body.caseId !== caseId || !Array.isArray(body.audit) || body.audit.some(item => {
       if (item === null || typeof item !== "object" || Array.isArray(item)) return true;
       const audit = item as Record<string, unknown>;
-      return typeof audit.id !== "string" || !audit.id || audit.caseId !== caseId ||
-        typeof audit.from !== "string" || !audit.from || typeof audit.to !== "string" || !audit.to ||
-        typeof audit.actorId !== "string" || !audit.actorId || typeof audit.at !== "string" || !validTimestamp(audit.at) ||
+      return typeof audit.id !== "string" || !validResourceId(audit.id) || audit.caseId !== caseId ||
+        typeof audit.from !== "string" || !validInputText(audit.from, 100) || typeof audit.to !== "string" || !validInputText(audit.to, 100) ||
+        typeof audit.actorId !== "string" || !validInputText(audit.actorId, 200) || typeof audit.at !== "string" || !validTimestamp(audit.at) ||
         !Number.isInteger(audit.version) || (audit.version as number) < 0;
     }) || new Set(body.audit.map(item => (item as Record<string, unknown>).id)).size !== body.audit.length) throw new Error("INVALID_WORKSPACE_AUDIT");
     return body.audit as RemoteCaseAudit[];
