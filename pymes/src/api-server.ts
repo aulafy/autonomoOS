@@ -27,7 +27,7 @@ function response(status: number, body: Record<string, unknown>, requestId = nor
 /** Web-standard HTTP adapter; usable by Node, tests, or a future edge runtime. */
 export async function handlePymesRequest(api: WorkspaceApi, request: Request, options: PymesHttpOptions = {}): Promise<Response> {
   const allowedOrigins = options.allowedOrigins ?? defaultCorsOrigins;
-  const serviceVersion = options.serviceVersion ?? defaultServiceVersion;
+  const serviceVersion = options.serviceVersion?.trim() || defaultServiceVersion;
   const requestId = normalizeRequestId(request.headers.get("x-request-id")?.trim());
   const pathname = new URL(request.url).pathname;
   const origin = request.headers.get("origin") ?? undefined;

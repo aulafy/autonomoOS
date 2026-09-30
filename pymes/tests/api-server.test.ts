@@ -22,6 +22,11 @@ test("health endpoint exposes an injected release version", async () => {
   assert.equal((await response.json()).version, "2026.09.29");
 });
 
+test("health endpoint falls back when the release version is blank", async () => {
+  const response = await handlePymesRequest(api(), new Request("http://localhost/healthz"), { serviceVersion: "   " });
+  assert.equal((await response.json()).version, "0.1.0");
+});
+
 test("request ids are bounded consistently", () => {
   assert.equal(normalizeRequestId("support-42"), "support-42");
   assert.equal(normalizeRequestId("  support-42  "), "support-42");
