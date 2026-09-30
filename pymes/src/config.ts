@@ -32,7 +32,7 @@ export function normalizeOptionalToken(value: string | undefined, errorCode: str
 export function parseBoundedOptionalNumber(value: string | undefined, maximum: number, errorCode: string): number | undefined {
   if (value === undefined || value.trim() === "") return undefined;
   const parsed = Number(value);
-  if (!Number.isFinite(parsed) || parsed < 0 || parsed > maximum) throw new Error(errorCode);
+  if (!Number.isInteger(parsed) || parsed < 0 || parsed > maximum) throw new Error(errorCode);
   return parsed;
 }
 

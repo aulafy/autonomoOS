@@ -56,6 +56,7 @@ test("bounded optional numbers support ingress configuration", () => {
   assert.equal(parseBoundedOptionalNumber(undefined, 100, "ERR"), undefined);
   assert.equal(parseBoundedOptionalNumber(" 42 ", 100, "ERR"), 42);
   assert.throws(() => parseBoundedOptionalNumber("101", 100, "ERR"), /ERR/);
+  assert.throws(() => parseBoundedOptionalNumber("42.5", 100, "ERR"), /ERR/);
   assert.throws(() => parseBoundedOptionalNumber("nope", 100, "ERR"), /ERR/);
 });
 
