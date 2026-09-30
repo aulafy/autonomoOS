@@ -43,6 +43,7 @@ function validConfig(config: WorkspaceClientConfig): void {
 }
 
 export class WorkspaceClient {
+  private lastRequestIdValue: string | null = null;
   constructor(private readonly config: WorkspaceClientConfig,
     private readonly fetcher: typeof fetch = fetch) {
     validConfig(config);
@@ -52,10 +53,12 @@ export class WorkspaceClient {
   private async request(path: string, init: RequestInit = {}, acceptedStatuses: readonly number[] = []): Promise<Record<string, unknown>> {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), this.config.requestTimeoutMs ?? 10000);
+    const correlationId = requestId();
+    this.lastRequestIdValue = correlationId;
     let response: Response;
     try {
       response = await this.fetcher(`${this.config.baseUrl}${path}`, {
-        ...init, signal: controller.signal, headers: { Accept: "application/json", Authorization: `Bearer ${this.config.token}`, "X-Request-Id": requestId(),
+        ...init, signal: controller.signal, headers: { Accept: "application/json", Authorization: `Bearer ${this.config.token}`, "X-Request-Id": correlationId,
           ...(init.headers ?? {}) }
       });
     } catch (error) {
@@ -73,6 +76,7 @@ export class WorkspaceClient {
     }
     return body as Record<string, unknown>;
   }
+  get lastRequestId(): string | null { return this.lastRequestIdValue; }
 
   async approvals(): Promise<RemoteApproval[]> {
     const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/approvals`);

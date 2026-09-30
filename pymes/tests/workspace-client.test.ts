@@ -148,4 +148,5 @@ test("workspace client sends a correlation request id", async () => {
   const value = new WorkspaceClient({ baseUrl: "http://workspace.local", tenantId: "agency-1", token: "owner-token-123456" }, fetcher);
   await value.inbox();
   assert.match(seen, /^[0-9a-f-]{36}$/);
+  assert.equal(value.lastRequestId, seen);
 });
