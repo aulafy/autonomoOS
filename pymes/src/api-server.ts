@@ -4,7 +4,7 @@ import { normalizeRequestId } from "./request-id.js";
 const MAX_BODY_BYTES = 1_048_576;
 const defaultCorsOrigins = ["http://127.0.0.1:5174", "http://localhost:5174"];
 export interface PymesHttpOptions { allowedOrigins?: readonly string[]; serviceVersion?: string; }
-const defaultServiceVersion = process.env.PYMES_API_VERSION ?? "0.1.0";
+const defaultServiceVersion = process.env.PYMES_API_VERSION?.trim() || "0.1.0";
 
 function response(status: number, body: Record<string, unknown>, requestId = normalizeRequestId(undefined), origin?: string, allowedOrigins: readonly string[] = defaultCorsOrigins): Response {
   const headers: Record<string, string> = { "content-type": "application/json; charset=utf-8", "x-request-id": requestId,
