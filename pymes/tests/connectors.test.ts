@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { findHoldedContactsByPhone, listGoogleCalendarEvents } from "../src/connectors.js";
+import { createGoogleCalendarEvent, findHoldedContactsByPhone, listGoogleCalendarEvents } from "../src/connectors.js";
 
 test("Holded reads an exact phone match without fetching the whole address book", async () => {
   const requests: Array<{ url: URL; init?: RequestInit }> = [];
@@ -70,6 +70,14 @@ test("Google Calendar reads all pages and keeps timed and all-day events", async
     fetcher: async () => Response.json({ items: [{ id: "bad-date",
       start: { date: "2026-02-30" }, end: { date: "2026-03-01" } }] })
   }), /INVALID_EVENT/);
+});
+
+test("Google Calendar creates a timed event and validates the provider response", async () => {
+  let calledInit: RequestInit | undefined;
+  const event = await createGoogleCalendarEvent({ accessToken: "token", calendarId: "primary", title: "Revisión de póliza", startsAt: "2026-09-30T10:00:00Z", endsAt: "2026-09-30T10:30:00Z", fetcher: async (_input, init) => { calledInit = init; return new Response(JSON.stringify({ id: "created-1", summary: "Revisión de póliza", start: { dateTime: "2026-09-30T10:00:00Z" }, end: { dateTime: "2026-09-30T10:30:00Z" } }), { status: 200, headers: { "content-type": "application/json" } }); } });
+  assert.equal(event.externalId, "created-1");
+  assert.equal(calledInit?.method, "POST");
+  assert.match(String(calledInit?.body), /Revisión de póliza/);
 });
 
 test("provider retry recovers from transient Holded failures", async () => {

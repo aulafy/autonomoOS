@@ -176,3 +176,35 @@ export async function listGoogleCalendarEvents(input: {
   }
   throw new Error("GOOGLE_CALENDAR_PAGE_LIMIT");
 }
+
+/** Creates a timed Google Calendar event after the workspace has confirmed it. */
+export async function createGoogleCalendarEvent(input: {
+  accessToken: string;
+  calendarId: string;
+  title: string;
+  startsAt: string;
+  endsAt: string;
+  timeoutMs?: number;
+  fetcher?: Fetcher;
+}): Promise<ExternalCalendarEvent> {
+  requireCredential(input.accessToken);
+  if (!input.calendarId.trim() || !nonempty(input.title)) throw new Error("INVALID_CALENDAR_EVENT_INPUT");
+  const startsAt = validInstant(input.startsAt);
+  const endsAt = validInstant(input.endsAt);
+  if (!startsAt || !endsAt || Date.parse(endsAt) <= Date.parse(startsAt)) throw new Error("INVALID_CALENDAR_EVENT_TIME");
+  const response = await providerFetch(input.fetcher ?? fetch,
+    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(input.calendarId)}/events`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${input.accessToken}`, Accept: "application/json", "Content-Type": "application/json" },
+      body: JSON.stringify({ summary: input.title.trim(), start: { dateTime: startsAt }, end: { dateTime: endsAt } }),
+    }, input.timeoutMs);
+  if (!response.ok) throw new Error(`GOOGLE_CALENDAR_WRITE_FAILED:${response.status}`);
+  const item = record(await response.json());
+  const externalId = nonempty(item?.id);
+  const start = record(item?.start);
+  const end = record(item?.end);
+  const returnedStart = validInstant(start?.dateTime);
+  const returnedEnd = validInstant(end?.dateTime);
+  if (!externalId || !returnedStart || !returnedEnd || Date.parse(returnedEnd) <= Date.parse(returnedStart)) throw new Error("GOOGLE_CALENDAR_INVALID_CREATED_EVENT");
+  return { provider: "google_calendar", externalId, title: nonempty(item?.summary) ?? input.title.trim(), startsAt: returnedStart, endsAt: returnedEnd, allDay: false };
+}
