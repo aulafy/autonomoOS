@@ -204,21 +204,21 @@ test("workspace client rejects unsafe approval resources and transition targets"
 
 test("workspace client rejects malformed audit entries", async () => {
   const fetcher: typeof fetch = async () => new Response(JSON.stringify({ tenantId: "agency-1", caseId: "case-1", audit: [
-    { id: "audit-1", caseId: "case-other", from: "received", to: "accepted", actorId: "owner", at: "2026-09-30T10:00:00Z", version: 1 }
+    { id: "audit-1", caseId: "case-other", from: "received", to: "accepted", operation: "transition", actorId: "owner", at: "2026-09-30T10:00:00Z", version: 1 }
   ] }), { status: 200, headers: { "content-type": "application/json" } });
   const value = new WorkspaceClient({ baseUrl: "http://127.0.0.1:8799", tenantId: "agency-1", token: "token-1234567890" }, fetcher);
   await assert.rejects(() => value.audit("case-1"), /INVALID_WORKSPACE_AUDIT/);
 });
 
 test("workspace client rejects unsafe audit metadata", async () => {
-  const fetcher: typeof fetch = async () => new Response(JSON.stringify({ tenantId: "agency-1", caseId: "case-1", audit: [{ id: "audit-1", caseId: "case-1", from: "received", to: "approved", actorId: "owner\n", at: "2026-09-30T10:00:00Z", version: 1 }] }), { status: 200, headers: { "content-type": "application/json" } });
+  const fetcher: typeof fetch = async () => new Response(JSON.stringify({ tenantId: "agency-1", caseId: "case-1", audit: [{ id: "audit-1", caseId: "case-1", from: "received", to: "approved", operation: "transition", actorId: "owner\n", at: "2026-09-30T10:00:00Z", version: 1 }] }), { status: 200, headers: { "content-type": "application/json" } });
   const client = new WorkspaceClient({ baseUrl: "http://127.0.0.1:8799", tenantId: "agency-1", token: "token-1234567890" }, fetcher);
   await assert.rejects(() => client.audit("case-1"), /INVALID_WORKSPACE_AUDIT/);
 });
 
 test("workspace client rejects audit entries with invalid timestamps", async () => {
   const fetcher: typeof fetch = async () => new Response(JSON.stringify({ tenantId: "agency-1", caseId: "case-1", audit: [
-    { id: "audit-1", caseId: "case-1", from: "received", to: "accepted", actorId: "owner", at: "soon", version: 1 }
+    { id: "audit-1", caseId: "case-1", from: "received", to: "accepted", operation: "transition", actorId: "owner", at: "soon", version: 1 }
   ] }), { status: 200, headers: { "content-type": "application/json" } });
   const value = new WorkspaceClient({ baseUrl: "http://127.0.0.1:8799", tenantId: "agency-1", token: "token-1234567890" }, fetcher);
   await assert.rejects(() => value.audit("case-1"), /INVALID_WORKSPACE_AUDIT/);
@@ -295,7 +295,7 @@ test("workspace client rejects empty inbox and approval envelopes for another te
 });
 
 test("workspace client rejects duplicate audit identifiers", async () => {
-  const entry = { id: "audit-1", caseId: "case-1", from: "received", to: "accepted", actorId: "owner", at: "2026-09-30T10:00:00Z", version: 1 };
+  const entry = { id: "audit-1", caseId: "case-1", from: "received", to: "accepted", operation: "transition", actorId: "owner", at: "2026-09-30T10:00:00Z", version: 1 };
   const fetcher: typeof fetch = async () => new Response(JSON.stringify({ tenantId: "agency-1", caseId: "case-1", audit: [entry, { ...entry, version: 2 }] }), { status: 200, headers: { "content-type": "application/json" } });
   const client = new WorkspaceClient({ baseUrl: "http://127.0.0.1:8799", tenantId: "agency-1", token: "token-1234567890" }, fetcher);
   await assert.rejects(() => client.audit("case-1"), /INVALID_WORKSPACE_AUDIT/);

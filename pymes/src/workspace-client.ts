@@ -32,7 +32,7 @@ export interface RemoteInboxRecord {
   updatedAt?: string;
 }
 export interface RemoteConnector { id: string; name: string; status: ConnectorStatus; }
-export interface RemoteCaseAudit { id: string; caseId: string; from: string; to: string; actorId: string; at: string; version: number; }
+export interface RemoteCaseAudit { id: string; caseId: string; from: string; to: string; operation: string; actorId: string; at: string; version: number; }
 export interface RemoteEffect { id: string; caseId: string; kind: string; status: string; requestedBy: string; requestedAt: string; retryCount?: number; draftHash?: string; payload: Record<string, unknown>; executionNote?: string; executedBy?: string; executedAt?: string; confirmedBy?: string; confirmedAt?: string; }
 export interface WorkspaceHealth { status: "ok" | "not_ready"; service: string; version: string; retryAfter?: string; }
 function isRemoteEffect(value: unknown): value is RemoteEffect {
@@ -236,6 +236,7 @@ export class WorkspaceClient {
       const audit = item as Record<string, unknown>;
       return typeof audit.id !== "string" || !validResourceId(audit.id) || audit.caseId !== caseId ||
         typeof audit.from !== "string" || !validInputText(audit.from, 100) || typeof audit.to !== "string" || !validInputText(audit.to, 100) ||
+        typeof audit.operation !== "string" || !validInputText(audit.operation, 100) ||
         typeof audit.actorId !== "string" || !validInputText(audit.actorId, 200) || typeof audit.at !== "string" || !validTimestamp(audit.at) ||
         !Number.isInteger(audit.version) || (audit.version as number) < 0;
     }) || new Set(body.audit.map(item => (item as Record<string, unknown>).id)).size !== body.audit.length) throw new Error("INVALID_WORKSPACE_AUDIT");

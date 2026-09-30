@@ -352,7 +352,7 @@ function renderDetail(item: WorkItem) {
         }
       }
       if (!entries.length) trace.appendChild(el("p", "", "Todavía no hay cambios de estado registrados."));
-      for (const entry of entries) trace.appendChild(el("p", "", `v${entry.version} · ${entry.from} → ${entry.to} · ${entry.actorId} · ${dayTime(entry.at)}`));
+      for (const entry of entries) trace.appendChild(el("p", "", `v${entry.version} · ${entry.from} → ${entry.to} · ${entry.operation} · ${entry.actorId} · ${dayTime(entry.at)}`));
       const next = remote?.state === "pending_review" ? "approved" : remote?.state === "approved" ? "executing" : null;
       if (next) {
         const action = el("button", "review-button", next === "approved" ? "Aprobar caso" : "Iniciar ejecución");
