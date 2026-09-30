@@ -76,7 +76,7 @@ async function checkRemoteWorkspace(): Promise<void> {
       unavailable.retryAfter = readiness.retryAfter ?? "5s";
       throw unavailable;
     }
-    const [approvals, inbox] = await Promise.all([client.approvals(), client.inbox()]);
+    const [approvals, inbox, connectors] = await Promise.all([client.approvals(), client.inbox(), client.connectors()]);
     remoteWorkspaceClient = client;
     remoteInbox = new Map(inbox.map(item => [item.id, item]));
     workspaceFailureCount = 0;
@@ -91,7 +91,7 @@ async function checkRemoteWorkspace(): Promise<void> {
     status.dataset.lastSync = new Date().toISOString();
     document.getElementById("workspace-retry")?.remove();
     const syncedAt = new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-    status.textContent = `● WORKSPACE CONECTADO · v${readiness.version} · ${inbox.length} casos · ${approvals.length} aprobaciones · sync ${syncedAt}`;
+    status.textContent = `● WORKSPACE CONECTADO · v${readiness.version} · ${inbox.length} casos · ${approvals.length} aprobaciones · ${connectors.length} conectores · sync ${syncedAt}`;
     status.title = `Workspace ${readiness.service} versión ${readiness.version}. Última sincronización: ${status.dataset.lastSync}. Los casos y aprobaciones se leen del workspace remoto; los fixtures locales no se mezclan automáticamente.`;
     let logout = document.getElementById("workspace-logout") as HTMLButtonElement | null;
     if (!logout) {
