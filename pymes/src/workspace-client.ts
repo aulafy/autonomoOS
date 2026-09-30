@@ -42,7 +42,10 @@ function isRemoteEffect(value: unknown): value is RemoteEffect {
     typeof effect.requestedBy === "string" && validInputText(effect.requestedBy, 200) &&
     typeof effect.requestedAt === "string" && validTimestamp(effect.requestedAt) &&
     effect.payload !== null && typeof effect.payload === "object" && !Array.isArray(effect.payload) &&
-    (effect.retryCount === undefined || (Number.isInteger(effect.retryCount) && (effect.retryCount as number) >= 0 && (effect.retryCount as number) <= 1_000));
+    (effect.retryCount === undefined || (Number.isInteger(effect.retryCount) && (effect.retryCount as number) >= 0 && (effect.retryCount as number) <= 1_000)) &&
+    (effect.executionNote === undefined || (typeof effect.executionNote === "string" && validMultilineText(effect.executionNote, 2_000))) &&
+    (effect.executedBy === undefined || (typeof effect.executedBy === "string" && validInputText(effect.executedBy, 200))) &&
+    (effect.executedAt === undefined || (typeof effect.executedAt === "string" && validTimestamp(effect.executedAt)));
 }
 function isRemoteApproval(value: unknown, tenantId: string): value is RemoteApproval {
   if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
@@ -60,6 +63,9 @@ function validResourceId(value: string): boolean {
 }
 function validInputText(value: string, maxLength: number): boolean {
   return value.trim().length > 0 && value.length <= maxLength && !/[\u0000-\u001f\u007f]/.test(value);
+}
+function validMultilineText(value: string, maxLength: number): boolean {
+  return value.trim().length > 0 && value.length <= maxLength && !/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(value);
 }
 function validTimestamp(value: string): boolean {
   return validInputText(value, 100) && Number.isFinite(Date.parse(value));

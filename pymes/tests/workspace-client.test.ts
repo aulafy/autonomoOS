@@ -239,6 +239,12 @@ test("workspace client rejects malformed effect retry counters", async () => {
   await assert.rejects(() => client.effects(), /INVALID_WORKSPACE_EFFECTS/);
 });
 
+test("workspace client rejects malformed effect execution metadata", async () => {
+  const fetcher: typeof fetch = async () => new Response(JSON.stringify({ tenantId: "agency-1", effects: [{ id: "e", caseId: "case-1", kind: "send", status: "succeeded", requestedBy: "owner", requestedAt: "2026-09-30T10:00:00Z", executionNote: "x".repeat(2_001), executedBy: "owner", executedAt: "2026-09-30T10:01:00Z", payload: {} }] }), { status: 200, headers: { "content-type": "application/json" } });
+  const client = new WorkspaceClient({ baseUrl: "http://127.0.0.1:8799", tenantId: "agency-1", token: "token-1234567890" }, fetcher);
+  await assert.rejects(() => client.effects(), /INVALID_WORKSPACE_EFFECTS/);
+});
+
 test("workspace client rejects oversized approval reasons", async () => {
   const fetcher: typeof fetch = async () => new Response(JSON.stringify({ approvals: [{ id: "a", tenantId: "agency-1", resourceId: "offer-1", operation: "approveOffer", approvedBy: "owner", approvedAt: "2026-09-30T10:00:00Z", reason: "x".repeat(2_001), draftHash: "sha256:v1" }] }), { status: 200, headers: { "content-type": "application/json" } });
   const client = new WorkspaceClient({ baseUrl: "http://127.0.0.1:8799", tenantId: "agency-1", token: "token-1234567890" }, fetcher);
