@@ -11,6 +11,9 @@ test("pilot configuration declares the supported communication channels", () => 
   assert.deepEqual(connectorStatuses, ["lectura preparada", "conectado", "no configurado"]);
   assert.equal(isConnectorStatus("conectado"), true);
   assert.equal(isConnectorStatus("inventado"), false);
+  assert.equal(isConnectorStatus(null), false);
+  assert.equal(isConnectorStatus(42), false);
+  assert.equal(isConnectorStatus({ status: "conectado" }), false);
 });
 
 test("configured channels discard unknown values and whitespace", () => {
