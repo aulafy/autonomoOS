@@ -81,3 +81,13 @@ PYMES_GOOGLE_ACCESS_TOKEN=... PYMES_GOOGLE_CALENDAR_ID=primary \
 No se incluye un flujo para obtener el token OAuth. Un piloto real debe
 obtenerlo mediante autorización de la cuenta correspondiente y ejecutar este
 comando en un entorno de servidor protegido.
+
+## Salida de mensajes gobernada
+
+`sendMessageWebhook` permite conectar un gateway autorizado para WhatsApp,
+Telegram, iMessage o correo. El endpoint remoto debe usar HTTPS; HTTP solo se
+acepta para `localhost` o `127.0.0.1` durante desarrollo. Cada petición lleva
+token Bearer y, si existe, `Idempotency-Key` derivada del efecto confirmado.
+El gateway debe devolver `{ "externalId": "..." }`; cualquier respuesta sin
+identificador se considera fallida. El envío solo debe invocarse desde un
+worker después de la confirmación humana.
