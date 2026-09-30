@@ -24,6 +24,8 @@ permite fijar la versión visible en `/healthz` y `/readyz` sin recompilar; por
 defecto es `0.1.0`.
 `PYMES_API_BOOTSTRAP_TOKEN` se recorta al arrancar y debe tener al menos 16
 caracteres efectivos.
+`PYMES_API_BOOTSTRAP_TENANT` y `PYMES_API_BOOTSTRAP_USER` también se recortan al
+arrancar para evitar espacios accidentales en el namespace inicial.
 La misma versión se guarda en el label OCI
 `org.opencontainers.image.version`, para identificar el artefacto en un
 registry o inventario de contenedores sin arrancarlo.

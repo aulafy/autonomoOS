@@ -8,8 +8,8 @@ import { normalizeBootstrapToken, parseConfiguredChannels, parseCorsOrigins } fr
 const port = Number(process.env.PYMES_API_PORT ?? 8790);
 const host = process.env.PYMES_API_HOST ?? "127.0.0.1";
 const token = normalizeBootstrapToken(process.env.PYMES_API_BOOTSTRAP_TOKEN);
-const tenantId = process.env.PYMES_API_BOOTSTRAP_TENANT ?? "demo-agency";
-const userId = process.env.PYMES_API_BOOTSTRAP_USER ?? "demo-owner";
+const tenantId = (process.env.PYMES_API_BOOTSTRAP_TENANT ?? "demo-agency").trim();
+const userId = (process.env.PYMES_API_BOOTSTRAP_USER ?? "demo-owner").trim();
 const corsOrigins = parseCorsOrigins(process.env.PYMES_API_CORS_ORIGINS);
 
 if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error("INVALID_PYMES_API_PORT");
