@@ -39,6 +39,20 @@ test("SQLite inbox updates preserve OpenClaw provenance", () => {
   store.close();
 });
 
+test("SQLite audit of OpenClaw ingress survives restart", () => {
+  const directory = mkdtempSync(join(tmpdir(), "pymes-audit-"));
+  const path = join(directory, "workspace.db");
+  const first = new SqliteWorkspaceRepository(path);
+  first.appendCaseAudit({ id: "audit-event-1", tenantId: "agency-1", caseId: "openclaw:event-1",
+    from: "received", to: "received", operation: "openclaw_ingress", actorId: "openclaw-gateway",
+    at: "2026-09-30T10:00:00Z", version: 0 });
+  first.close();
+  const second = new SqliteWorkspaceRepository(path);
+  assert.deepEqual(second.listCaseAudit("agency-1", "openclaw:event-1")[0]?.operation, "openclaw_ingress");
+  second.close();
+  rmSync(directory, { recursive: true, force: true });
+});
+
 test("SQLite repository stores session hashes and authenticates legacy sessions", () => {
   const directory = mkdtempSync(join(tmpdir(), "pymes-session-"));
   const repository = new SqliteWorkspaceRepository(join(directory, "workspace.db"));
