@@ -96,6 +96,8 @@ sin recargar la aplicación; el control se bloquea mientras la sincronización
 está en curso para evitar peticiones duplicadas. Mientras permanece abierta,
 la interfaz repite esa sincronización cada 60 segundos y conserva el mismo
 bloqueo para no solapar operaciones.
+Los controles de workspace tienen foco visible y el estado de conexión se
+anuncia como región viva; la interfaz respeta además `prefers-reduced-motion`.
 Las peticiones del cliente usan 10 segundos por defecto; se puede configurar
 `requestTimeoutMs` entre 100 y 60.000 ms y capturar
 `WORKSPACE_REQUEST_TIMEOUT` para ofrecer un reintento.
