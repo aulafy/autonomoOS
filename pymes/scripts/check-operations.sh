@@ -26,8 +26,8 @@ body="$(curl --fail --silent --show-error --max-time "${timeout_seconds}" \
   -H 'Accept: application/json' "${endpoint}")"
 
 if ! command -v jq >/dev/null 2>&1; then
-  printf '%s\n' "${body}"
-  exit 0
+  echo "jq es obligatorio para validar las métricas de operaciones" >&2
+  exit 2
 fi
 
 failed="$(jq -r '.effects.byStatus.failed // 0' <<<"${body}")"
