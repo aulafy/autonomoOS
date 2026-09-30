@@ -126,7 +126,10 @@ async function checkRemoteWorkspace(): Promise<void> {
       unavailable.retryAfter = readiness.retryAfter ?? "5s";
       throw unavailable;
     }
-    const [approvals, inbox, attention, connectors, metrics] = await Promise.all([client.approvals(), client.inbox(), client.attention(), client.connectors(), client.metrics()]);
+    const [approvals, inbox, connectors, metrics] = await Promise.all([client.approvals(), client.inbox(), client.connectors(), client.metrics()]);
+    let attention: RemoteInboxRecord[];
+    try { attention = await client.attention(); }
+    catch { attention = inbox.filter(item => item.state === "pending_review" || item.state === "uncertain"); }
     remoteWorkspaceClient = client;
     remoteInbox = new Map(inbox.map(item => [item.id, item]));
     $("attention-count").textContent = String(attention.length);
