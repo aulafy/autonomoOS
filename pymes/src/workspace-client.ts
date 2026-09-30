@@ -35,7 +35,12 @@ export interface RemoteConnector { id: string; name: string; status: ConnectorSt
 export interface RemoteCaseAudit { id: string; caseId: string; from: string; to: string; operation: string; actorId: string; at: string; version: number; requestId?: string; }
 export type WorkspaceEffectKind = "call" | "calendar" | "message" | "crm_task";
 export type WorkspaceEffectStatus = "pending" | "confirmed" | "succeeded" | "failed";
-export interface RemoteEffect { tenantId: string; id: string; caseId: string; kind: WorkspaceEffectKind; status: WorkspaceEffectStatus; requestedBy: string; requestedAt: string; retryCount?: number; draftHash?: string; payload: Record<string, unknown>; executionNote?: string; executedBy?: string; executedAt?: string; confirmedBy?: string; confirmedAt?: string; }
+export interface CallEffectPayload { objective: string; questions: string[]; contactId?: string; phone?: string; }
+export interface CalendarEffectPayload { title: string; startsAt: string; contactId?: string; }
+export interface MessageEffectPayload { channel: "whatsapp" | "telegram" | "imessage" | "email"; text: string; contactId?: string; }
+export interface CrmTaskEffectPayload { title: string; contactId: string; sourceMessageId?: string; }
+export type WorkspaceEffectPayload = CallEffectPayload | CalendarEffectPayload | MessageEffectPayload | CrmTaskEffectPayload;
+export interface RemoteEffect { tenantId: string; id: string; caseId: string; kind: WorkspaceEffectKind; status: WorkspaceEffectStatus; requestedBy: string; requestedAt: string; retryCount?: number; draftHash?: string; payload: WorkspaceEffectPayload; executionNote?: string; executedBy?: string; executedAt?: string; confirmedBy?: string; confirmedAt?: string; }
 export interface WorkspaceHealth { status: "ok" | "not_ready"; service: string; version: string; retryAfter?: string; }
 export interface WorkspaceMetrics {
   tenantId: string;
