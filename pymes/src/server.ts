@@ -3,6 +3,7 @@ import { WorkspaceApi } from "./workspace-api.js";
 import { handlePymesRequest } from "./api-server.js";
 import { SqliteWorkspaceRepository } from "./workspace-store-sqlite.js";
 import { normalizeRequestId } from "./request-id.js";
+import { parseConfiguredChannels } from "./config.js";
 
 const port = Number(process.env.PYMES_API_PORT ?? 8790);
 const host = process.env.PYMES_API_HOST ?? "127.0.0.1";
@@ -20,13 +21,11 @@ const repository = new SqliteWorkspaceRepository(process.env.PYMES_API_DB_PATH ?
 repository.provisionSession(token, { userId, tenantId, role: "owner" });
 const ingressToken = process.env.PYMES_OPENCLAW_INGRESS_TOKEN;
 const csv = (value: string | undefined) => new Set((value ?? "").split(",").map(item => item.trim()).filter(Boolean));
-const validChannels = new Set(["whatsapp", "telegram", "imessage", "email"]);
-const configuredChannels = [...csv(process.env.PYMES_OPENCLAW_CHANNELS)].filter(channel => validChannels.has(channel)) as Array<"whatsapp" | "telegram" | "imessage" | "email">;
 const api = new WorkspaceApi(repository, ingressToken ? { token: ingressToken, policy: {
   tenantId,
   allowedAgentIds: csv(process.env.PYMES_OPENCLAW_AGENT_IDS),
   allowedResourceIds: csv(process.env.PYMES_OPENCLAW_RESOURCE_IDS),
-  allowedChannels: new Set(configuredChannels),
+  allowedChannels: parseConfiguredChannels(process.env.PYMES_OPENCLAW_CHANNELS),
   pairedSenderIds: csv(process.env.PYMES_OPENCLAW_PAIRED_SENDERS),
   consentedConversationIds: csv(process.env.PYMES_OPENCLAW_CONSENTED_CONVERSATIONS)
 } } : undefined);

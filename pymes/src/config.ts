@@ -1,9 +1,17 @@
+export const supportedChannels = ["whatsapp", "telegram", "imessage", "email"] as const;
+export type SupportedChannel = typeof supportedChannels[number];
+
+export function parseConfiguredChannels(value: string | undefined): Set<SupportedChannel> {
+  const allowed = new Set<SupportedChannel>(supportedChannels);
+  return new Set((value ?? "").split(",").map(item => item.trim()).filter((item): item is SupportedChannel => allowed.has(item as SupportedChannel)));
+}
+
 export const pilotConfig = {
   country: "España",
   timeZone: "Europe/Madrid",
   crm: { name: "Holded", status: "por conectar" },
   calendar: { name: "Google Calendar", status: "por conectar" },
-  channels: ["whatsapp", "telegram", "imessage", "email"] as const
+  channels: supportedChannels
 } as const;
 
 export const insuranceLines = {
