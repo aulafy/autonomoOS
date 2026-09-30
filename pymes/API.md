@@ -84,6 +84,9 @@ Las colecciones de aprobaciones y efectos también deben tener identificadores
 únicos; los duplicados se rechazan para evitar decisiones o ejecuciones dobles.
 La bandeja aplica la misma regla a los casos para evitar que un mensaje se
 procese dos veces en la vista operativa.
+Las colecciones remotas están limitadas a 10.000 elementos por respuesta y el
+registro de conectores a 100; una respuesta mayor se rechaza para proteger la
+memoria y el renderizado del workspace.
 Cada efecto individual debe incluir como mínimo `id`, `caseId`, `kind`,
 `status`, `requestedBy` y `requestedAt`; el cliente rechaza efectos incompletos
 con `INVALID_WORKSPACE_EFFECT` antes de permitir confirmaciones o reintentos.

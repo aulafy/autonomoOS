@@ -1,4 +1,5 @@
 import { isConnectorConfig, type ConnectorStatus } from "./config.js";
+const MAX_REMOTE_ITEMS = 10_000;
 
 export interface WorkspaceClientConfig {
   baseUrl: string;
@@ -116,7 +117,7 @@ export class WorkspaceClient {
 
   async approvals(): Promise<RemoteApproval[]> {
     const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/approvals`);
-    if (!Array.isArray(body.approvals) || !body.approvals.every(item => isRemoteApproval(item, this.config.tenantId)) ||
+    if (!Array.isArray(body.approvals) || body.approvals.length > MAX_REMOTE_ITEMS || !body.approvals.every(item => isRemoteApproval(item, this.config.tenantId)) ||
       new Set(body.approvals.map(item => item.id)).size !== body.approvals.length) throw new Error("INVALID_WORKSPACE_APPROVALS");
     return body.approvals as RemoteApproval[];
   }
@@ -138,7 +139,7 @@ export class WorkspaceClient {
 
   async inbox(): Promise<RemoteInboxRecord[]> {
     const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/inbox`);
-    if (!Array.isArray(body.items) || body.items.some(item => {
+    if (!Array.isArray(body.items) || body.items.length > MAX_REMOTE_ITEMS || body.items.some(item => {
       if (item === null || typeof item !== "object" || Array.isArray(item)) return true;
       const record = item as Record<string, unknown>;
       return record.tenantId !== this.config.tenantId || typeof record.id !== "string" || !record.id ||
@@ -148,7 +149,7 @@ export class WorkspaceClient {
   }
   async connectors(): Promise<RemoteConnector[]> {
     const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/connectors`);
-    if (body.tenantId !== this.config.tenantId || !Array.isArray(body.connectors) || !body.connectors.every(isConnectorConfig) ||
+    if (body.tenantId !== this.config.tenantId || !Array.isArray(body.connectors) || body.connectors.length > 100 || !body.connectors.every(isConnectorConfig) ||
       new Set(body.connectors.map(connector => connector.id)).size !== body.connectors.length) {
       throw new Error("INVALID_WORKSPACE_CONNECTORS");
     }
@@ -189,14 +190,14 @@ export class WorkspaceClient {
   }
   async effects(): Promise<RemoteEffect[]> {
     const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/effects`);
-    if (body.tenantId !== this.config.tenantId || !Array.isArray(body.effects) || !body.effects.every(isRemoteEffect) ||
+    if (body.tenantId !== this.config.tenantId || !Array.isArray(body.effects) || body.effects.length > MAX_REMOTE_ITEMS || !body.effects.every(isRemoteEffect) ||
       new Set(body.effects.map(item => item.id)).size !== body.effects.length) throw new Error("INVALID_WORKSPACE_EFFECTS");
     return body.effects as RemoteEffect[];
   }
   async effectsForCase(caseId: string): Promise<RemoteEffect[]> {
     if (!validResourceId(caseId)) throw new Error("INVALID_WORKSPACE_CASE_INPUT");
     const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/cases/${encodeURIComponent(caseId)}/effects`);
-    if (body.tenantId !== this.config.tenantId || body.caseId !== caseId || !Array.isArray(body.effects) || !body.effects.every(isRemoteEffect) ||
+    if (body.tenantId !== this.config.tenantId || body.caseId !== caseId || !Array.isArray(body.effects) || body.effects.length > MAX_REMOTE_ITEMS || !body.effects.every(isRemoteEffect) ||
       new Set(body.effects.map(item => item.id)).size !== body.effects.length) throw new Error("INVALID_WORKSPACE_EFFECTS");
     return body.effects as RemoteEffect[];
   }
