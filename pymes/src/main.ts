@@ -38,6 +38,7 @@ let workspaceRetryTimer: number | null = null;
 let workspaceSyncInFlight = false;
 let workspaceAutoRefreshTimer: number | null = null;
 const WORKSPACE_REFRESH_INTERVAL_MS = 60_000;
+const WORKSPACE_METRICS_STALE_AFTER_MS = 5 * 60 * 1000;
 let workspaceFailureCount = 0;
 
 function renderWorkspaceMetrics(metrics: WorkspaceMetrics): void {
@@ -65,7 +66,7 @@ function renderWorkspaceMetrics(metrics: WorkspaceMetrics): void {
   const updated = document.getElementById("workspace-metrics-updated");
   if (updated) {
     const ageMs = Date.now() - Date.parse(metrics.generatedAt);
-    const stale = ageMs > 5 * 60 * 1000;
+    const stale = ageMs > WORKSPACE_METRICS_STALE_AFTER_MS;
     updated.textContent = stale
       ? `Datos desactualizados · ${new Date(metrics.generatedAt).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}`
       : `Actualizado ${new Date(metrics.generatedAt).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}`;
