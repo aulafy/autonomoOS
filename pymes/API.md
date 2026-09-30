@@ -51,6 +51,8 @@ responde correctamente; durante el arranque aplica un backoff fijo de 5
 segundos y permite reintento manual.
 Cuando conecta, muestra la versión devuelta por `readyz`; esa versión identifica
 el release del workspace remoto y no el bundle estático de la interfaz.
+El indicador visual expone además `data-state="connected|starting|error"` para
+automatización y pruebas de interfaz sin depender del texto localizado.
 
 ## Ingress OpenClaw Enterprise
 
