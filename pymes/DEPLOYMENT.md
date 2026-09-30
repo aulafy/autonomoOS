@@ -47,7 +47,8 @@ Para Kubernetes hay una plantilla base en [`k8s/deployment.yaml`](k8s/deployment
 Adapta el nombre de la imagen, el `StorageClass` y el gestor de secretos antes
 de aplicarla. SQLite usa un volumen `ReadWriteOnce` y la plantilla mantiene una
 sola réplica; el escalado horizontal requiere migrar primero a un almacenamiento
-transaccional compartido.
+transaccional compartido. La plantilla tampoco monta el token de ServiceAccount
+porque el workspace no necesita consultar la API de Kubernetes.
 
 ## Interfaz
 
