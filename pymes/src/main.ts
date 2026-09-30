@@ -33,6 +33,7 @@ let remoteWorkspaceClient: WorkspaceClient | null = null;
 let remoteInbox = new Map<string, { state: string; version?: number }>();
 let workspaceRetryTimer: number | null = null;
 let workspaceSyncInFlight = false;
+let workspaceAutoRefreshTimer: number | null = null;
 
 let selectedChannel: Channel | "all" = "all";
 const channelLabels: Record<Channel, string> = {
@@ -63,6 +64,9 @@ async function checkRemoteWorkspace(): Promise<void> {
     remoteWorkspaceClient = client;
     remoteInbox = new Map(inbox.map(item => [item.id, item]));
     if (workspaceRetryTimer !== null) { window.clearTimeout(workspaceRetryTimer); workspaceRetryTimer = null; }
+    if (workspaceAutoRefreshTimer === null) {
+      workspaceAutoRefreshTimer = window.setInterval(() => { void checkRemoteWorkspace(); }, 60000);
+    }
     status.className = "workspace-pill connected";
     document.getElementById("workspace-retry")?.remove();
     const syncedAt = new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
