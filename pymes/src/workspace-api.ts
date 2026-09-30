@@ -236,7 +236,11 @@ export class WorkspaceApi {
       catch { return { status: 403, body: { error: "WORKSPACE_PERMISSION_DENIED" } }; }
       const items = this.repository.listInbox(tenantId)
         .filter(item => item.state === "pending_review" || item.state === "uncertain")
-        .sort((left, right) => (left.updatedAt ?? "").localeCompare(right.updatedAt ?? ""))
+        .sort((left, right) => {
+          const leftTime = left.updatedAt && Number.isFinite(Date.parse(left.updatedAt)) ? Date.parse(left.updatedAt) : Number.POSITIVE_INFINITY;
+          const rightTime = right.updatedAt && Number.isFinite(Date.parse(right.updatedAt)) ? Date.parse(right.updatedAt) : Number.POSITIVE_INFINITY;
+          return leftTime - rightTime;
+        })
         .slice(0, 100);
       return { status: 200, body: { tenantId, items } };
     }
