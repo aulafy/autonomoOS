@@ -128,6 +128,8 @@ La ventana temporal se configura con `PYMES_OPENCLAW_MAX_EVENT_AGE_MS` y
 negativos dentro de los límites documentados en [DEPLOYMENT.md](DEPLOYMENT.md).
 Cada recepción conserva procedencia, auditoría e idempotencia por mensaje
 externo y canal, incluso tras reiniciar SQLite.
+La auditoría conserva el `requestId` de la petición para correlacionar logs; las
+bases existentes migran automáticamente la columna nueva sin perder historial.
 
 La cola de revisión y las ofertas transcritas se guardan ahora en un almacén
 versionado del navegador para no perder el trabajo al recargar. Sigue siendo
