@@ -13,6 +13,7 @@ import "./logout.css";
 import "./retry.css";
 import "./refresh.css";
 import "./snapshot.css";
+import "./remote-state.css";
 import { retryDelayMs } from "./retry-delay.js";
 
 const demoMorning = new Date();
@@ -64,6 +65,7 @@ async function checkRemoteWorkspace(): Promise<void> {
     const [approvals, inbox] = await Promise.all([client.approvals(), client.inbox()]);
     remoteWorkspaceClient = client;
     remoteInbox = new Map(inbox.map(item => [item.id, item]));
+    renderInbox();
     if (workspaceRetryTimer !== null) { window.clearTimeout(workspaceRetryTimer); workspaceRetryTimer = null; }
     if (workspaceAutoRefreshTimer === null) {
       workspaceAutoRefreshTimer = window.setInterval(() => { void checkRemoteWorkspace(); }, 60000);
@@ -232,6 +234,8 @@ function renderInbox() {
       el("span", "", `· ${topicNames[item.message.topic]}`),
       el("span", "", `· ${item.message.insuranceLine ? insuranceLines[item.message.insuranceLine] : "Por clasificar"}`),
       el("span", "", `· ${dayTime(item.message.receivedAt)}`));
+    const remote = remoteInbox.get(item.id);
+    if (remote) meta.append(el("span", "remote-state", `· Workspace: ${remote.state} · v${remote.version ?? 0}`));
     button.append(head, meta, el("p", "", item.message.text));
     button.addEventListener("click", () => {
       selectedId = item.id;
