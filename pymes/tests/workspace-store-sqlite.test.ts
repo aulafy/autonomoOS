@@ -86,3 +86,10 @@ test("SQLite inbox updates are explicit and duplicate inserts fail", () => {
   assert.deepEqual(store.listInbox("agency-2"), []);
   store.close();
 });
+
+test("SQLite inbox enforces external message idempotency", () => {
+  const store = new SqliteWorkspaceRepository(":memory:");
+  store.appendInbox({ id: "event-1", tenantId: "agency-1", state: "received", summary: "Mensaje", sourceExternalMessageId: "wa-1", sourceChannel: "whatsapp" });
+  assert.throws(() => store.appendInbox({ id: "event-2", tenantId: "agency-1", state: "received", summary: "Reintento", sourceExternalMessageId: "wa-1", sourceChannel: "whatsapp" }));
+  store.close();
+});

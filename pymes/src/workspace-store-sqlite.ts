@@ -45,6 +45,7 @@ export class SqliteWorkspaceRepository implements WorkspaceRepository {
     try { this.db.exec("ALTER TABLE workspace_inbox ADD COLUMN source_event_id TEXT"); } catch {}
     try { this.db.exec("ALTER TABLE workspace_inbox ADD COLUMN source_external_message_id TEXT"); } catch {}
     try { this.db.exec("ALTER TABLE workspace_inbox ADD COLUMN source_channel TEXT"); } catch {}
+    this.db.exec("CREATE UNIQUE INDEX IF NOT EXISTS workspace_inbox_external_message ON workspace_inbox(tenant_id, source_external_message_id, source_channel) WHERE source_external_message_id IS NOT NULL AND source_channel IS NOT NULL");
     try { this.db.exec("ALTER TABLE workspace_effects ADD COLUMN confirmed_by TEXT"); } catch {}
     try { this.db.exec("ALTER TABLE workspace_effects ADD COLUMN confirmed_at TEXT"); } catch {}
     try { this.db.exec("ALTER TABLE workspace_effects ADD COLUMN executed_by TEXT"); } catch {}
