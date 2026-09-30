@@ -65,6 +65,8 @@ El contexto de piloto expone `data-crm-status` y `data-calendar-status` con los
 estados tipados de Holded y Google Calendar.
 Los adaptadores nuevos pueden reutilizar el tipo exportado `ConnectorConfig`
 junto con `ConnectorStatus` para mantener la misma semántica.
+Los conectores del piloto usan los IDs estables `holded` y `google_calendar`;
+los nombres visibles pueden cambiar sin romper esas referencias.
 
 ## Ingress OpenClaw Enterprise
 
