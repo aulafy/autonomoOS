@@ -182,6 +182,8 @@ Para un proceso residente, `runEffectWorker` ejecuta el polling sin solapar cicl
 y acepta un `AbortSignal` para apagado ordenado. Ejecútalo como deployment separado
 con `PYMES_API_WORKER_TOKEN`, usando un intervalo de 5 a 300 segundos y un
 supervisor que reinicie el proceso si el polling falla.
+Para ejecuciones programadas, `maxCycles` permite finalizar tras un número
+acotado de ciclos y devolver el control al Job.
 
 La cola de revisión y las ofertas transcritas se guardan ahora en un almacén
 versionado del navegador para no perder el trabajo al recargar. Sigue siendo

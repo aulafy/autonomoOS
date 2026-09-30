@@ -259,3 +259,8 @@ recomienda empezar en 5.000 ms. Un error de polling debe producir una salida no
 cero para que Kubernetes, systemd o el supervisor elegido pueda reiniciar el
 worker. Los logs solo deben contener identificador de efecto, estado, duración y
 `requestId`, nunca el texto del mensaje ni tokens.
+
+Para un `CronJob`, configura `maxCycles` en el código de arranque para que el
+proceso termine después de la ventana prevista. El valor debe estar entre 1 y
+10.000; omitirlo activa el modo residente. El `CronJob` debe conservar el mismo
+token dedicado y no ejecutar dos instancias simultáneas sobre el mismo tenant.
