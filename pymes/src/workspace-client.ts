@@ -40,6 +40,9 @@ export interface CalendarEffectPayload { title: string; startsAt: string; contac
 export interface MessageEffectPayload { channel: "whatsapp" | "telegram" | "imessage" | "email"; text: string; contactId?: string; }
 export interface CrmTaskEffectPayload { title: string; contactId: string; sourceMessageId?: string; }
 export type WorkspaceEffectPayload = CallEffectPayload | CalendarEffectPayload | MessageEffectPayload | CrmTaskEffectPayload;
+export type CreateEffectInput = { id: string; caseId: string; requestedAt?: string; draftHash: string } &
+  ({ kind: "call"; payload: CallEffectPayload } | { kind: "calendar"; payload: CalendarEffectPayload } |
+   { kind: "message"; payload: MessageEffectPayload } | { kind: "crm_task"; payload: CrmTaskEffectPayload });
 export interface RemoteEffect { tenantId: string; id: string; caseId: string; kind: WorkspaceEffectKind; status: WorkspaceEffectStatus; requestedBy: string; requestedAt: string; retryCount?: number; draftHash?: string; payload: WorkspaceEffectPayload; executionNote?: string; executedBy?: string; executedAt?: string; confirmedBy?: string; confirmedAt?: string; }
 export interface WorkspaceHealth { status: "ok" | "not_ready"; service: string; version: string; retryAfter?: string; }
 export interface WorkspaceMetrics {
@@ -323,11 +326,11 @@ export class WorkspaceClient {
       new Set(body.effects.map(item => item.id)).size !== body.effects.length) throw new Error("INVALID_WORKSPACE_EFFECTS");
     return body.effects as RemoteEffect[];
   }
-  async createEffect(input: { id: string; caseId: string; kind: WorkspaceEffectKind; payload: Record<string, unknown>; requestedAt?: string; draftHash: string }): Promise<RemoteEffect> {
+  async createEffect(input: CreateEffectInput): Promise<RemoteEffect> {
     let payloadBytes = -1;
     try { payloadBytes = input?.payload ? new TextEncoder().encode(JSON.stringify(input.payload)).byteLength : -1; }
     catch { payloadBytes = -1; }
-    const payload = input?.payload as Record<string, unknown> | undefined;
+    const payload = input?.payload as unknown as Record<string, unknown> | undefined;
     const payloadShapeValid = input?.kind === "message"
       ? (payload?.channel === "whatsapp" || payload?.channel === "telegram" || payload?.channel === "imessage" || payload?.channel === "email") && typeof payload.text === "string" && validMultilineText(payload.text, 4_000)
       : input?.kind === "calendar"

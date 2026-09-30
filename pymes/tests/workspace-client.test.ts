@@ -472,11 +472,11 @@ test("workspace client creates a governed effect draft", async () => {
     payload: { objective: "Revisar renovación", questions: ["Confirmar fecha"] }, requestedAt: "2026-09-29T15:00:00Z", draftHash: "sha256:draft" });
   assert.equal(effect.status, "pending");
   assert.equal(effect.kind, "call");
-  await assert.rejects(() => value.createEffect({ id: "bad", caseId: "case-client", kind: "call", payload: {}, draftHash: "sha256:x" }), /INVALID_WORKSPACE_EFFECT_INPUT/);
-  await assert.rejects(() => value.createEffect({ id: "bad-message", caseId: "case-client", kind: "message", payload: { text: "Hola" }, draftHash: "sha256:x" }), /INVALID_WORKSPACE_EFFECT_INPUT/);
+  await assert.rejects(() => value.createEffect({ id: "bad", caseId: "case-client", kind: "call", payload: {} as never, draftHash: "sha256:x" }), /INVALID_WORKSPACE_EFFECT_INPUT/);
+  await assert.rejects(() => value.createEffect({ id: "bad-message", caseId: "case-client", kind: "message", payload: { text: "Hola" } as never, draftHash: "sha256:x" }), /INVALID_WORKSPACE_EFFECT_INPUT/);
   const circular: Record<string, unknown> = {};
   circular.self = circular;
-  await assert.rejects(() => value.createEffect({ id: "circular", caseId: "case-client", kind: "call", payload: circular, draftHash: "sha256:x" }), /INVALID_WORKSPACE_EFFECT_INPUT/);
+  await assert.rejects(() => value.createEffect({ id: "circular", caseId: "case-client", kind: "call", payload: circular as never, draftHash: "sha256:x" }), /INVALID_WORKSPACE_EFFECT_INPUT/);
 });
 
 test("workspace client exposes current version on transition conflict", async () => {
