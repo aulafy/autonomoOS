@@ -76,7 +76,9 @@ operaciones activas, fallos y aprobaciones, junto con la hora de sincronización
 Si la marca temporal supera cinco minutos, la interfaz muestra los datos como
 desactualizados para evitar decisiones sobre una conexión caída.
 El endpoint `GET /v1/workspaces/:tenant/metrics` devuelve solo esos contadores,
-sin contenido de mensajes ni payloads. Para supervisores existe
+sin contenido de mensajes ni payloads. También publica alertas cuando hay
+operaciones fallidas, una cola de más de 20 casos o casos `pending_review` con
+más de 24 horas sin actualizar. Para supervisores existe
 `npm run check:operations`; para Kubernetes, `npm run check:k8s` valida el
 overlay antes de aplicarlo.
 

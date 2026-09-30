@@ -200,8 +200,9 @@ backup anterior hasta validar la recuperación.
   ```
 
   La monitorización debe alertar cuando `effects.byStatus.failed` sea mayor que
-  cero o cuando `inbox.byState.pending_review` supere el umbral acordado con la
-  agencia. Las respuestas `401` y `403` deben tratarse como fallo de la
+  cero, cuando `inbox.byState.pending_review` supere el umbral acordado con la
+  agencia o cuando la respuesta incluya `STALE_CASES` (casos pendientes con más
+  de 24 horas). Las respuestas `401` y `403` deben tratarse como fallo de la
   configuración de monitorización, no como ausencia de actividad.
 - El volumen Docker usa `/data/pymes-workspace.db`; conservarlo junto con sus
   ficheros WAL durante los respaldos.
