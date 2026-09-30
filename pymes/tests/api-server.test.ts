@@ -48,6 +48,7 @@ test("readiness endpoint exposes the injected release version", async () => {
 test("readiness reports storage failures", async () => {
   const broken = new WorkspaceApi({
     findSession() { return null; }, listInbox() { throw new Error("DB_DOWN"); },
+    revokeSession() {},
     appendInbox() {}, updateInbox() {}, appendApproval() {}, listApprovals() { return []; },
     appendCaseAudit() {}, listCaseAudit() { return []; }, appendEffect() {}, updateEffect() {}, listEffects() { return []; }
   });

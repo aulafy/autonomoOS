@@ -64,6 +64,9 @@ export class SqliteWorkspaceRepository implements WorkspaceRepository {
     this.db.prepare("UPDATE workspace_sessions SET token = ? WHERE token = ?").run(hash, legacy.token);
     return { userId: legacy.user_id, tenantId: legacy.tenant_id, role: legacy.role };
   }
+  revokeSession(token: string): void {
+    this.db.prepare("DELETE FROM workspace_sessions WHERE token = ? OR token = ?").run(hashSessionToken(token), token);
+  }
   listInbox(tenantId: string): WorkspaceInboxRecord[] {
     const rows = this.db.prepare(`SELECT id, tenant_id, state, summary, version, updated_at FROM workspace_inbox
       WHERE tenant_id = ? ORDER BY rowid`).all(tenantId) as Array<{ id: string; tenant_id: string;

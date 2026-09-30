@@ -36,6 +36,7 @@ export interface WorkspaceApiResponse {
 
 export interface WorkspaceRepository {
   findSession(token: string): WorkspacePrincipal | null;
+  revokeSession(token: string): void;
   listInbox(tenantId: string): WorkspaceInboxRecord[];
   appendInbox(record: WorkspaceInboxRecord): void;
   updateInbox(record: WorkspaceInboxRecord): void;
@@ -59,6 +60,7 @@ export class InMemoryWorkspaceRepository implements WorkspaceRepository {
     const value = this.sessions.get(hashSessionToken(token));
     return value ? structuredClone(value) : null;
   }
+  revokeSession(token: string): void { this.sessions.delete(hashSessionToken(token)); }
   listInbox(tenantId: string): WorkspaceInboxRecord[] {
     return structuredClone(this.inbox.get(tenantId) ?? []);
   }
@@ -177,6 +179,10 @@ export class WorkspaceApi {
     const tenantId = parts[2];
     if (!tenantId || tenantId !== principal.tenantId) {
       return { status: 403, body: { error: "TENANT_SCOPE_DENIED" } };
+    }
+    if (request.method === "POST" && parts[3] === "session" && parts[4] === "revoke" && parts.length === 5) {
+      this.repository.revokeSession(token!);
+      return { status: 200, body: { tenantId, status: "revoked" } };
     }
     const resource = { tenantId, id: tenantId };
     if (request.method === "GET" && parts[3] === "inbox" && parts.length === 4) {

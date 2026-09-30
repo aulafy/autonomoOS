@@ -134,3 +134,10 @@ test("session provisioning rejects oversized tokens", () => {
   const api = new WorkspaceApi();
   assert.throws(() => api.addSession("x".repeat(4097), { userId: "owner", tenantId: "agency-1", role: "owner" }), /INVALID_SESSION_TOKEN/);
 });
+
+test("authenticated users can revoke their current session", () => {
+  const value = api();
+  const request = { method: "POST" as const, path: "/v1/workspaces/agency-1/session/revoke", authorization: "Bearer reviewer-token-1234" };
+  assert.equal(value.handle(request).status, 200);
+  assert.equal(value.handle({ method: "GET", path: "/v1/workspaces/agency-1/inbox", authorization: request.authorization }).status, 401);
+});
