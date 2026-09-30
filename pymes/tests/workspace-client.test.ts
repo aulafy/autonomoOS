@@ -140,6 +140,14 @@ test("workspace client rejects malformed approval mutation responses", async () 
   await assert.rejects(() => value.approve({ resourceId: "offer-1", reason: "Revisada", draftHash: "sha256:v1", approvedAt: "2026-09-30T10:00:00Z" }), /INVALID_WORKSPACE_APPROVAL/);
 });
 
+test("workspace client rejects empty approval input before network access", async () => {
+  let calls = 0;
+  const fetcher: typeof fetch = async () => { calls += 1; return new Response("{}", { status: 500 }); };
+  const value = new WorkspaceClient({ baseUrl: "http://127.0.0.1:8799", tenantId: "agency-1", token: "token-1234567890" }, fetcher);
+  await assert.rejects(() => value.approve({ resourceId: "", reason: "", draftHash: "", approvedAt: "" }), /INVALID_WORKSPACE_APPROVAL_INPUT/);
+  assert.equal(calls, 0);
+});
+
 test("workspace client reads an individual effect", async () => {
   const api = new WorkspaceApi();
   api.addSession("owner-token-123456", { userId: "owner", tenantId: "agency-1", role: "owner" });

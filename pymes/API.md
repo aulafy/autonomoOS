@@ -47,6 +47,9 @@ borrador; de lo contrario el cliente responde con
 La respuesta de `approve()` también debe cumplir el contrato completo y
 pertenecer al tenant actual; una creación malformada se rechaza con
 `INVALID_WORKSPACE_APPROVAL`.
+`approve()` valida también sus datos de entrada localmente y devuelve
+`INVALID_WORKSPACE_APPROVAL_INPUT` sin abrir una petición si falta el recurso,
+el motivo, el hash o la fecha.
 Las colecciones de efectos también deben devolver el `tenantId` del workspace;
 `effectsForCase()` verifica además que el `caseId` de la envolvente coincida
 con el caso solicitado y rechaza cualquier desalineación.

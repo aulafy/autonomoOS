@@ -146,6 +146,10 @@ export class WorkspaceClient {
   }
 
   async approve(input: { resourceId: string; reason: string; draftHash: string; approvedAt: string }): Promise<RemoteApproval> {
+    if (!input || typeof input.resourceId !== "string" || !input.resourceId.trim() || input.resourceId.length > 200 ||
+      typeof input.reason !== "string" || !input.reason.trim() || input.reason.length > 2_000 ||
+      typeof input.draftHash !== "string" || !input.draftHash.trim() || input.draftHash.length > 512 ||
+      typeof input.approvedAt !== "string" || !input.approvedAt.trim()) throw new Error("INVALID_WORKSPACE_APPROVAL_INPUT");
     const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/approvals`, {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input)
     });
