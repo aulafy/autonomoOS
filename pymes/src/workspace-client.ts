@@ -41,7 +41,8 @@ function isRemoteEffect(value: unknown): value is RemoteEffect {
     typeof effect.status === "string" && validInputText(effect.status, 100) &&
     typeof effect.requestedBy === "string" && validInputText(effect.requestedBy, 200) &&
     typeof effect.requestedAt === "string" && validTimestamp(effect.requestedAt) &&
-    effect.payload !== null && typeof effect.payload === "object" && !Array.isArray(effect.payload);
+    effect.payload !== null && typeof effect.payload === "object" && !Array.isArray(effect.payload) &&
+    (effect.retryCount === undefined || (Number.isInteger(effect.retryCount) && (effect.retryCount as number) >= 0 && (effect.retryCount as number) <= 1_000));
 }
 function isRemoteApproval(value: unknown, tenantId: string): value is RemoteApproval {
   if (value === null || typeof value !== "object" || Array.isArray(value)) return false;

@@ -132,6 +132,7 @@ Cada efecto individual debe incluir como mínimo `id`, `caseId`, `kind`,
 con `INVALID_WORKSPACE_EFFECT` antes de permitir confirmaciones o reintentos.
 El `payload` de un efecto debe ser un objeto JSON, nunca un array, `null` o una
 primitiva.
+Si aparece `retryCount`, debe ser un entero entre 0 y 1.000.
 Las respuestas de `confirmEffect()`, `reportEffectResult()` y `retryEffect()`
 se validan con el mismo contrato antes de devolverse al llamador; una mutación
 con respuesta incompleta no se presenta como ejecutada.
