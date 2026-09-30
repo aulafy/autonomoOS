@@ -11,6 +11,7 @@ import { acceptClassification, parseClassificationProposal,
   type ClassificationProposal } from "./classification.js";
 import "./logout.css";
 import "./retry.css";
+import { retryDelayMs } from "./retry-delay.js";
 
 const demoMorning = new Date();
 demoMorning.setHours(9, 0, 0, 0);
@@ -31,14 +32,6 @@ let remoteWorkspaceClient: WorkspaceClient | null = null;
 let remoteInbox = new Map<string, { state: string; version?: number }>();
 let workspaceRetryTimer: number | null = null;
 
-function retryDelayMs(value: string | undefined): number {
-  if (!value) return 5000;
-  const seconds = Number(value);
-  if (Number.isFinite(seconds)) return Math.min(60000, Math.max(1000, Math.round(seconds * 1000)));
-  const date = Date.parse(value);
-  if (!Number.isNaN(date)) return Math.min(60000, Math.max(1000, date - Date.now()));
-  return 5000;
-}
 let selectedChannel: Channel | "all" = "all";
 const channelLabels: Record<Channel, string> = {
   whatsapp: "WhatsApp", telegram: "Telegram", imessage: "iMessage", email: "Correo"
