@@ -136,7 +136,7 @@ async function checkRemoteWorkspace(): Promise<void> {
     const notReady = error instanceof Error && error.message === "WORKSPACE_NOT_READY";
     const failureHint = workspaceFailureCount > 1 ? ` · ${workspaceFailureCount} fallos consecutivos` : "";
     status.textContent = notReady ? `● WORKSPACE ARRANCANDO${detail ? ` · ${detail}` : ""}${failureHint}` : detail ? `● WORKSPACE NO DISPONIBLE · ${detail}${failureHint}` : `● WORKSPACE NO DISPONIBLE${failureHint}`;
-    status.title = detail ? `Diagnóstico de soporte: ${detail}` : "El workspace remoto no está disponible.";
+    status.title = detail ? `Diagnóstico de soporte: ${detail}${failureHint}` : `El workspace remoto no está disponible.${failureHint}`;
     let retry = document.getElementById("workspace-retry") as HTMLButtonElement | null;
     if (!retry) {
       retry = document.createElement("button");
