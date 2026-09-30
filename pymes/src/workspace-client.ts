@@ -97,7 +97,7 @@ export class WorkspaceClient {
     let response: Response;
     try {
       response = await this.fetcher(`${this.config.baseUrl}${path}`, {
-        ...init, signal: controller.signal, headers: { Accept: "application/json", Authorization: `Bearer ${this.config.token}`, "X-Request-Id": correlationId,
+        ...init, signal: controller.signal, headers: { Accept: "application/json", "Cache-Control": "no-store", Authorization: `Bearer ${this.config.token}`, "X-Request-Id": correlationId,
           ...(init.headers ?? {}) }
       });
     } catch (error) {

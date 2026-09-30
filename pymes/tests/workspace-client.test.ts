@@ -420,3 +420,14 @@ test("workspace client sends a correlation request id", async () => {
   assert.match(seen, /^[0-9a-f-]{36}$/);
   assert.equal(value.lastRequestId, seen);
 });
+
+test("workspace client disables intermediary caching", async () => {
+  let cacheControl = "";
+  const fetcher: typeof fetch = async (_input, init) => {
+    cacheControl = new Headers(init?.headers).get("cache-control") ?? "";
+    return new Response(JSON.stringify({ status: "ok", service: "pymes-workspace", version: "0.1.0" }), { status: 200, headers: { "content-type": "application/json" } });
+  };
+  const value = new WorkspaceClient({ baseUrl: "http://workspace.local", tenantId: "agency-1", token: "owner-token-123456" }, fetcher);
+  await value.health();
+  assert.equal(cacheControl, "no-store");
+});

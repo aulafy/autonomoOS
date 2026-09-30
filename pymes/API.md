@@ -32,6 +32,8 @@ El mismo timeout permanece activo mientras se lee y parsea el cuerpo de la
 respuesta, no solo durante la conexión inicial.
 Cada petición del cliente genera un `X-Request-Id` para correlacionar logs y
 diagnósticos; `WorkspaceClient.lastRequestId` expone el último valor enviado.
+También envía `Cache-Control: no-store` para impedir el almacenamiento
+intermedio de datos sensibles del workspace.
 Los fallos HTTP del cliente se exponen como `WorkspaceHttpError`, con `status`,
 `message`, `requestId` y `retryAfter` para decidir reautenticación, reintento,
 backoff o soporte.
