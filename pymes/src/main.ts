@@ -457,6 +457,30 @@ function renderDetail(item: WorkItem) {
           }
         });
         block.appendChild(task);
+        const callPlan = buildCallPlan(item, brief);
+        if (callPlan.nextAppointment) {
+          const calendar = el("button", "review-button", "Preparar cita de calendario");
+          calendar.type = "button";
+          calendar.title = "Prepara la cita propuesta; requiere confirmación antes de crearla";
+          calendar.addEventListener("click", async () => {
+            calendar.disabled = true;
+            try {
+              await remoteWorkspaceClient!.createEffect({
+                id: `calendar-${item.id}-${Date.now()}`,
+                caseId: item.id,
+                kind: "calendar",
+                payload: { title: callPlan.nextAppointment!.title, startsAt: callPlan.nextAppointment!.startsAt, contactId: item.contact!.id },
+                draftHash: `sha256:calendar-${item.id}`
+              });
+              await checkRemoteWorkspace();
+              renderDetail(item);
+            } catch (error) {
+              calendar.disabled = false;
+              calendar.textContent = error instanceof Error ? error.message : "No se pudo preparar la cita";
+            }
+          });
+          block.appendChild(calendar);
+        }
       }
       for (const effect of own) {
         block.appendChild(el("p", "", `${effectKindNames[effect.kind] ?? effect.kind} · ${effectStatusNames[effect.status] ?? effect.status} · solicitada por ${effect.requestedBy}`));
