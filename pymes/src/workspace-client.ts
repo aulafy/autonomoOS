@@ -116,7 +116,8 @@ export class WorkspaceClient {
 
   async approvals(): Promise<RemoteApproval[]> {
     const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/approvals`);
-    if (!Array.isArray(body.approvals) || !body.approvals.every(item => isRemoteApproval(item, this.config.tenantId))) throw new Error("INVALID_WORKSPACE_APPROVALS");
+    if (!Array.isArray(body.approvals) || !body.approvals.every(item => isRemoteApproval(item, this.config.tenantId)) ||
+      new Set(body.approvals.map(item => item.id)).size !== body.approvals.length) throw new Error("INVALID_WORKSPACE_APPROVALS");
     return body.approvals as RemoteApproval[];
   }
   async health(): Promise<WorkspaceHealth> {
@@ -188,13 +189,15 @@ export class WorkspaceClient {
   }
   async effects(): Promise<RemoteEffect[]> {
     const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/effects`);
-    if (body.tenantId !== this.config.tenantId || !Array.isArray(body.effects) || !body.effects.every(isRemoteEffect)) throw new Error("INVALID_WORKSPACE_EFFECTS");
+    if (body.tenantId !== this.config.tenantId || !Array.isArray(body.effects) || !body.effects.every(isRemoteEffect) ||
+      new Set(body.effects.map(item => item.id)).size !== body.effects.length) throw new Error("INVALID_WORKSPACE_EFFECTS");
     return body.effects as RemoteEffect[];
   }
   async effectsForCase(caseId: string): Promise<RemoteEffect[]> {
     if (!validResourceId(caseId)) throw new Error("INVALID_WORKSPACE_CASE_INPUT");
     const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/cases/${encodeURIComponent(caseId)}/effects`);
-    if (body.tenantId !== this.config.tenantId || body.caseId !== caseId || !Array.isArray(body.effects) || !body.effects.every(isRemoteEffect)) throw new Error("INVALID_WORKSPACE_EFFECTS");
+    if (body.tenantId !== this.config.tenantId || body.caseId !== caseId || !Array.isArray(body.effects) || !body.effects.every(isRemoteEffect) ||
+      new Set(body.effects.map(item => item.id)).size !== body.effects.length) throw new Error("INVALID_WORKSPACE_EFFECTS");
     return body.effects as RemoteEffect[];
   }
   async effect(effectId: string): Promise<RemoteEffect> {

@@ -227,6 +227,15 @@ test("workspace client rejects approvals and effects with invalid timestamps", a
   await assert.rejects(() => effectClient.effects(), /INVALID_WORKSPACE_EFFECTS/);
 });
 
+test("workspace client rejects duplicate approval and effect identifiers", async () => {
+  const approval: typeof fetch = async () => new Response(JSON.stringify({ approvals: [
+    { id: "a", tenantId: "agency-1", resourceId: "offer-1", operation: "approveOffer", approvedBy: "owner", approvedAt: "2026-09-30T10:00:00Z", reason: "Revisada", draftHash: "sha256:v1" },
+    { id: "a", tenantId: "agency-1", resourceId: "offer-2", operation: "approveOffer", approvedBy: "owner", approvedAt: "2026-09-30T10:01:00Z", reason: "Revisada", draftHash: "sha256:v2" }
+  ] }), { status: 200, headers: { "content-type": "application/json" } });
+  const client = new WorkspaceClient({ baseUrl: "http://127.0.0.1:8799", tenantId: "agency-1", token: "token-1234567890" }, approval);
+  await assert.rejects(() => client.approvals(), /INVALID_WORKSPACE_APPROVALS/);
+});
+
 test("workspace client reads an individual effect", async () => {
   const api = new WorkspaceApi();
   api.addSession("owner-token-123456", { userId: "owner", tenantId: "agency-1", role: "owner" });

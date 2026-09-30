@@ -79,6 +79,8 @@ La fecha de cada entrada debe ser parseable; los timestamps inválidos también
 invalidan la respuesta de auditoría completa.
 Las aprobaciones deben llevar `approvedAt` válido y los efectos `requestedAt`
 válido; si no, se rechazan las colecciones o mutaciones recibidas.
+Las colecciones de aprobaciones y efectos también deben tener identificadores
+únicos; los duplicados se rechazan para evitar decisiones o ejecuciones dobles.
 Cada efecto individual debe incluir como mínimo `id`, `caseId`, `kind`,
 `status`, `requestedBy` y `requestedAt`; el cliente rechaza efectos incompletos
 con `INVALID_WORKSPACE_EFFECT` antes de permitir confirmaciones o reintentos.
