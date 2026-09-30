@@ -19,6 +19,8 @@ same-origin`, además de
 Las rutas `POST` requieren `Content-Type: application/json`; otros tipos
 devuelven `415 UNSUPPORTED_MEDIA_TYPE`.
 Un método no permitido devuelve `405` con la cabecera `Allow` correspondiente.
+Una request malformada devuelve `400`; si el parser rechaza las cabeceras por
+exceso de tamaño, el servidor devuelve `431` y cierra la conexión.
 
 ## Salud
 
