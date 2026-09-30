@@ -20,11 +20,13 @@ const repository = new SqliteWorkspaceRepository(process.env.PYMES_API_DB_PATH ?
 repository.provisionSession(token, { userId, tenantId, role: "owner" });
 const ingressToken = process.env.PYMES_OPENCLAW_INGRESS_TOKEN;
 const csv = (value: string | undefined) => new Set((value ?? "").split(",").map(item => item.trim()).filter(Boolean));
+const validChannels = new Set(["whatsapp", "telegram", "imessage", "email"]);
+const configuredChannels = [...csv(process.env.PYMES_OPENCLAW_CHANNELS)].filter(channel => validChannels.has(channel)) as Array<"whatsapp" | "telegram" | "imessage" | "email">;
 const api = new WorkspaceApi(repository, ingressToken ? { token: ingressToken, policy: {
   tenantId,
   allowedAgentIds: csv(process.env.PYMES_OPENCLAW_AGENT_IDS),
   allowedResourceIds: csv(process.env.PYMES_OPENCLAW_RESOURCE_IDS),
-  allowedChannels: csv(process.env.PYMES_OPENCLAW_CHANNELS) as Set<"whatsapp" | "telegram" | "imessage" | "email">,
+  allowedChannels: new Set(configuredChannels),
   pairedSenderIds: csv(process.env.PYMES_OPENCLAW_PAIRED_SENDERS),
   consentedConversationIds: csv(process.env.PYMES_OPENCLAW_CONSENTED_CONVERSATIONS)
 } } : undefined);
