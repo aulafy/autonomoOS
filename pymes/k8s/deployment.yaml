@@ -31,6 +31,11 @@ spec:
               value: "0.0.0.0"
             - name: PYMES_API_PORT
               value: "8790"
+            - name: PYMES_API_CORS_ORIGINS
+              valueFrom:
+                configMapKeyRef:
+                  name: pymes-workspace-config
+                  key: cors-origins
             - name: PYMES_API_DB_PATH
               value: /data/pymes-workspace.db
             - name: PYMES_API_BOOTSTRAP_TOKEN
@@ -114,3 +119,11 @@ spec:
   resources:
     requests:
       storage: 10Gi
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pymes-workspace-config
+data:
+  # Sustituye por los orígenes exactos de la interfaz, separados por comas.
+  cors-origins: https://app.example.com
