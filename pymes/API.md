@@ -50,6 +50,9 @@ backoff o soporte.
 Su `requestId` usa el mismo saneamiento que `lastResponseRequestId`.
 Las rutas `POST` requieren `Content-Type: application/json`; otros tipos
 devuelven `415 UNSUPPORTED_MEDIA_TYPE`.
+`revokeSession()` exige una respuesta con el tenant actual y
+`status: "revoked"`; una confirmación incoherente devuelve
+`INVALID_WORKSPACE_REVOKE_RESPONSE`.
 Un método no permitido devuelve `405` con la cabecera `Allow` correspondiente.
 Una request malformada devuelve `400`; si el parser rechaza las cabeceras por
 exceso de tamaño, el servidor devuelve `431` y cierra la conexión.

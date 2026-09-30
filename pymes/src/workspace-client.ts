@@ -276,8 +276,9 @@ export class WorkspaceClient {
     return body;
   }
   async revokeSession(): Promise<void> {
-    await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/session/revoke`, {
+    const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/session/revoke`, {
       method: "POST", headers: { "Content-Type": "application/json" }, body: "{}"
     });
+    if (body.tenantId !== this.config.tenantId || body.status !== "revoked") throw new Error("INVALID_WORKSPACE_REVOKE_RESPONSE");
   }
 }

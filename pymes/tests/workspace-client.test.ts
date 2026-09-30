@@ -391,6 +391,12 @@ test("workspace client can revoke its current session", async () => {
   await assert.rejects(() => value.inbox(), /UNAUTHENTICATED/);
 });
 
+test("workspace client rejects an incoherent revoke response", async () => {
+  const fetcher: typeof fetch = async () => new Response(JSON.stringify({ tenantId: "agency-2", status: "revoked" }), { status: 200, headers: { "content-type": "application/json" } });
+  const value = new WorkspaceClient({ baseUrl: "http://workspace.local", tenantId: "agency-1", token: "owner-token-123456" }, fetcher);
+  await assert.rejects(() => value.revokeSession(), /INVALID_WORKSPACE_REVOKE_RESPONSE/);
+});
+
 test("workspace client trims endpoint and credential configuration", async () => {
   const api = new WorkspaceApi();
   api.addSession("owner-token-123456", { userId: "owner", tenantId: "agency-1", role: "owner" });
