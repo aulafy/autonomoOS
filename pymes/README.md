@@ -84,6 +84,9 @@ PYMES_API_BOOTSTRAP_USER=demo-owner
 PYMES_OPENCLAW_CHANNELS=whatsapp,telegram,imessage,email
 ```
 
+Los tokens bootstrap y de ingress deben tener entre 16 y 4.096 caracteres
+efectivos. Los identificadores bootstrap se limitan a 200 caracteres.
+
 Comprueba la instalación con `GET /healthz` antes de conectar la interfaz.
 
 El ingress interno de OpenClaw Enterprise se activa por separado con
