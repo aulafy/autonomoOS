@@ -451,10 +451,11 @@ test("workspace client creates a governed effect draft", async () => {
   const fetcher: typeof fetch = (input, init) => handlePymesRequest(api, new Request(String(input), init));
   const value = new WorkspaceClient({ baseUrl: "http://workspace.local", tenantId: "agency-1", token: "owner-token-123456" }, fetcher);
   const effect = await value.createEffect({ id: "call-draft-1", caseId: "case-client", kind: "call",
-    payload: { phone: "+34600000000", purpose: "Revisar renovación" }, requestedAt: "2026-09-29T15:00:00Z", draftHash: "sha256:draft" });
+    payload: { objective: "Revisar renovación", questions: ["Confirmar fecha"] }, requestedAt: "2026-09-29T15:00:00Z", draftHash: "sha256:draft" });
   assert.equal(effect.status, "pending");
   assert.equal(effect.kind, "call");
   await assert.rejects(() => value.createEffect({ id: "bad", caseId: "case-client", kind: "call", payload: {}, draftHash: "sha256:x" }), /INVALID_WORKSPACE_EFFECT_INPUT/);
+  await assert.rejects(() => value.createEffect({ id: "bad-message", caseId: "case-client", kind: "message", payload: { text: "Hola" }, draftHash: "sha256:x" }), /INVALID_WORKSPACE_EFFECT_INPUT/);
   const circular: Record<string, unknown> = {};
   circular.self = circular;
   await assert.rejects(() => value.createEffect({ id: "circular", caseId: "case-client", kind: "call", payload: circular, draftHash: "sha256:x" }), /INVALID_WORKSPACE_EFFECT_INPUT/);

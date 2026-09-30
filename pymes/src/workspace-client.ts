@@ -307,10 +307,21 @@ export class WorkspaceClient {
     let payloadBytes = -1;
     try { payloadBytes = input?.payload ? new TextEncoder().encode(JSON.stringify(input.payload)).byteLength : -1; }
     catch { payloadBytes = -1; }
+    const payload = input?.payload as Record<string, unknown> | undefined;
+    const payloadShapeValid = input?.kind === "message"
+      ? (payload?.channel === "whatsapp" || payload?.channel === "telegram" || payload?.channel === "imessage" || payload?.channel === "email") && typeof payload.text === "string" && validMultilineText(payload.text, 4_000)
+      : input?.kind === "calendar"
+        ? typeof payload?.title === "string" && validInputText(payload.title, 500) && typeof payload.startsAt === "string" && validTimestamp(payload.startsAt)
+        : input?.kind === "crm_task"
+          ? typeof payload?.title === "string" && validInputText(payload.title, 500) && typeof payload.contactId === "string" && validResourceId(payload.contactId)
+          : input?.kind === "call"
+            ? typeof payload?.objective === "string" && validInputText(payload.objective, 2_000) && Array.isArray(payload.questions) && payload.questions.length <= 100 && payload.questions.every(value => typeof value === "string" && validInputText(value, 500))
+            : false;
     if (!input || !validResourceId(input.id) || !validResourceId(input.caseId) ||
       !["call", "calendar", "message", "crm_task"].includes(input.kind) ||
       !input.payload || typeof input.payload !== "object" || Array.isArray(input.payload) || Object.keys(input.payload).length === 0 ||
       payloadBytes < 0 || payloadBytes > 65536 ||
+      !payloadShapeValid ||
       !validInputText(input.draftHash, 512) ||
       (input.requestedAt !== undefined && !validTimestamp(input.requestedAt))) {
       throw new Error("INVALID_WORKSPACE_EFFECT_INPUT");
