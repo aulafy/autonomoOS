@@ -38,6 +38,8 @@
   acumulación de recursos durante ejecuciones residentes.
 - Validación de lotes del worker: forma de resultados, estados permitidos,
   tamaño máximo y ausencia de `effectId` duplicados.
+- Leasing local opcional integrado en el procesamiento por lotes, con exclusión
+  entre propietarios, liberación garantizada y validación de identificadores.
 
 ### Seguridad y operación
 
