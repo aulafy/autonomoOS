@@ -47,7 +47,7 @@ function renderWorkspaceMetrics(metrics: WorkspaceMetrics): void {
   const rows: Array<[string, string]> = [
     ["Casos", String(metrics.inbox.total)],
     ["Pendientes", String(metrics.inbox.byState.pending_review ?? 0)],
-    ["Operaciones", String(metrics.effects.total)],
+    ["Operaciones activas", String((metrics.effects.byStatus.pending ?? 0) + (metrics.effects.byStatus.confirmed ?? 0))],
     ["Aprobaciones", String(metrics.approvals.total)]
   ];
   for (const [label, value] of rows) {
