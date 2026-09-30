@@ -150,6 +150,13 @@ test("metrics alert on pending cases older than the operational SLA", () => {
   assert.deepEqual(response.body.alerts, [{ code: "STALE_CASES", severity: "warning", count: 1 }]);
 });
 
+test("metrics alert on uncertain cases", () => {
+  const value = api();
+  value.addInbox({ id: "uncertain-metric", tenantId: "agency-1", state: "uncertain", summary: "Revisión incierta" });
+  const response = value.handle({ method: "GET", path: "/v1/workspaces/agency-1/metrics", authorization: "Bearer reviewer-token-1234" });
+  assert.deepEqual(response.body.alerts, [{ code: "UNCERTAIN_CASES", severity: "warning", count: 1 }]);
+});
+
 test("case transition is authenticated and leaves an audit trail", () => {
   const value = api();
   const response = value.handle({ method: "POST", path: "/v1/workspaces/agency-1/cases/msg-1/transition",

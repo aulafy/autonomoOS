@@ -55,7 +55,9 @@ function renderWorkspaceMetrics(metrics: WorkspaceMetrics): void {
         ? `${alert.count} operación${alert.count === 1 ? "" : "es"} fallida${alert.count === 1 ? "" : "s"}`
         : alert.code === "INBOX_BACKLOG"
           ? `${alert.count} casos pendientes de revisión`
-          : `${alert.count} casos llevan más de 24 h pendientes`;
+          : alert.code === "UNCERTAIN_CASES"
+            ? `${alert.count} casos con resultado incierto`
+            : `${alert.count} casos llevan más de 24 h pendientes`;
       alertTarget.appendChild(item);
     }
   }

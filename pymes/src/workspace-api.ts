@@ -262,6 +262,7 @@ export class WorkspaceApi {
       const approvals = this.repository.listApprovals(tenantId);
       const failedEffects = effects.filter(effect => effect.status === "failed").length;
       const pendingReview = inbox.filter(item => item.state === "pending_review").length;
+      const uncertainCases = inbox.filter(item => item.state === "uncertain").length;
       const stalePending = inbox.filter(item => item.state === "pending_review" && item.updatedAt &&
         Number.isFinite(Date.parse(item.updatedAt)) && Date.now() - Date.parse(item.updatedAt) > 24 * 60 * 60 * 1000).length;
       const byField = <T extends object>(items: readonly T[], field: "state" | "status"): Record<string, number> =>
@@ -277,6 +278,7 @@ export class WorkspaceApi {
         alerts: [
           ...(failedEffects > 0 ? [{ code: "FAILED_EFFECTS", severity: "critical", count: failedEffects }] : []),
           ...(pendingReview > 20 ? [{ code: "INBOX_BACKLOG", severity: "warning", count: pendingReview }] : []),
+          ...(uncertainCases > 0 ? [{ code: "UNCERTAIN_CASES", severity: "warning", count: uncertainCases }] : []),
           ...(stalePending > 0 ? [{ code: "STALE_CASES", severity: "warning", count: stalePending }] : [])
         ] } };
     }

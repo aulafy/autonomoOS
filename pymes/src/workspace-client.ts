@@ -51,7 +51,7 @@ export interface WorkspaceMetrics {
   inbox: { total: number; byState: Record<string, number> };
   effects: { total: number; byStatus: Record<string, number> };
   approvals: { total: number };
-  alerts?: Array<{ code: "FAILED_EFFECTS" | "INBOX_BACKLOG" | "STALE_CASES"; severity: "warning" | "critical"; count: number }>;
+  alerts?: Array<{ code: "FAILED_EFFECTS" | "INBOX_BACKLOG" | "UNCERTAIN_CASES" | "STALE_CASES"; severity: "warning" | "critical"; count: number }>;
 }
 function isRemoteEffect(value: unknown, tenantId: string): value is RemoteEffect {
   if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
@@ -284,7 +284,7 @@ export class WorkspaceClient {
     };
     const validAlerts = body.alerts === undefined || (Array.isArray(body.alerts) && body.alerts.length <= 20 && body.alerts.every(alert =>
       alert !== null && typeof alert === "object" && !Array.isArray(alert) &&
-      ((alert as Record<string, unknown>).code === "FAILED_EFFECTS" || (alert as Record<string, unknown>).code === "INBOX_BACKLOG" || (alert as Record<string, unknown>).code === "STALE_CASES") &&
+      ((alert as Record<string, unknown>).code === "FAILED_EFFECTS" || (alert as Record<string, unknown>).code === "INBOX_BACKLOG" || (alert as Record<string, unknown>).code === "UNCERTAIN_CASES" || (alert as Record<string, unknown>).code === "STALE_CASES") &&
       ((alert as Record<string, unknown>).severity === "warning" || (alert as Record<string, unknown>).severity === "critical") &&
       Number.isInteger((alert as Record<string, unknown>).count) && ((alert as Record<string, unknown>).count as number) > 0 && ((alert as Record<string, unknown>).count as number) <= MAX_REMOTE_ITEMS));
     if (body.tenantId !== this.config.tenantId || typeof body.generatedAt !== "string" || !validTimestamp(body.generatedAt) ||
