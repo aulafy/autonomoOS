@@ -20,6 +20,16 @@ test("worker session is least privilege at the HTTP API", () => {
   assert.equal(value.handle({ method: "POST", path: "/v1/workspaces/agency-1/approvals", authorization: "Bearer worker-token-12345", body: { resourceId: "offer-1", reason: "No", draftHash: "hash", approvedAt: "2026-09-30T10:00:00Z" } }).status, 403);
 });
 
+test("worker can report only an owner-confirmed effect", () => {
+  const value = api();
+  value.addSession("worker-token-12345", { userId: "effects-worker", tenantId: "agency-1", role: "worker" });
+  const created = value.handle({ method: "POST", path: "/v1/workspaces/agency-1/effects", authorization: "Bearer owner-token-12345", body: { id: "worker-effect", caseId: "msg-1", kind: "call", payload: { objective: "Revisar", questions: [] }, requestedAt: "2026-09-30T10:00:00Z", draftHash: "sha256:worker" } });
+  assert.equal(created.status, 201);
+  assert.equal(value.handle({ method: "POST", path: "/v1/workspaces/agency-1/effects/worker-effect/result", authorization: "Bearer worker-token-12345", body: { result: "succeeded", executedAt: "2026-09-30T10:01:00Z", note: "Provider completed" } }).status, 400);
+  assert.equal(value.handle({ method: "POST", path: "/v1/workspaces/agency-1/effects/worker-effect/confirm", authorization: "Bearer owner-token-12345", body: { confirm: true, confirmedAt: "2026-09-30T10:00:30Z" } }).status, 200);
+  assert.equal(value.handle({ method: "POST", path: "/v1/workspaces/agency-1/effects/worker-effect/result", authorization: "Bearer worker-token-12345", body: { result: "succeeded", executedAt: "2026-09-30T10:01:00Z", note: "Provider completed" } }).status, 200);
+});
+
 test("API authenticates and isolates inbox by tenant", () => {
   const value = api();
   value.addInbox({ id: "msg-1", tenantId: "agency-1", state: "approved", summary: "Actualizado" });
