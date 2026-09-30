@@ -22,10 +22,13 @@ npm test
 npm run typecheck --workspaces --if-present
 npm run build
 npm run check:pymes
+npm audit --omit=dev --audit-level=high
 ```
 
 `npm run check:pymes` ejecuta el gate completo del producto PYMES: typecheck,
 pruebas y build de la interfaz.
+CI añade además el typecheck de todos los workspaces y bloquea la entrega ante
+vulnerabilidades altas o críticas en dependencias de runtime.
 
 ## Run the demos
 
