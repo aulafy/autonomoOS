@@ -30,6 +30,10 @@ export class WorkspaceConflictError extends Error {
   constructor(readonly currentVersion: number) { super(`CASE_VERSION_CONFLICT_CURRENT_${currentVersion}`); }
 }
 
+function requestId(): string {
+  return typeof globalThis.crypto?.randomUUID === "function" ? globalThis.crypto.randomUUID() : `pymes-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
 function validConfig(config: WorkspaceClientConfig): void {
   let base: URL;
   try { base = new URL(config.baseUrl.trim()); } catch { throw new Error("INVALID_WORKSPACE_CLIENT_CONFIG"); }
@@ -50,7 +54,7 @@ export class WorkspaceClient {
     let response: Response;
     try {
       response = await this.fetcher(`${this.config.baseUrl}${path}`, {
-        ...init, signal: controller.signal, headers: { Accept: "application/json", Authorization: `Bearer ${this.config.token}`,
+        ...init, signal: controller.signal, headers: { Accept: "application/json", Authorization: `Bearer ${this.config.token}`, "X-Request-Id": requestId(),
           ...(init.headers ?? {}) }
       });
     } catch (error) {

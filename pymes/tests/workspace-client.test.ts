@@ -119,3 +119,16 @@ test("workspace client aborts a request after its configured timeout", async () 
   const value = new WorkspaceClient({ baseUrl: "http://workspace.local", tenantId: "agency-1", token: "owner-token-123456", requestTimeoutMs: 100 }, fetcher);
   await assert.rejects(() => value.inbox(), /WORKSPACE_REQUEST_TIMEOUT/);
 });
+
+test("workspace client sends a correlation request id", async () => {
+  const api = new WorkspaceApi();
+  api.addSession("owner-token-123456", { userId: "owner", tenantId: "agency-1", role: "owner" });
+  let seen = "";
+  const fetcher: typeof fetch = async (input, init) => {
+    seen = new Headers(init?.headers).get("x-request-id") ?? "";
+    return handlePymesRequest(api, new Request(String(input), init));
+  };
+  const value = new WorkspaceClient({ baseUrl: "http://workspace.local", tenantId: "agency-1", token: "owner-token-123456" }, fetcher);
+  await value.inbox();
+  assert.match(seen, /^[0-9a-f-]{36}$/);
+});
