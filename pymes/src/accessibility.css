@@ -1,1 +1,2 @@
 @media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+.workspace-pill[data-state="starting"]{background:#fff7e4;color:#9a7428!important}.workspace-pill[data-state="error"]{background:#fff0e9;color:#a6533f!important}.workspace-pill[data-state="connected"]{background:#e4f5ea;color:#2d7750!important}
