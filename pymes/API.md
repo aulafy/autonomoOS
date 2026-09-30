@@ -22,7 +22,8 @@ Un método no permitido devuelve `405` con la cabecera `Allow` correspondiente.
 
 ## Salud
 
-`GET /healthz` confirma que el proceso está vivo. `GET /readyz` comprueba
+`GET /healthz` confirma que el proceso está vivo y devuelve la versión del
+servicio. `GET /readyz` comprueba
 además que el repositorio responde; devuelve `503` con `status: "not_ready"`
 si el almacenamiento no está disponible.
 En ese caso incluye `Retry-After: 5` para facilitar el backoff del orquestador.
