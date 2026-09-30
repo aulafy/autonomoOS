@@ -16,7 +16,8 @@ if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error("INV
 if (!tenantId || !userId) throw new Error("INVALID_PYMES_API_BOOTSTRAP_IDENTITY");
 const repository = new SqliteWorkspaceRepository(process.env.PYMES_API_DB_PATH ?? "./data/pymes-workspace.db");
 repository.provisionSession(token, { userId, tenantId, role: "owner" });
-const ingressToken = process.env.PYMES_OPENCLAW_INGRESS_TOKEN;
+const ingressToken = process.env.PYMES_OPENCLAW_INGRESS_TOKEN?.trim() || undefined;
+if (ingressToken !== undefined && ingressToken.length < 16) throw new Error("INVALID_PYMES_OPENCLAW_INGRESS_TOKEN");
 const csv = (value: string | undefined) => new Set((value ?? "").split(",").map(item => item.trim()).filter(Boolean));
 const api = new WorkspaceApi(repository, ingressToken ? { token: ingressToken, policy: {
   tenantId,

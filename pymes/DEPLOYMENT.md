@@ -66,7 +66,9 @@ La respuesta debe incluir `Access-Control-Allow-Origin` con ese origen exacto.
 
 ## OpenClaw Enterprise
 
-El ingress se activa con `PYMES_OPENCLAW_INGRESS_TOKEN` y las listas de control:
+El ingress se activa con `PYMES_OPENCLAW_INGRESS_TOKEN`, que se recorta al
+arrancar y debe tener al menos 16 caracteres efectivos, además de las listas
+de control:
 
 ```bash
 PYMES_OPENCLAW_AGENT_IDS='agent-1' \
