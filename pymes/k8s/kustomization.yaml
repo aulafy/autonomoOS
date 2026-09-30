@@ -1,0 +1,8 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - deployment.yaml
+
+# secret.example.yaml es una referencia; crea el Secret real desde tu gestor
+# de secretos y no lo incluyas automáticamente en este overlay.

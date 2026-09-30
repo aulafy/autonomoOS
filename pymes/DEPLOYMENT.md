@@ -60,6 +60,8 @@ conservan los valores seguros del despliegue Compose.
 posición: genera el Secret real desde tu gestor de secretos y no lo versiones.
 Sus claves `openclaw-ingress-token` y `openclaw-signing-secret` son opcionales;
 si faltan, el ingress OpenClaw queda desactivado de forma segura.
+La base se puede aplicar con `kubectl apply -k pymes/k8s`; crea el Secret real
+antes de arrancar el Deployment.
 
 ## Interfaz
 
