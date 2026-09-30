@@ -45,6 +45,13 @@ async function checkRemoteWorkspace(): Promise<void> {
   if (!baseUrl || !tenantId || !token) { status.setAttribute("aria-busy", "false"); return; }
   try {
     const client = new WorkspaceClient({ baseUrl, tenantId, token });
+    const readiness = await client.ready();
+    if (readiness.status !== "ok") {
+      const unavailable = new Error("WORKSPACE_NOT_READY") as Error & { status: number; retryAfter: string };
+      unavailable.status = 503;
+      unavailable.retryAfter = "5s";
+      throw unavailable;
+    }
     const [approvals, inbox] = await Promise.all([client.approvals(), client.inbox()]);
     remoteWorkspaceClient = client;
     remoteInbox = new Map(inbox.map(item => [item.id, item]));
