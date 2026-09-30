@@ -93,6 +93,8 @@ registro de conectores a 100; una respuesta mayor se rechaza para proteger la
 memoria y el renderizado del workspace.
 Los campos visibles de la bandeja y los metadatos de efectos también tienen
 longitudes máximas para impedir payloads que saturen la interfaz.
+Si están presentes, `version` debe ser un entero no negativo y `updatedAt` una
+fecha parseable; los metadatos opcionales incoherentes invalidan el caso.
 El cliente rechaza respuestas con `Content-Length` superior a 1 MiB mediante
 `WORKSPACE_RESPONSE_TOO_LARGE` antes de parsear el JSON.
 También mide el cuerpo real cuando la cabecera falta o no es fiable.
