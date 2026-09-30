@@ -38,6 +38,7 @@ let workspaceRetryTimer: number | null = null;
 let workspaceSyncInFlight = false;
 let workspaceAutoRefreshTimer: number | null = null;
 const WORKSPACE_REFRESH_INTERVAL_MS = 60_000;
+let workspaceFailureCount = 0;
 
 let selectedChannel: Channel | "all" = "all";
 const channelLabels: Record<Channel, string> = {
@@ -73,6 +74,7 @@ async function checkRemoteWorkspace(): Promise<void> {
     const [approvals, inbox] = await Promise.all([client.approvals(), client.inbox()]);
     remoteWorkspaceClient = client;
     remoteInbox = new Map(inbox.map(item => [item.id, item]));
+    workspaceFailureCount = 0;
     renderInbox();
     if (workspaceRetryTimer !== null) { window.clearTimeout(workspaceRetryTimer); workspaceRetryTimer = null; }
     if (workspaceAutoRefreshTimer === null) {
@@ -124,6 +126,7 @@ async function checkRemoteWorkspace(): Promise<void> {
     const selected = brief.items.find(item => item.id === selectedId);
     if (selected) renderDetail(selected);
   } catch (error: unknown) {
+    workspaceFailureCount += 1;
     status.className = "workspace-pill error";
     const requestId = error instanceof Error && "requestId" in error ? String((error as { requestId?: unknown }).requestId ?? "") : "";
     const httpStatus = error instanceof Error && "status" in error && typeof (error as { status?: unknown }).status === "number" ? String((error as { status: number }).status) : "";
@@ -131,7 +134,8 @@ async function checkRemoteWorkspace(): Promise<void> {
     const retryHint = retryAfter ? `reintento sugerido en ${retryAfter}` : "";
     const detail = [httpStatus && `HTTP ${httpStatus}`, retryHint, requestId].filter(Boolean).join(" · ");
     const notReady = error instanceof Error && error.message === "WORKSPACE_NOT_READY";
-    status.textContent = notReady ? `● WORKSPACE ARRANCANDO${detail ? ` · ${detail}` : ""}` : detail ? `● WORKSPACE NO DISPONIBLE · ${detail}` : "● WORKSPACE NO DISPONIBLE";
+    const failureHint = workspaceFailureCount > 1 ? ` · ${workspaceFailureCount} fallos consecutivos` : "";
+    status.textContent = notReady ? `● WORKSPACE ARRANCANDO${detail ? ` · ${detail}` : ""}${failureHint}` : detail ? `● WORKSPACE NO DISPONIBLE · ${detail}${failureHint}` : `● WORKSPACE NO DISPONIBLE${failureHint}`;
     status.title = detail ? `Diagnóstico de soporte: ${detail}` : "El workspace remoto no está disponible.";
     let retry = document.getElementById("workspace-retry") as HTMLButtonElement | null;
     if (!retry) {
