@@ -245,3 +245,17 @@ provisionar una sesión dedicada con rol `worker`; no reutilices el token
 bootstrap del propietario.
 El servidor valida estas parejas durante el arranque y termina antes de
 escuchar si falta un token, la URL no usa HTTPS o contiene credenciales.
+
+### Worker residente
+
+El módulo `runEffectWorker` proporciona el ciclo residente: hace un polling,
+espera el intervalo configurado y vuelve a consultar sin ejecutar dos ciclos a la
+vez. El proceso debe recibir un `AbortSignal` desde su supervisor para responder a
+`SIGTERM`; así termina el ciclo actual antes de salir. Mantén el worker separado
+del proceso HTTP y usa una sesión dedicada con rol `worker`.
+
+El intervalo aceptado está entre 250 ms y 300.000 ms; para producción se
+recomienda empezar en 5.000 ms. Un error de polling debe producir una salida no
+cero para que Kubernetes, systemd o el supervisor elegido pueda reiniciar el
+worker. Los logs solo deben contener identificador de efecto, estado, duración y
+`requestId`, nunca el texto del mensaje ni tokens.

@@ -178,6 +178,11 @@ el lote a 100 efectos, procesa en orden y continúa cuando un proveedor falla.
 El resultado de cada elemento debe enviarse a métricas o logs operativos sin
 incluir el texto completo de mensajes ni credenciales.
 
+Para un proceso residente, `runEffectWorker` ejecuta el polling sin solapar ciclos
+y acepta un `AbortSignal` para apagado ordenado. Ejecútalo como deployment separado
+con `PYMES_API_WORKER_TOKEN`, usando un intervalo de 5 a 300 segundos y un
+supervisor que reinicie el proceso si el polling falla.
+
 La cola de revisión y las ofertas transcritas se guardan ahora en un almacén
 versionado del navegador para no perder el trabajo al recargar. Sigue siendo
 almacenamiento local de la demo, no persistencia multiusuario: el producto real
