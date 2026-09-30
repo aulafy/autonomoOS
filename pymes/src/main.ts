@@ -50,7 +50,7 @@ async function checkRemoteWorkspace(): Promise<void> {
     if (readiness.status !== "ok") {
       const unavailable = new Error("WORKSPACE_NOT_READY") as Error & { status: number; retryAfter: string };
       unavailable.status = 503;
-      unavailable.retryAfter = "5s";
+      unavailable.retryAfter = readiness.retryAfter ?? "5s";
       throw unavailable;
     }
     const [approvals, inbox] = await Promise.all([client.approvals(), client.inbox()]);

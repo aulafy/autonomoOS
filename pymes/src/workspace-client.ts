@@ -26,7 +26,7 @@ export interface RemoteInboxRecord {
 }
 export interface RemoteCaseAudit { id: string; caseId: string; from: string; to: string; actorId: string; at: string; version: number; }
 export interface RemoteEffect { id: string; caseId: string; kind: string; status: string; requestedBy: string; requestedAt: string; retryCount?: number; payload: Record<string, unknown>; executionNote?: string; executedBy?: string; executedAt?: string; }
-export interface WorkspaceHealth { status: "ok" | "not_ready"; service: string; version: string; }
+export interface WorkspaceHealth { status: "ok" | "not_ready"; service: string; version: string; retryAfter?: string; }
 export class WorkspaceConflictError extends Error {
   constructor(readonly currentVersion: number) { super(`CASE_VERSION_CONFLICT_CURRENT_${currentVersion}`); }
 }
@@ -92,7 +92,12 @@ export class WorkspaceClient {
     return body as unknown as WorkspaceHealth;
   }
   async ready(): Promise<WorkspaceHealth> {
-    const body = await this.request("/readyz", {}, [503]);
+    let body: Record<string, unknown>;
+    try { body = await this.request("/readyz"); }
+    catch (error) {
+      if (!(error instanceof WorkspaceHttpError) || error.status !== 503) throw error;
+      return { status: "not_ready", service: "pymes-workspace", version: "unknown", retryAfter: error.retryAfter ?? undefined };
+    }
     if ((body.status !== "ok" && body.status !== "not_ready") || typeof body.service !== "string" || typeof body.version !== "string") throw new Error("INVALID_WORKSPACE_READINESS");
     return body as unknown as WorkspaceHealth;
   }
