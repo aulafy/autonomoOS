@@ -254,6 +254,18 @@ ingress queda sin canales permitidos y bloquea esos eventos.
   monitorización de la agencia. Requiere sesión y permiso de lectura; devuelve
   únicamente totales y estados (`inbox`, `effects`, `approvals`), nunca el
   contenido de mensajes, payloads ni datos personales.
+
+Ejemplo de respuesta sanitizada:
+
+```json
+{
+  "tenantId": "agency-1",
+  "generatedAt": "2026-09-30T10:15:00.000Z",
+  "inbox": { "total": 12, "byState": { "pending_review": 4, "completed": 8 } },
+  "effects": { "total": 5, "byStatus": { "pending": 2, "failed": 1, "succeeded": 2 } },
+  "approvals": { "total": 7 }
+}
+```
 - `GET /v1/workspaces/:tenant/cases/:caseId/audit` — transiciones con actor, versión y fecha.
 - `GET /v1/workspaces/:tenant/effects/:effectId` — estado individual de una operación.
 - `GET /v1/workspaces/:tenant/cases/:caseId/effects` — operaciones de un caso.
