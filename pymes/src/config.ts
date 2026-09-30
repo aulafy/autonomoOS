@@ -6,7 +6,15 @@ export type SupportedChannel = Channel;
 /** Missing/blank input uses safe local defaults; wildcard input is rejected. */
 export function parseCorsOrigins(value: string | undefined): string[] {
   const configured = value?.trim() ? value : "http://127.0.0.1:5174,http://localhost:5174";
-  const origins = configured.split(",").map(item => item.trim()).filter(Boolean);
+  const rawOrigins = configured.split(",").map(item => item.trim()).filter(Boolean);
+  const origins = rawOrigins.map(origin => {
+    let parsed: URL;
+    try { parsed = new URL(origin); } catch { throw new Error("INVALID_PYMES_API_CORS_ORIGINS"); }
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:" || parsed.pathname !== "/" || parsed.search || parsed.hash) {
+      throw new Error("INVALID_PYMES_API_CORS_ORIGINS");
+    }
+    return parsed.origin;
+  });
   if (origins.length === 0) return parseCorsOrigins(undefined);
   if (origins.includes("*")) throw new Error("INVALID_PYMES_API_CORS_ORIGINS");
   return [...new Set(origins)];
