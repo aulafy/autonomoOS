@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { InMemoryEffectLeaseStore, SqliteEffectLeaseStore } from "../src/effect-lease.js";
 
@@ -40,4 +43,19 @@ test("sqlite lease store acquires atomically and survives a second handle", () =
   const otherTenant = new SqliteEffectLeaseStore(db, 1_000, "agency-b");
   assert.equal(otherTenant.acquire("effect-1", "worker-b", 20)?.ownerId, "worker-b");
   db.close();
+});
+
+test("sqlite lease survives a database handle restart", () => {
+  const directory = mkdtempSync(join(tmpdir(), "pymes-lease-"));
+  const path = join(directory, "leases.db");
+  const firstDb = new DatabaseSync(path);
+  const first = new SqliteEffectLeaseStore(firstDb, 1_000, "agency-a");
+  first.acquire("effect-1", "worker-a", 10);
+  firstDb.close();
+  const secondDb = new DatabaseSync(path);
+  const second = new SqliteEffectLeaseStore(secondDb, 1_000, "agency-a");
+  assert.equal(second.acquire("effect-1", "worker-b", 500), null);
+  assert.equal(second.acquire("effect-1", "worker-b", 1_010)?.ownerId, "worker-b");
+  secondDb.close();
+  rmSync(directory, { recursive: true, force: true });
 });
