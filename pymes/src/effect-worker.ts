@@ -61,6 +61,19 @@ export interface EffectBatchSummary {
   skipped: number;
 }
 
+function validWorkerBatch(results: unknown): results is EffectBatchResult[] {
+  if (!Array.isArray(results) || results.length > 100) return false;
+  const ids = new Set<string>();
+  for (const result of results) {
+    if (!result || typeof result !== "object") return false;
+    const candidate = result as Partial<EffectBatchResult>;
+    if (typeof candidate.effectId !== "string" || !candidate.effectId.trim() || ids.has(candidate.effectId)) return false;
+    if (candidate.status !== "succeeded" && candidate.status !== "failed" && candidate.status !== "skipped") return false;
+    ids.add(candidate.effectId);
+  }
+  return true;
+}
+
 /** Produces safe operational counters; it deliberately omits effect payloads and errors. */
 export function summarizeEffectBatch(results: readonly EffectBatchResult[]): EffectBatchSummary {
   return results.reduce<EffectBatchSummary>((summary, result) => {
@@ -130,11 +143,7 @@ export async function runEffectWorker(input: EffectWorkerLoopOptions): Promise<v
     let results: EffectBatchResult[];
     try {
       results = await input.poll();
-      const effectIds = new Set<string>();
-      if (!Array.isArray(results) || results.length > 100 || results.some(result =>
-        !result || typeof result !== "object" || typeof result.effectId !== "string" || !result.effectId.trim() ||
-        effectIds.has(result.effectId) || (effectIds.add(result.effectId), false) ||
-        (result.status !== "succeeded" && result.status !== "failed" && result.status !== "skipped"))) {
+      if (!validWorkerBatch(results)) {
         throw new Error("INVALID_EFFECT_WORKER_RESULTS");
       }
     } catch (error) {
