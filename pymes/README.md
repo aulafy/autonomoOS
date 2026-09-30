@@ -91,6 +91,9 @@ El ingress interno de OpenClaw Enterprise se activa por separado con
 emparejados y conversaciones consentidas. Publica en
 `POST /v1/workspaces/:tenant/ingress/openclaw` usando el header
 `X-PYMES-Ingress-Token`; la política no se acepta dentro del cuerpo del evento.
+El token se recorta y exige 16 caracteres efectivos; cada lista admite hasta
+100 identificadores de 200 caracteres como máximo. Los valores bootstrap de
+tenant y usuario también se recortan y están limitados a 200 caracteres.
 
 La cola de revisión y las ofertas transcritas se guardan ahora en un almacén
 versionado del navegador para no perder el trabajo al recargar. Sigue siendo
