@@ -79,6 +79,7 @@ PYMES_API_VERSION=0.1.0
 PYMES_API_CORS_ORIGINS=http://127.0.0.1:5174,http://localhost:5174
 PYMES_API_BOOTSTRAP_TENANT=demo-agency
 PYMES_API_BOOTSTRAP_USER=demo-owner
+PYMES_OPENCLAW_CHANNELS=whatsapp,telegram,imessage,email
 ```
 
 Comprueba la instalación con `GET /healthz` antes de conectar la interfaz.
