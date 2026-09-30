@@ -310,7 +310,11 @@ function renderDetail(item: WorkItem) {
     void remoteWorkspaceClient.audit(item.id).then(entries => {
       trace.replaceChildren(el("strong", "", `Trazabilidad · ${entries.length} transiciones`));
       const remote = remoteInbox.get(item.id);
-      if (remote) trace.appendChild(el("p", "workspace-snapshot", `Snapshot remoto · estado ${remote.state} · versión v${remote.version ?? 0}`));
+      if (remote) {
+        const snapshot = el("p", "workspace-snapshot", `Snapshot remoto · ${remoteStateNames[remote.state] ?? remote.state} · versión v${remote.version ?? 0}`);
+        snapshot.title = `Estado técnico: ${remote.state}; versión ${remote.version ?? 0}`;
+        trace.appendChild(snapshot);
+      }
       if (!entries.length) trace.appendChild(el("p", "", "Todavía no hay cambios de estado registrados."));
       for (const entry of entries) trace.appendChild(el("p", "", `v${entry.version} · ${entry.from} → ${entry.to} · ${entry.actorId} · ${dayTime(entry.at)}`));
       const next = remote?.state === "pending_review" ? "approved" : remote?.state === "approved" ? "executing" : null;
