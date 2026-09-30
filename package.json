@@ -14,6 +14,7 @@
     "demo:pymes": "npm --workspace pymes run dev",
     "check:pymes": "npm run check --workspace=@agent-world/pymes",
     "check:operations": "npm run check:operations --workspace=@agent-world/pymes",
+    "check:openclaw-contract": "bash scripts/check-openclaw-contract.sh",
     "check:k8s": "bash scripts/check-k8s-manifest.sh",
     "demo:h3": "tsx apps/agent-runtime/src/h3-demo.ts",
     "demo:h4": "tsx apps/agent-runtime/src/h4-demo.ts",
