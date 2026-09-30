@@ -50,6 +50,7 @@ jobs:
         run: |
           grep -q '^PYMES_API_VERSION=' pymes/.env.example
           grep -q 'PYMES_API_VERSION' pymes/docker-compose.yml pymes/Dockerfile pymes/DEPLOYMENT.md
+          grep -q 'whatsapp,telegram,imessage,email' pymes/.env.example pymes/docker-compose.yml
       - name: Validate repository diff
         run: git diff --check
       - run: npm run check:pymes
