@@ -22,6 +22,9 @@ La base se crea en `./data/pymes-workspace.db` por defecto. Para un entorno
 persistente, define `PYMES_API_DB_PATH` en un volumen estable. `PYMES_API_VERSION`
 permite fijar la versión visible en `/healthz` y `/readyz` sin recompilar; por
 defecto es `0.1.0`.
+La misma versión se guarda en el label OCI
+`org.opencontainers.image.version`, para identificar el artefacto en un
+registry o inventario de contenedores sin arrancarlo.
 
 ## Interfaz
 
