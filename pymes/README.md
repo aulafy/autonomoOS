@@ -83,7 +83,9 @@ más de 24 horas sin actualizar. Para supervisores existe
 overlay antes de aplicarlo.
 La cola `GET /v1/workspaces/:tenant/attention` permite a paneles externos leer
 solo los casos `pending_review` o `uncertain`, ordenados por antigüedad y con un
-límite de 100 registros.
+límite de 100 registros. La demo usa la bandeja remota como fallback solo cuando
+un workspace antiguo responde `404`; los errores de autenticación o servicio no
+se silencian.
 
 Variables principales:
 
