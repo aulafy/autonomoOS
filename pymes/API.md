@@ -77,6 +77,8 @@ Cada entrada debe incluir transición, actor, fecha y una versión entera no
 negativa; las entradas incoherentes se rechazan antes de mostrarse.
 La fecha de cada entrada debe ser parseable; los timestamps inválidos también
 invalidan la respuesta de auditoría completa.
+Las aprobaciones deben llevar `approvedAt` válido y los efectos `requestedAt`
+válido; si no, se rechazan las colecciones o mutaciones recibidas.
 Cada efecto individual debe incluir como mínimo `id`, `caseId`, `kind`,
 `status`, `requestedBy` y `requestedAt`; el cliente rechaza efectos incompletos
 con `INVALID_WORKSPACE_EFFECT` antes de permitir confirmaciones o reintentos.

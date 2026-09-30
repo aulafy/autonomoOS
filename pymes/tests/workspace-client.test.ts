@@ -218,6 +218,15 @@ test("workspace client rejects audit entries with invalid timestamps", async () 
   await assert.rejects(() => value.audit("case-1"), /INVALID_WORKSPACE_AUDIT/);
 });
 
+test("workspace client rejects approvals and effects with invalid timestamps", async () => {
+  const approvals: typeof fetch = async () => new Response(JSON.stringify({ approvals: [{ id: "a", tenantId: "agency-1", resourceId: "offer-1", operation: "approveOffer", approvedBy: "owner", approvedAt: "soon", reason: "Revisada", draftHash: "sha256:v1" }] }), { status: 200, headers: { "content-type": "application/json" } });
+  const approvalClient = new WorkspaceClient({ baseUrl: "http://127.0.0.1:8799", tenantId: "agency-1", token: "token-1234567890" }, approvals);
+  await assert.rejects(() => approvalClient.approvals(), /INVALID_WORKSPACE_APPROVALS/);
+  const effects: typeof fetch = async () => new Response(JSON.stringify({ tenantId: "agency-1", effects: [{ id: "e", caseId: "case-1", kind: "send", status: "pending", requestedBy: "owner", requestedAt: "soon", payload: {} }] }), { status: 200, headers: { "content-type": "application/json" } });
+  const effectClient = new WorkspaceClient({ baseUrl: "http://127.0.0.1:8799", tenantId: "agency-1", token: "token-1234567890" }, effects);
+  await assert.rejects(() => effectClient.effects(), /INVALID_WORKSPACE_EFFECTS/);
+});
+
 test("workspace client reads an individual effect", async () => {
   const api = new WorkspaceApi();
   api.addSession("owner-token-123456", { userId: "owner", tenantId: "agency-1", role: "owner" });

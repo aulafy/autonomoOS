@@ -38,7 +38,7 @@ function isRemoteEffect(value: unknown): value is RemoteEffect {
     typeof effect.kind === "string" && effect.kind.length > 0 &&
     typeof effect.status === "string" && effect.status.length > 0 &&
     typeof effect.requestedBy === "string" && effect.requestedBy.length > 0 &&
-    typeof effect.requestedAt === "string" && effect.requestedAt.length > 0;
+    typeof effect.requestedAt === "string" && validTimestamp(effect.requestedAt);
 }
 function isRemoteApproval(value: unknown, tenantId: string): value is RemoteApproval {
   if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
@@ -47,7 +47,7 @@ function isRemoteApproval(value: unknown, tenantId: string): value is RemoteAppr
     typeof approval.resourceId === "string" && !!approval.resourceId &&
     (approval.operation === "approveOffer" || approval.operation === "executeEffect") &&
     typeof approval.approvedBy === "string" && !!approval.approvedBy &&
-    typeof approval.approvedAt === "string" && !!approval.approvedAt &&
+    typeof approval.approvedAt === "string" && validTimestamp(approval.approvedAt) &&
     typeof approval.reason === "string" && !!approval.reason &&
     typeof approval.draftHash === "string" && !!approval.draftHash;
 }
