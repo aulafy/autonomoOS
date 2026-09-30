@@ -243,6 +243,11 @@ ingress queda sin canales permitidos y bloquea esos eventos.
 
 ## Bandeja y trazabilidad
 
+Las sesiones con rol `worker` pueden leer bandeja, efectos y métricas, y
+registrar resultados de efectos previamente confirmados. No pueden crear
+propuestas, aprobar ofertas ni administrar conectores; usa un token dedicado
+`PYMES_API_WORKER_TOKEN` para estos procesos.
+
 - `POST /v1/workspaces/:tenant/session/revoke` — revoca el token Bearer actual y devuelve `{ "status": "revoked" }`. Las siguientes llamadas con ese token reciben `401`.
 - `GET /v1/workspaces/:tenant/inbox` — casos del tenant autenticado.
 - `GET /v1/workspaces/:tenant/attention` — solo casos `pending_review` o `uncertain`, ordenados por antigüedad y limitados a 100.
