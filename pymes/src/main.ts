@@ -4,7 +4,7 @@ import { insuranceLines, pilotConfig, type InsuranceLine } from "./config.js";
 import { evaluateQuoteIntake, quoteRequirements } from "./quote-intake.js";
 import { offersForCase, recordQuoteOffer, type OfferEntry, type QuoteOffer } from "./quote-offers.js";
 import { createWorkspaceStore } from "./workspace-store.js";
-import { WorkspaceClient, WorkspaceConflictError, type RemoteInboxRecord, type WorkspaceEffectKind, type WorkspaceMetrics } from "./workspace-client.js";
+import { WorkspaceClient, WorkspaceConflictError, WorkspaceHttpError, type RemoteInboxRecord, type WorkspaceEffectKind, type WorkspaceMetrics } from "./workspace-client.js";
 import { MAX_EFFECT_RETRIES } from "./effects.js";
 import { buildCallPlan } from "./call-plan.js";
 import { acceptClassification, parseClassificationProposal,
@@ -129,7 +129,10 @@ async function checkRemoteWorkspace(): Promise<void> {
     const [approvals, inbox, connectors, metrics] = await Promise.all([client.approvals(), client.inbox(), client.connectors(), client.metrics()]);
     let attention: RemoteInboxRecord[];
     try { attention = await client.attention(); }
-    catch { attention = inbox.filter(item => item.state === "pending_review" || item.state === "uncertain"); }
+    catch (error) {
+      if (!(error instanceof WorkspaceHttpError) || error.status !== 404) throw error;
+      attention = inbox.filter(item => item.state === "pending_review" || item.state === "uncertain");
+    }
     remoteWorkspaceClient = client;
     remoteInbox = new Map(inbox.map(item => [item.id, item]));
     $("attention-count").textContent = String(attention.length);
