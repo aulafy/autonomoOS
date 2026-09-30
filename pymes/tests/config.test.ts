@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { connectorStatuses, isConnectorConfig, isConnectorStatus, normalizeBootstrapIdentity, normalizeBootstrapToken, normalizeOptionalToken, parseBoundedOptionalNumber, parseConfiguredChannels, parseConfiguredIdSet, parseCorsOrigins, pilotConfig } from "../src/config.js";
+import { connectorStatuses, isConnectorConfig, isConnectorStatus, normalizeBootstrapIdentity, normalizeBootstrapToken, normalizeOptionalToken, parseBoundedOptionalNumber, parseConfiguredChannels, parseConfiguredIdSet, parseCorsOrigins, parseOptionalProviderGateway, pilotConfig } from "../src/config.js";
 
 test("pilot configuration declares the supported communication channels", () => {
   assert.deepEqual(pilotConfig.channels, ["whatsapp", "telegram", "imessage", "email"]);
@@ -16,6 +16,13 @@ test("pilot configuration declares the supported communication channels", () => 
   assert.equal(isConnectorStatus({ status: "conectado" }), false);
   assert.equal(isConnectorConfig(pilotConfig.crm), true);
   assert.equal(isConnectorConfig({ id: "x", name: "X", status: "invalid" }), false);
+});
+
+test("provider gateway config requires a safe endpoint and token", () => {
+  assert.equal(parseOptionalProviderGateway(undefined, undefined, "BAD_GATEWAY"), undefined);
+  assert.deepEqual(parseOptionalProviderGateway("https://gateway.example.test/send", "token-1234567890123456", "BAD_GATEWAY"), { endpoint: "https://gateway.example.test/send", token: "token-1234567890123456" });
+  assert.throws(() => parseOptionalProviderGateway("http://gateway.example.test/send", "token-1234567890123456", "BAD_GATEWAY"), /BAD_GATEWAY/);
+  assert.throws(() => parseOptionalProviderGateway("https://gateway.example.test/send", undefined, "BAD_GATEWAY"), /BAD_GATEWAY/);
 });
 
 test("connector configuration rejects unsafe or oversized text", () => {

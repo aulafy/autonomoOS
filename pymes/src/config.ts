@@ -29,6 +29,20 @@ export function normalizeOptionalToken(value: string | undefined, errorCode: str
   return token;
 }
 
+export interface ProviderGatewayConfig { endpoint: string; token: string }
+
+export function parseOptionalProviderGateway(endpoint: string | undefined, token: string | undefined, errorCode: string): ProviderGatewayConfig | undefined {
+  const rawEndpoint = endpoint?.trim();
+  const rawToken = token?.trim();
+  if (!rawEndpoint && !rawToken) return undefined;
+  if (!rawEndpoint || !rawToken || rawToken.length < 16 || rawToken.length > 4096) throw new Error(errorCode);
+  let parsed: URL;
+  try { parsed = new URL(rawEndpoint); } catch { throw new Error(errorCode); }
+  if (parsed.protocol !== "https:" && !(parsed.protocol === "http:" && (parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1"))) throw new Error(errorCode);
+  if (parsed.username || parsed.password || /[\u0000-\u001f\u007f]/.test(rawToken)) throw new Error(errorCode);
+  return { endpoint: parsed.toString(), token: rawToken };
+}
+
 export function parseBoundedOptionalNumber(value: string | undefined, maximum: number, errorCode: string): number | undefined {
   if (value === undefined || value.trim() === "") return undefined;
   const parsed = Number(value);
