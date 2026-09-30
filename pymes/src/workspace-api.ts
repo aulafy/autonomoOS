@@ -274,9 +274,10 @@ export class WorkspaceApi {
           version: item.version ?? 0, updatedAt: item.updatedAt ?? new Date(0).toISOString() },
           to: body.to as CaseState, principal, at: body.at });
         this.repository.updateInbox({ ...item, state: next.state, version: next.version, updatedAt: next.updatedAt });
+        const priorAudit = this.repository.listCaseAudit(tenantId, item.id);
         this.repository.appendCaseAudit({ id: `audit-${tenantId}-${item.id}-${next.version}`, tenantId,
           caseId: item.id, from: item.state, to: next.state, operation: "transition", actorId: principal.userId,
-          at: next.updatedAt, version: next.version });
+          at: next.updatedAt, version: priorAudit.length ? priorAudit[priorAudit.length - 1]!.version + 1 : next.version });
         return { status: 200, body: next as unknown as Record<string, unknown> };
       } catch (error) {
         const message = error instanceof Error ? error.message : "INVALID_CASE_TRANSITION";
@@ -310,10 +311,11 @@ export class WorkspaceApi {
           payload: jsonRecord(body.payload)!, principal, requestedAt: body.requestedAt, draftHash: body.draftHash });
         this.repository.appendEffect(effect);
         const currentCase = this.repository.listInbox(tenantId).find(value => value.id === effect.caseId);
+        const priorAudit = this.repository.listCaseAudit(tenantId, effect.caseId);
         this.repository.appendCaseAudit({ id: `audit-${tenantId}-${effect.caseId}-effect-${effect.id}`, tenantId,
           caseId: effect.caseId, from: currentCase?.state ?? "received", to: currentCase?.state ?? "received",
           operation: "effect_requested", actorId: principal.userId, at: effect.requestedAt,
-          version: currentCase?.version ?? 0 });
+          version: priorAudit.length ? priorAudit[priorAudit.length - 1]!.version + 1 : currentCase?.version ?? 0 });
         return { status: 201, body: effect as unknown as Record<string, unknown> };
       } catch (error) { const message = error instanceof Error ? error.message : "INVALID_PENDING_EFFECT"; return { status: message === "WORKSPACE_PERMISSION_DENIED" ? 403 : 400, body: { error: message } }; }
     }
