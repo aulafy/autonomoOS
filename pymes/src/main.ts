@@ -45,6 +45,18 @@ function renderWorkspaceMetrics(metrics: WorkspaceMetrics): void {
   const target = document.getElementById("workspace-metrics");
   if (!target) return;
   target.replaceChildren();
+  const alertTarget = document.getElementById("workspace-alerts");
+  if (alertTarget) {
+    alertTarget.replaceChildren();
+    for (const alert of metrics.alerts ?? []) {
+      const item = document.createElement("span");
+      item.className = `workspace-alert ${alert.severity}`;
+      item.textContent = alert.code === "FAILED_EFFECTS"
+        ? `${alert.count} operación${alert.count === 1 ? "" : "es"} fallida${alert.count === 1 ? "" : "s"}`
+        : `${alert.count} casos pendientes de revisión`;
+      alertTarget.appendChild(item);
+    }
+  }
   const failed = metrics.effects.byStatus.failed ?? 0;
   target.dataset.failed = String(failed);
   target.setAttribute("aria-label", failed > 0 ? `${failed} operaciones fallidas requieren revisión` : "Operativa sin operaciones fallidas");

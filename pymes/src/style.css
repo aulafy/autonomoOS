@@ -16,3 +16,4 @@
 .workspace-metrics[data-failed]:not([data-failed="0"]){border-radius:8px}.workspace-metrics[data-failed]:not([data-failed="0"])>div:nth-child(4){border-color:#a96b4b;background:#5e3f35}.workspace-metrics[data-failed="0"]>div:nth-child(4) strong{color:#c8f29c}
 .workspace-metrics-updated{display:block;margin-top:10px;color:#8fb9a0;font-size:10px}
 .workspace-metrics-updated[data-stale="true"]{color:#ffcf9a;font-weight:800}
+.workspace-alerts{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.workspace-alert{padding:5px 8px;border-radius:5px;background:#6b4937;color:#ffd9aa;font-size:10px;font-weight:800}.workspace-alert.critical{background:#733d3b;color:#ffd0c4}
