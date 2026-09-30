@@ -48,6 +48,7 @@ function renderWorkspaceMetrics(metrics: WorkspaceMetrics): void {
     ["Casos", String(metrics.inbox.total)],
     ["Pendientes", String(metrics.inbox.byState.pending_review ?? 0)],
     ["Operaciones activas", String((metrics.effects.byStatus.pending ?? 0) + (metrics.effects.byStatus.confirmed ?? 0))],
+    ["Fallidas", String(metrics.effects.byStatus.failed ?? 0)],
     ["Aprobaciones", String(metrics.approvals.total)]
   ];
   for (const [label, value] of rows) {
