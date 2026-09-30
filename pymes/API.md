@@ -135,6 +135,8 @@ primitiva.
 Si aparece `retryCount`, debe ser un entero entre 0 y 1.000.
 `executionNote` permite saltos de línea para conservar el historial de
 reintentos, pero mantiene límites y bloquea controles no imprimibles.
+Los metadatos opcionales de confirmación (`confirmedBy`, `confirmedAt`) deben
+ser texto acotado y fecha parseable cuando aparecen.
 Las respuestas de `confirmEffect()`, `reportEffectResult()` y `retryEffect()`
 se validan con el mismo contrato antes de devolverse al llamador; una mutación
 con respuesta incompleta no se presenta como ejecutada.
