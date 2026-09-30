@@ -62,6 +62,9 @@ jobs:
           grep -q '16 caracteres' pymes/DEPLOYMENT.md
           grep -q 'whatsapp,telegram,imessage,email' pymes/.env.example pymes/docker-compose.yml
           grep -q 'iMessage' pymes/README.md
+          grep -q '^PYMES_MESSAGE_GATEWAY_URL=' pymes/.env.example
+          grep -q '^PYMES_CRM_GATEWAY_URL=' pymes/.env.example
+          grep -q '^PYMES_CALL_GATEWAY_URL=' pymes/.env.example
       - name: Validate repository diff
         run: git diff --check
       - run: npm run check:pymes
