@@ -1,4 +1,4 @@
-export type WorkspaceRole = "owner" | "agent" | "reviewer";
+export type WorkspaceRole = "owner" | "agent" | "reviewer" | "worker";
 export type WorkspaceOperation = "readInbox" | "prepareQuote" | "approveOffer" |
   "executeEffect" | "manageConnectors" | "manageMembers" | "exportData";
 
@@ -6,7 +6,8 @@ const permissions: Record<WorkspaceRole, ReadonlySet<WorkspaceOperation>> = {
   owner: new Set(["readInbox", "prepareQuote", "approveOffer", "executeEffect",
     "manageConnectors", "manageMembers", "exportData"]),
   agent: new Set(["readInbox", "prepareQuote", "manageConnectors"]),
-  reviewer: new Set(["readInbox", "approveOffer", "exportData"])
+  reviewer: new Set(["readInbox", "approveOffer", "exportData"]),
+  worker: new Set(["readInbox", "executeEffect"])
 };
 
 export interface WorkspacePrincipal {

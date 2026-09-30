@@ -169,6 +169,10 @@ El worker usa `executeRemoteEffect`: obtiene un efecto `confirmed`, llama al
 handler y registra el resultado en la API. No se deben registrar handlers que
 envíen directamente desde la interfaz ni que omitan la confirmación.
 
+Las credenciales del worker deben usar el rol `worker`, que solo permite leer
+la bandeja y ejecutar efectos confirmados; no puede aprobar ofertas ni
+administrar conectores.
+
 Para un proceso periódico se puede usar `executeConfirmedEffects`, que limita
 el lote a 100 efectos, procesa en orden y continúa cuando un proveedor falla.
 El resultado de cada elemento debe enviarse a métricas o logs operativos sin

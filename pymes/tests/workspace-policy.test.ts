@@ -12,6 +12,10 @@ test("roles remain scoped to tenant and operation", () => {
   assert.equal(can(principal("reviewer"), "approveOffer", resource), true);
   assert.equal(can(principal("reviewer"), "executeEffect", resource), false);
   assert.equal(can(principal("owner", "agency-2"), "approveOffer", resource), false);
+  assert.equal(can(principal("worker"), "readInbox", resource), true);
+  assert.equal(can(principal("worker"), "executeEffect", resource), true);
+  assert.equal(can(principal("worker"), "approveOffer", resource), false);
+  assert.equal(can(principal("worker"), "manageConnectors", resource), false);
 });
 
 test("permission checks fail closed", () => {

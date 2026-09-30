@@ -407,4 +407,4 @@ export class WorkspaceApi {
   }
 }
 
-export const supportedRoles: readonly WorkspaceRole[] = ["owner", "agent", "reviewer"];
+export const supportedRoles: readonly WorkspaceRole[] = ["owner", "agent", "reviewer", "worker"];
