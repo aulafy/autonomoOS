@@ -26,6 +26,8 @@
   comprobaciones de CI para evitar secretos o claves de despliegue huérfanos.
 - Endpoint de efectos con `status=confirmed` para polling eficiente y seguro de
   workers, conservando filtrado local compatible.
+- Sesión de servicio con rol `worker`, token dedicado y permisos HTTP mínimos
+  para ejecutar efectos sin reutilizar credenciales de propietario.
 
 ### Seguridad y operación
 
