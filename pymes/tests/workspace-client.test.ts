@@ -23,6 +23,12 @@ test("workspace client uses the API contract for approvals", async () => {
   assert.equal((await value.inbox())[0]?.id, "msg-remote");
 });
 
+test("workspace client exposes health and readiness contracts", async () => {
+  const value = client();
+  assert.equal((await value.health()).service, "pymes-workspace");
+  assert.equal((await value.ready()).status, "ok");
+});
+
 test("workspace client reads an individual effect", async () => {
   const api = new WorkspaceApi();
   api.addSession("owner-token-123456", { userId: "owner", tenantId: "agency-1", role: "owner" });

@@ -26,6 +26,7 @@ export interface RemoteInboxRecord {
 }
 export interface RemoteCaseAudit { id: string; caseId: string; from: string; to: string; actorId: string; at: string; version: number; }
 export interface RemoteEffect { id: string; caseId: string; kind: string; status: string; requestedBy: string; requestedAt: string; retryCount?: number; payload: Record<string, unknown>; executionNote?: string; executedBy?: string; executedAt?: string; }
+export interface WorkspaceHealth { status: "ok" | "not_ready"; service: string; version: string; }
 export class WorkspaceConflictError extends Error {
   constructor(readonly currentVersion: number) { super(`CASE_VERSION_CONFLICT_CURRENT_${currentVersion}`); }
 }
@@ -77,6 +78,16 @@ export class WorkspaceClient {
     const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/approvals`);
     if (!Array.isArray(body.approvals)) throw new Error("INVALID_WORKSPACE_APPROVALS");
     return body.approvals as RemoteApproval[];
+  }
+  async health(): Promise<WorkspaceHealth> {
+    const body = await this.request("/healthz");
+    if (body.status !== "ok" || typeof body.service !== "string" || typeof body.version !== "string") throw new Error("INVALID_WORKSPACE_HEALTH");
+    return body as unknown as WorkspaceHealth;
+  }
+  async ready(): Promise<WorkspaceHealth> {
+    const body = await this.request("/readyz");
+    if ((body.status !== "ok" && body.status !== "not_ready") || typeof body.service !== "string" || typeof body.version !== "string") throw new Error("INVALID_WORKSPACE_READINESS");
+    return body as unknown as WorkspaceHealth;
   }
 
   async inbox(): Promise<RemoteInboxRecord[]> {
