@@ -63,6 +63,21 @@ test("reviewer can read approvals but tenant remains isolated", () => {
   assert.deepEqual(response.body.approvals, []);
 });
 
+test("metrics expose tenant-scoped operational counts without message content", () => {
+  const value = api();
+  const denied = value.handle({ method: "GET", path: "/v1/workspaces/agency-1/metrics" });
+  assert.equal(denied.status, 401);
+  const response = value.handle({ method: "GET", path: "/v1/workspaces/agency-1/metrics",
+    authorization: "Bearer reviewer-token-1234" });
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body.inbox, { total: 1, byState: { pending_review: 1 } });
+  assert.deepEqual(response.body.effects, { total: 0, byStatus: {} });
+  assert.deepEqual(response.body.approvals, { total: 0 });
+  assert.equal("summary" in response.body, false);
+  assert.equal(value.handle({ method: "GET", path: "/v1/workspaces/agency-2/metrics",
+    authorization: "Bearer reviewer-token-1234" }).status, 403);
+});
+
 test("case transition is authenticated and leaves an audit trail", () => {
   const value = api();
   const response = value.handle({ method: "POST", path: "/v1/workspaces/agency-1/cases/msg-1/transition",

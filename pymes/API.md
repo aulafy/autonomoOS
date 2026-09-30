@@ -250,6 +250,10 @@ ingress queda sin canales permitidos y bloquea esos eventos.
   El cliente valida cada registro y rechaza respuestas malformadas aunque el
   HTTP status sea `200`.
 - `GET /v1/workspaces/:tenant/approvals` — aprobaciones registradas.
+- `GET /v1/workspaces/:tenant/metrics` — contadores operativos por estado para
+  monitorización de la agencia. Requiere sesión y permiso de lectura; devuelve
+  únicamente totales y estados (`inbox`, `effects`, `approvals`), nunca el
+  contenido de mensajes, payloads ni datos personales.
 - `GET /v1/workspaces/:tenant/cases/:caseId/audit` — transiciones con actor, versión y fecha.
 - `GET /v1/workspaces/:tenant/effects/:effectId` — estado individual de una operación.
 - `GET /v1/workspaces/:tenant/cases/:caseId/effects` — operaciones de un caso.

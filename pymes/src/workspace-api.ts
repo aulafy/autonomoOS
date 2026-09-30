@@ -233,6 +233,23 @@ export class WorkspaceApi {
       catch { return { status: 403, body: { error: "WORKSPACE_PERMISSION_DENIED" } }; }
       return { status: 200, body: { tenantId, approvals: this.repository.listApprovals(tenantId) } };
     }
+    if (request.method === "GET" && parts[3] === "metrics" && parts.length === 4) {
+      try { requirePermission(principal, "readInbox", resource); }
+      catch { return { status: 403, body: { error: "WORKSPACE_PERMISSION_DENIED" } }; }
+      const inbox = this.repository.listInbox(tenantId);
+      const effects = this.repository.listEffects(tenantId);
+      const approvals = this.repository.listApprovals(tenantId);
+      const byField = <T extends object>(items: readonly T[], field: "state" | "status"): Record<string, number> =>
+        items.reduce<Record<string, number>>((counts, item) => {
+          const value = (item as Record<string, unknown>)[field];
+          if (typeof value === "string") counts[value] = (counts[value] ?? 0) + 1;
+          return counts;
+        }, {});
+      return { status: 200, body: { tenantId, generatedAt: new Date().toISOString(),
+        inbox: { total: inbox.length, byState: byField(inbox, "state") },
+        effects: { total: effects.length, byStatus: byField(effects, "status") },
+        approvals: { total: approvals.length } } };
+    }
     if (request.method === "POST" && parts[3] === "cases" && parts[5] === "transition" && parts.length === 6) {
       const body = jsonRecord(request.body);
       if (!body || typeof body.to !== "string" || typeof body.at !== "string")
