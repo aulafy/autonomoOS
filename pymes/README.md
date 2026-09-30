@@ -98,6 +98,9 @@ la interfaz repite esa sincronización cada 60 segundos y conserva el mismo
 bloqueo para no solapar operaciones.
 Los controles de workspace tienen foco visible y el estado de conexión se
 anuncia como región viva; la interfaz respeta además `prefers-reduced-motion`.
+Cuando la conexión falla varias veces, el indicador conserva el número de
+fallos consecutivos en pantalla y en su tooltip, junto con el HTTP status,
+`Retry-After` y `X-Request-Id` cuando están disponibles.
 Las peticiones del cliente usan 10 segundos por defecto; se puede configurar
 `requestTimeoutMs` entre 100 y 60.000 ms y capturar
 `WORKSPACE_REQUEST_TIMEOUT` para ofrecer un reintento.
