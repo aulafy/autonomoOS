@@ -240,5 +240,8 @@ salidas. Son variables opcionales y deben inyectarse como secretos del
 despliegue; nunca se deben incluir en la interfaz ni en el repositorio. Si un
 gateway no está configurado, el efecto permanece confirmado hasta que un
 worker autorizado pueda procesarlo.
+Configura además `PYMES_API_WORKER_TOKEN` y `PYMES_API_WORKER_ID` para
+provisionar una sesión dedicada con rol `worker`; no reutilices el token
+bootstrap del propietario.
 El servidor valida estas parejas durante el arranque y termina antes de
 escuchar si falta un token, la URL no usa HTTPS o contiene credenciales.

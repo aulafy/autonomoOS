@@ -10,6 +10,8 @@ const host = (process.env.PYMES_API_HOST ?? "127.0.0.1").trim();
 const token = normalizeBootstrapToken(process.env.PYMES_API_BOOTSTRAP_TOKEN);
 const tenantId = normalizeBootstrapIdentity(process.env.PYMES_API_BOOTSTRAP_TENANT, "demo-agency");
 const userId = normalizeBootstrapIdentity(process.env.PYMES_API_BOOTSTRAP_USER, "demo-owner");
+const workerToken = normalizeOptionalToken(process.env.PYMES_API_WORKER_TOKEN, "INVALID_PYMES_API_WORKER_TOKEN");
+const workerId = normalizeBootstrapIdentity(process.env.PYMES_API_WORKER_ID, "effects-worker");
 const corsOrigins = parseCorsOrigins(process.env.PYMES_API_CORS_ORIGINS);
 // Validate optional worker gateway configuration at startup; workers consume the values separately.
 parseOptionalProviderGateway(process.env.PYMES_MESSAGE_GATEWAY_URL, process.env.PYMES_MESSAGE_GATEWAY_TOKEN, "INVALID_PYMES_MESSAGE_GATEWAY");
@@ -20,6 +22,7 @@ if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error("INV
 if (!host || host.length > 255 || /[\u0000-\u001f\u007f]/.test(host)) throw new Error("INVALID_PYMES_API_HOST");
 const repository = new SqliteWorkspaceRepository(process.env.PYMES_API_DB_PATH ?? "./data/pymes-workspace.db");
 repository.provisionSession(token, { userId, tenantId, role: "owner" });
+if (workerToken) repository.provisionSession(workerToken, { userId: workerId, tenantId, role: "worker" });
 const ingressToken = normalizeOptionalToken(process.env.PYMES_OPENCLAW_INGRESS_TOKEN, "INVALID_PYMES_OPENCLAW_INGRESS_TOKEN");
 const ingressSigningSecret = normalizeOptionalToken(process.env.PYMES_OPENCLAW_SIGNING_SECRET, "INVALID_PYMES_OPENCLAW_SIGNING_SECRET");
 const api = new WorkspaceApi(repository, ingressToken ? { token: ingressToken, policy: {

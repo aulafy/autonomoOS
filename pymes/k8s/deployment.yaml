@@ -83,6 +83,14 @@ spec:
                 secretKeyRef:
                   name: pymes-workspace-secrets
                   key: tenant
+            - name: PYMES_API_WORKER_ID
+              value: "effects-worker"
+            - name: PYMES_API_WORKER_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: pymes-workspace-secrets
+                  key: worker-token
+                  optional: true
             - name: PYMES_OPENCLAW_INGRESS_TOKEN
               valueFrom:
                 secretKeyRef:
