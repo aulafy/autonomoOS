@@ -33,6 +33,24 @@ export function crmTaskEffectHandler(input: {
   };
 }
 
+export function callEffectHandler(input: {
+  start: (call: { phone?: string; objective?: string; questions?: string[]; contactId?: string }) => Promise<{ externalId: string }>;
+}): EffectHandler {
+  return {
+    async execute(effect) {
+      const payload = effect.payload;
+      const objective = typeof payload.objective === "string" && payload.objective.trim() ? payload.objective.trim() : undefined;
+      const phone = typeof payload.phone === "string" && payload.phone.trim() ? payload.phone.trim() : undefined;
+      const questions = Array.isArray(payload.questions) && payload.questions.every(value => typeof value === "string" && value.trim() && value.length <= 500) ? payload.questions as string[] : undefined;
+      if (!objective && !phone) throw new Error("INVALID_CALL_EFFECT_PAYLOAD");
+      if (payload.questions !== undefined && !questions) throw new Error("INVALID_CALL_EFFECT_PAYLOAD");
+      const result = await input.start({ phone, objective, questions, contactId: typeof payload.contactId === "string" ? payload.contactId : undefined });
+      if (!result || typeof result.externalId !== "string" || !result.externalId.trim() || result.externalId.length > 200) throw new Error("INVALID_CALL_PROVIDER_RESPONSE");
+      return `Call started: ${result.externalId}`;
+    },
+  };
+}
+
 export function googleCalendarEffectHandler(input: {
   accessToken: string;
   calendarId: string;
