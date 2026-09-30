@@ -99,6 +99,11 @@ server.requestTimeout = 30_000;
 server.keepAliveTimeout = 5_000;
 server.maxHeadersCount = 100;
 server.maxRequestsPerSocket = 1_000;
+server.on("error", error => {
+  console.error("PYMES API listen failed", { error: safeError(error) });
+  repository.close();
+  process.exitCode = 1;
+});
 server.listen(port, host, () => console.log(`PYMES API listening on http://${host}:${port}`));
 
 let shuttingDown = false;
