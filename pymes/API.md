@@ -6,7 +6,8 @@ La interfaz local puede llamar al API desde `http://127.0.0.1:5174` o
 `http://localhost:5174`; el adaptador responde al preflight `OPTIONS` y limita
 los orígenes a esos dos valores.
 La allowlist se compara literalmente; `*` no se interpreta como comodín y no
-habilita acceso de navegador.
+habilita acceso de navegador. Cada entrada debe ser un origen HTTP/HTTPS sin
+ruta, query, hash ni credenciales.
 En llamadas autorizadas desde navegador, `x-request-id` y `retry-after` se
 exponen mediante CORS para facilitar diagnóstico y backoff; el preflight se
 puede reutilizar durante 600 segundos.
