@@ -80,6 +80,11 @@ test("HTTP adapter supports restricted local CORS preflight", async () => {
   }));
   assert.equal(denied.headers.get("access-control-allow-origin"), null);
   assert.equal(denied.headers.get("vary"), "Origin");
+  const deniedGet = await handlePymesRequest(api(), new Request("http://localhost/healthz", {
+    headers: { origin: "https://attacker.example" }
+  }));
+  assert.equal(deniedGet.status, 200);
+  assert.equal(deniedGet.headers.get("access-control-allow-origin"), null);
 });
 
 test("HTTP adapter accepts explicitly configured CORS origins", async () => {
