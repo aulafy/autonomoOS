@@ -10,7 +10,8 @@ test("SQLite repository survives a repository restart", () => {
   const path = join(directory, "workspace.db");
   const first = new SqliteWorkspaceRepository(path);
   first.provisionSession("token-1234567890", { userId: "owner", tenantId: "agency-1", role: "owner" });
-  first.appendInbox({ id: "msg-1", tenantId: "agency-1", state: "pending_review", summary: "Oferta" });
+  first.appendInbox({ id: "msg-1", tenantId: "agency-1", state: "pending_review", summary: "Oferta",
+    sourceEventId: "event-1", sourceExternalMessageId: "wa-1", sourceChannel: "whatsapp" });
   first.appendApproval({ id: "approval-1", tenantId: "agency-1", resourceId: "offer-1",
     operation: "approveOffer", approvedBy: "owner", approvedAt: "2026-09-29T12:00:00Z",
     reason: "Revisada", draftHash: "sha256:v1" });
@@ -21,6 +22,7 @@ test("SQLite repository survives a repository restart", () => {
   const second = new SqliteWorkspaceRepository(path);
   assert.equal(second.findSession("token-1234567890")?.userId, "owner");
   assert.equal(second.listInbox("agency-1")[0]?.id, "msg-1");
+  assert.equal(second.listInbox("agency-1")[0]?.sourceExternalMessageId, "wa-1");
   assert.equal(second.listApprovals("agency-1")[0]?.id, "approval-1");
   second.close();
   rmSync(directory, { recursive: true, force: true });

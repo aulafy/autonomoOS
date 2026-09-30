@@ -20,6 +20,7 @@ export class SqliteWorkspaceRepository implements WorkspaceRepository {
       );
       CREATE TABLE IF NOT EXISTS workspace_inbox (
         id TEXT NOT NULL, tenant_id TEXT NOT NULL, state TEXT NOT NULL, summary TEXT NOT NULL,
+        source_event_id TEXT, source_external_message_id TEXT, source_channel TEXT,
         version INTEGER NOT NULL DEFAULT 0, updated_at TEXT,
         PRIMARY KEY (tenant_id, id)
       );
@@ -41,6 +42,9 @@ export class SqliteWorkspaceRepository implements WorkspaceRepository {
     // Keep databases created by the previous inbox schema readable.
     try { this.db.exec("ALTER TABLE workspace_inbox ADD COLUMN version INTEGER NOT NULL DEFAULT 0"); } catch {}
     try { this.db.exec("ALTER TABLE workspace_inbox ADD COLUMN updated_at TEXT"); } catch {}
+    try { this.db.exec("ALTER TABLE workspace_inbox ADD COLUMN source_event_id TEXT"); } catch {}
+    try { this.db.exec("ALTER TABLE workspace_inbox ADD COLUMN source_external_message_id TEXT"); } catch {}
+    try { this.db.exec("ALTER TABLE workspace_inbox ADD COLUMN source_channel TEXT"); } catch {}
     try { this.db.exec("ALTER TABLE workspace_effects ADD COLUMN confirmed_by TEXT"); } catch {}
     try { this.db.exec("ALTER TABLE workspace_effects ADD COLUMN confirmed_at TEXT"); } catch {}
     try { this.db.exec("ALTER TABLE workspace_effects ADD COLUMN executed_by TEXT"); } catch {}
@@ -69,20 +73,24 @@ export class SqliteWorkspaceRepository implements WorkspaceRepository {
     this.db.prepare("DELETE FROM workspace_sessions WHERE token = ? OR token = ?").run(hashSessionToken(token), token);
   }
   listInbox(tenantId: string): WorkspaceInboxRecord[] {
-    const rows = this.db.prepare(`SELECT id, tenant_id, state, summary, version, updated_at FROM workspace_inbox
+    const rows = this.db.prepare(`SELECT id, tenant_id, state, summary, source_event_id, source_external_message_id, source_channel, version, updated_at FROM workspace_inbox
       WHERE tenant_id = ? ORDER BY rowid`).all(tenantId) as Array<{ id: string; tenant_id: string;
-        state: WorkspaceInboxRecord["state"]; summary: string; version: number; updated_at: string | null }>;
+        state: WorkspaceInboxRecord["state"]; summary: string; source_event_id: string | null; source_external_message_id: string | null; source_channel: string | null; version: number; updated_at: string | null }>;
     return rows.map(row => ({ id: row.id, tenantId: row.tenant_id, state: row.state, summary: row.summary,
+      ...(row.source_event_id ? { sourceEventId: row.source_event_id } : {}),
+      ...(row.source_external_message_id ? { sourceExternalMessageId: row.source_external_message_id } : {}),
+      ...(row.source_channel ? { sourceChannel: row.source_channel } : {}),
       version: row.version, ...(row.updated_at ? { updatedAt: row.updated_at } : {}) }));
   }
   appendInbox(record: WorkspaceInboxRecord): void {
     this.db.prepare(`INSERT INTO workspace_inbox
-      (id, tenant_id, state, summary, version, updated_at) VALUES (?, ?, ?, ?, ?, ?)`).run(record.id, record.tenantId,
-      record.state, record.summary, record.version ?? 0, record.updatedAt ?? null);
+      (id, tenant_id, state, summary, source_event_id, source_external_message_id, source_channel, version, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(record.id, record.tenantId,
+      record.state, record.summary, record.sourceEventId ?? null, record.sourceExternalMessageId ?? null, record.sourceChannel ?? null, record.version ?? 0, record.updatedAt ?? null);
   }
   updateInbox(record: WorkspaceInboxRecord): void {
-    this.db.prepare(`UPDATE workspace_inbox SET state = ?, summary = ?, version = ?, updated_at = ?
-      WHERE id = ? AND tenant_id = ?`).run(record.state, record.summary, record.version ?? 0,
+    this.db.prepare(`UPDATE workspace_inbox SET state = ?, summary = ?, source_event_id = ?, source_external_message_id = ?, source_channel = ?, version = ?, updated_at = ?
+      WHERE id = ? AND tenant_id = ?`).run(record.state, record.summary,
+      record.sourceEventId ?? null, record.sourceExternalMessageId ?? null, record.sourceChannel ?? null, record.version ?? 0,
       record.updatedAt ?? null, record.id, record.tenantId);
   }
   appendCaseAudit(record: CaseAuditRecord): void {
