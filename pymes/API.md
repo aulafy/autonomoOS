@@ -93,6 +93,7 @@ Los campos visibles de la bandeja y los metadatos de efectos también tienen
 longitudes máximas para impedir payloads que saturen la interfaz.
 El cliente rechaza respuestas con `Content-Length` superior a 1 MiB mediante
 `WORKSPACE_RESPONSE_TOO_LARGE` antes de parsear el JSON.
+También mide el cuerpo real cuando la cabecera falta o no es fiable.
 Si el cuerpo no es JSON válido, normaliza el fallo a
 `INVALID_WORKSPACE_RESPONSE` para que la interfaz no dependa de errores del
 parser.

@@ -283,6 +283,13 @@ test("workspace client normalizes malformed remote JSON", async () => {
   await assert.rejects(() => client.inbox(), /INVALID_WORKSPACE_RESPONSE/);
 });
 
+test("workspace client measures response body when content length is absent", async () => {
+  const oversized = JSON.stringify({ items: [{ id: "case-1", tenantId: "agency-1", state: "pending_review", summary: "x".repeat(1_048_500) }] });
+  const fetcher: typeof fetch = async () => new Response(oversized, { status: 200, headers: { "content-type": "application/json" } });
+  const client = new WorkspaceClient({ baseUrl: "http://127.0.0.1:8799", tenantId: "agency-1", token: "token-1234567890" }, fetcher);
+  await assert.rejects(() => client.inbox(), /WORKSPACE_RESPONSE_TOO_LARGE/);
+});
+
 test("workspace client reads an individual effect", async () => {
   const api = new WorkspaceApi();
   api.addSession("owner-token-123456", { userId: "owner", tenantId: "agency-1", role: "owner" });

@@ -109,9 +109,17 @@ export class WorkspaceClient {
       throw new Error("WORKSPACE_RESPONSE_TOO_LARGE");
     }
     let body: unknown;
-    try { body = await response.json(); }
+    try {
+      const raw = await response.text();
+      if (new TextEncoder().encode(raw).byteLength > MAX_REMOTE_RESPONSE_BYTES) {
+        clearTimeout(timeout);
+        throw new Error("WORKSPACE_RESPONSE_TOO_LARGE");
+      }
+      body = raw ? JSON.parse(raw) : undefined;
+    }
     catch (error) {
       clearTimeout(timeout);
+      if (error instanceof Error && error.message === "WORKSPACE_RESPONSE_TOO_LARGE") throw error;
       if (controller.signal.aborted) throw new Error("WORKSPACE_REQUEST_TIMEOUT");
       throw new Error("INVALID_WORKSPACE_RESPONSE");
     }
