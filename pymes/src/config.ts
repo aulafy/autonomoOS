@@ -6,6 +6,7 @@ export type SupportedChannel = Channel;
 export function parseCorsOrigins(value: string | undefined): string[] {
   const configured = value?.trim() ? value : "http://127.0.0.1:5174,http://localhost:5174";
   const origins = configured.split(",").map(item => item.trim()).filter(Boolean);
+  if (origins.length === 0) return parseCorsOrigins(undefined);
   if (origins.includes("*")) throw new Error("INVALID_PYMES_API_CORS_ORIGINS");
   return [...new Set(origins)];
 }
