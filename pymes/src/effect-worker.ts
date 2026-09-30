@@ -1,4 +1,5 @@
 import { dispatchConfirmedEffect, type EffectHandlers } from "./effect-dispatcher.js";
+import type { EffectLeaseStore } from "./effect-lease.js";
 import type { PendingEffect } from "./effects.js";
 import type { RemoteEffect, WorkspaceClient } from "./workspace-client.js";
 
@@ -91,17 +92,28 @@ export async function executeConfirmedEffects(input: {
   requestId?: string;
   timeoutMs?: number;
   limit?: number;
+  leaseStore?: EffectLeaseStore;
+  leaseOwnerId?: string;
 }): Promise<EffectBatchResult[]> {
   const limit = input.limit ?? 20;
   if (!Number.isInteger(limit) || limit < 1 || limit > 100) throw new Error("INVALID_EFFECT_BATCH_LIMIT");
   const effects = (await input.client.confirmedEffects()).slice(0, limit);
   const results: EffectBatchResult[] = [];
   for (const effect of effects) {
+    const lease = input.leaseStore
+      ? input.leaseStore.acquire(effect.id, input.leaseOwnerId ?? "worker", Date.now())
+      : null;
+    if (input.leaseStore && !lease) {
+      results.push({ effectId: effect.id, status: "skipped", error: "EFFECT_LEASE_UNAVAILABLE" });
+      continue;
+    }
     try {
       const result = await executeRemoteEffect({ ...input, effectId: effect.id });
       results.push({ effectId: effect.id, status: result.status === "succeeded" ? "succeeded" : "failed" });
     } catch (error) {
       results.push({ effectId: effect.id, status: "skipped", error: error instanceof Error ? error.message : "EFFECT_BATCH_ITEM_FAILED" });
+    } finally {
+      if (lease && input.leaseStore) input.leaseStore.release(effect.id, lease.ownerId);
     }
   }
   return results;
