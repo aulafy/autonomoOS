@@ -64,7 +64,8 @@ function validTimestamp(value: string): boolean {
   return validInputText(value, 100) && Number.isFinite(Date.parse(value));
 }
 function safeHeaderValue(value: string | null, maxLength = 200): string | null {
-  return value && value.length <= maxLength && !/[\u0000-\u001f\u007f]/.test(value) ? value : null;
+  const normalized = value?.trim() ?? "";
+  return normalized && normalized.length <= maxLength && !/[\u0000-\u001f\u007f]/.test(normalized) ? normalized : null;
 }
 export class WorkspaceConflictError extends Error {
   constructor(readonly currentVersion: number) { super(`CASE_VERSION_CONFLICT_CURRENT_${currentVersion}`); }
@@ -113,9 +114,7 @@ export class WorkspaceClient {
       throw error;
     }
     this.lastStatusValue = response.status;
-    const responseRequestId = response.headers.get("x-request-id");
-    this.lastResponseRequestIdValue = responseRequestId && responseRequestId.length <= 200 && !/[\u0000-\u001f\u007f]/.test(responseRequestId)
-      ? responseRequestId : null;
+    this.lastResponseRequestIdValue = safeHeaderValue(response.headers.get("x-request-id"));
     const contentLength = response.headers.get("content-length");
     if (contentLength && (/^\d+$/.test(contentLength) === false || Number(contentLength) > MAX_REMOTE_RESPONSE_BYTES)) {
       clearTimeout(timeout);

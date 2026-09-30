@@ -38,6 +38,7 @@ diagnóstico de soporte, sin incluir cuerpos ni credenciales.
 el workspace cuando está presente, útil si un gateway genera una correlación
 distinta.
 Ese valor se limita a 200 caracteres y se descarta si contiene controles.
+Los metadatos de cabecera se recortan en los extremos antes de exponerse.
 Si una petición falla antes de recibir respuesta, `lastStatus` vuelve a
 `null` para no conservar un código obsoleto.
 También envía `Cache-Control: no-store` para impedir el almacenamiento

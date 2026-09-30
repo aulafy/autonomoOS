@@ -449,7 +449,7 @@ test("workspace client clears last status when transport fails", async () => {
 });
 
 test("workspace client exposes the response correlation id", async () => {
-  const fetcher: typeof fetch = async () => new Response(JSON.stringify({ status: "ok", service: "pymes-workspace", version: "0.1.0" }), { status: 200, headers: { "content-type": "application/json", "x-request-id": "gateway-42" } });
+  const fetcher: typeof fetch = async () => new Response(JSON.stringify({ status: "ok", service: "pymes-workspace", version: "0.1.0" }), { status: 200, headers: { "content-type": "application/json", "x-request-id": " gateway-42 " } });
   const value = new WorkspaceClient({ baseUrl: "http://workspace.local", tenantId: "agency-1", token: "owner-token-123456" }, fetcher);
   await value.health();
   assert.equal(value.lastResponseRequestId, "gateway-42");
