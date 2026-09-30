@@ -83,6 +83,13 @@ los nombres visibles pueden cambiar sin romper esas referencias.
 
 ## Ingress OpenClaw Enterprise
 
+### Errores HTTP no previstos
+
+El adaptador HTTP contiene excepciones inesperadas y responde con `500` y
+`{"error":"INTERNAL_SERVER_ERROR"}`. La respuesta conserva siempre
+`x-request-id` para correlacionarla con los logs del proceso; los detalles
+internos no se envían al cliente.
+
 `POST /v1/workspaces/:tenant/ingress/openclaw` usa
 `X-PYMES-Ingress-Token` y aplica la política de tenant, agente, recurso,
 canal, remitente emparejado y consentimiento. Un evento aceptado devuelve
