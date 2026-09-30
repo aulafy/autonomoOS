@@ -44,6 +44,9 @@ function renderWorkspaceMetrics(metrics: WorkspaceMetrics): void {
   const target = document.getElementById("workspace-metrics");
   if (!target) return;
   target.replaceChildren();
+  const failed = metrics.effects.byStatus.failed ?? 0;
+  target.dataset.failed = String(failed);
+  target.setAttribute("aria-label", failed > 0 ? `${failed} operaciones fallidas requieren revisión` : "Operativa sin operaciones fallidas");
   const rows: Array<[string, string]> = [
     ["Casos", String(metrics.inbox.total)],
     ["Pendientes", String(metrics.inbox.byState.pending_review ?? 0)],
@@ -59,6 +62,7 @@ function renderWorkspaceMetrics(metrics: WorkspaceMetrics): void {
     target.appendChild(item);
   }
   target.dataset.updatedAt = metrics.generatedAt;
+  target.title = failed > 0 ? `${failed} operación${failed === 1 ? "" : "es"} fallida${failed === 1 ? "" : "s"}: revisar antes de reintentar` : "Sin operaciones fallidas";
 }
 
 let selectedChannel: Channel | "all" = "all";
