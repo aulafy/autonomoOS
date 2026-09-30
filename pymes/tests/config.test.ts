@@ -24,12 +24,14 @@ test("bootstrap token normalization trims and enforces minimum length", () => {
   assert.equal(normalizeBootstrapToken("  1234567890123456  "), "1234567890123456");
   assert.throws(() => normalizeBootstrapToken("short"), /PYMES_API_BOOTSTRAP_TOKEN_REQUIRED/);
   assert.throws(() => normalizeBootstrapToken(undefined), /PYMES_API_BOOTSTRAP_TOKEN_REQUIRED/);
+  assert.throws(() => normalizeBootstrapToken("x".repeat(4097)), /PYMES_API_BOOTSTRAP_TOKEN_REQUIRED/);
 });
 
 test("optional token normalization allows omission and rejects short values", () => {
   assert.equal(normalizeOptionalToken(undefined, "INVALID_INGRESS"), undefined);
   assert.equal(normalizeOptionalToken("  sixteen-character-token  ", "INVALID_INGRESS"), "sixteen-character-token");
   assert.throws(() => normalizeOptionalToken("short", "INVALID_INGRESS"), /INVALID_INGRESS/);
+  assert.throws(() => normalizeOptionalToken("x".repeat(4097), "INVALID_INGRESS"), /INVALID_INGRESS/);
 });
 
 test("bootstrap identities are trimmed and bounded", () => {

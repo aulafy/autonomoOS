@@ -23,7 +23,7 @@ persistente, define `PYMES_API_DB_PATH` en un volumen estable. `PYMES_API_VERSIO
 permite fijar la versión visible en `/healthz` y `/readyz` sin recompilar; por
 defecto es `0.1.0`.
 `PYMES_API_BOOTSTRAP_TOKEN` se recorta al arrancar y debe tener al menos 16
-caracteres efectivos.
+caracteres efectivos, con un máximo de 4.096.
 `PYMES_API_BOOTSTRAP_TENANT` y `PYMES_API_BOOTSTRAP_USER` también se recortan al
 arrancar para evitar espacios accidentales en el namespace inicial.
 Las sesiones persistidas guardan un hash SHA-256 del token; las bases creadas
@@ -69,7 +69,7 @@ La respuesta debe incluir `Access-Control-Allow-Origin` con ese origen exacto.
 ## OpenClaw Enterprise
 
 El ingress se activa con `PYMES_OPENCLAW_INGRESS_TOKEN`, que se recorta al
-arrancar y debe tener al menos 16 caracteres efectivos, además de las listas
+arrancar y debe tener entre 16 y 4.096 caracteres efectivos, además de las listas
 de control. Cada lista admite hasta 100 identificadores y cada identificador
 puede tener como máximo 200 caracteres; los duplicados se eliminan al arrancar:
 

@@ -5,13 +5,13 @@ export type SupportedChannel = Channel;
 
 export function normalizeBootstrapToken(value: string | undefined): string {
   const token = value?.trim() ?? "";
-  if (token.length < 16) throw new Error("PYMES_API_BOOTSTRAP_TOKEN_REQUIRED");
+  if (token.length < 16 || token.length > 4096) throw new Error("PYMES_API_BOOTSTRAP_TOKEN_REQUIRED");
   return token;
 }
 
 export function normalizeOptionalToken(value: string | undefined, errorCode: string): string | undefined {
   const token = value?.trim() || undefined;
-  if (token !== undefined && token.length < 16) throw new Error(errorCode);
+  if (token !== undefined && (token.length < 16 || token.length > 4096)) throw new Error(errorCode);
   return token;
 }
 
