@@ -48,7 +48,7 @@ el token en `sessionStorage` como `pymes.workspace.token`.
 En producción, define `PYMES_API_CORS_ORIGINS` con una lista separada por
 comas de los dominios exactos de la interfaz (por ejemplo,
 `https://app.agencia.example`). No uses `*`: el API utiliza credenciales Bearer
-y debe mantener una allowlist explícita.
+y debe mantener una allowlist explícita; el servidor rechaza `*` al arrancar.
 
 Validación rápida desde el host de despliegue:
 
