@@ -51,6 +51,8 @@ revisión de una oferta real.
 Los nombres y mensajes son ficticios. WhatsApp, Telegram,
 iMessage, correo, CRM y calendario aparecen como fuentes y destinos previstos;
 **aún no hay conexiones reales**.
+Las pestañas de canales de la bandeja se generan desde la configuración
+compartida de canales soportados.
 
 ## API local de workspace
 
