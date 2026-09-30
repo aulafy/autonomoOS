@@ -173,7 +173,8 @@ export class WorkspaceClient {
       if (!(error instanceof WorkspaceHttpError) || error.status !== 503) throw error;
       return { status: "not_ready", service: "pymes-workspace", version: "unknown", retryAfter: error.retryAfter ?? undefined };
     }
-    if ((body.status !== "ok" && body.status !== "not_ready") || typeof body.service !== "string" || !validInputText(body.service, 200) || typeof body.version !== "string" || !validInputText(body.version, 200)) throw new Error("INVALID_WORKSPACE_READINESS");
+    if ((body.status !== "ok" && body.status !== "not_ready") || typeof body.service !== "string" || !validInputText(body.service, 200) || typeof body.version !== "string" || !validInputText(body.version, 200) ||
+      (body.retryAfter !== undefined && (typeof body.retryAfter !== "string" || !validInputText(body.retryAfter, 200)))) throw new Error("INVALID_WORKSPACE_READINESS");
     return body as unknown as WorkspaceHealth;
   }
 

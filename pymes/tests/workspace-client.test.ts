@@ -461,6 +461,12 @@ test("workspace client rejects oversized health metadata", async () => {
   await assert.rejects(() => value.health(), /INVALID_WORKSPACE_HEALTH/);
 });
 
+test("workspace client rejects malformed readiness retry metadata", async () => {
+  const fetcher: typeof fetch = async () => new Response(JSON.stringify({ status: "not_ready", service: "pymes-workspace", version: "0.1.0", retryAfter: "x".repeat(201) }), { status: 200, headers: { "content-type": "application/json" } });
+  const value = new WorkspaceClient({ baseUrl: "http://workspace.local", tenantId: "agency-1", token: "owner-token-123456" }, fetcher);
+  await assert.rejects(() => value.ready(), /INVALID_WORKSPACE_READINESS/);
+});
+
 test("workspace client drops oversized retry metadata", async () => {
   const fetcher: typeof fetch = async () => new Response(JSON.stringify({ error: "TEMPORARY" }), { status: 503, headers: { "content-type": "application/json", "retry-after": "x".repeat(201) } });
   const value = new WorkspaceClient({ baseUrl: "http://workspace.local", tenantId: "agency-1", token: "owner-token-123456" }, fetcher);
