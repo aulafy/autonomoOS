@@ -4,7 +4,7 @@ import { insuranceLines, pilotConfig, type InsuranceLine } from "./config.js";
 import { evaluateQuoteIntake, quoteRequirements } from "./quote-intake.js";
 import { offersForCase, recordQuoteOffer, type OfferEntry, type QuoteOffer } from "./quote-offers.js";
 import { createWorkspaceStore } from "./workspace-store.js";
-import { WorkspaceClient, WorkspaceConflictError, type RemoteInboxRecord, type WorkspaceMetrics } from "./workspace-client.js";
+import { WorkspaceClient, WorkspaceConflictError, type RemoteInboxRecord, type WorkspaceEffectKind, type WorkspaceMetrics } from "./workspace-client.js";
 import { MAX_EFFECT_RETRIES } from "./effects.js";
 import { buildCallPlan } from "./call-plan.js";
 import { acceptClassification, parseClassificationProposal,
@@ -436,7 +436,7 @@ function renderDetail(item: WorkItem) {
       block.appendChild(el("strong", "", `Operaciones pendientes · ${own.length}`));
       if (!own.length) block.appendChild(el("p", "", "No hay efectos externos pendientes."));
       const activeKinds = new Set(own.filter(effect => effect.status === "pending" || effect.status === "confirmed").map(effect => effect.kind));
-      const markIfActive = (button: HTMLButtonElement, kind: string): void => {
+      const markIfActive = (button: HTMLButtonElement, kind: WorkspaceEffectKind): void => {
         if (!activeKinds.has(kind)) return;
         button.disabled = true;
         button.textContent = `${button.textContent} · ya preparada`;
