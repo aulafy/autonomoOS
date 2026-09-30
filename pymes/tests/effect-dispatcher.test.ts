@@ -29,3 +29,9 @@ test("rejects unconfirmed, cross-tenant and unconfigured effects", async () => {
 test("rejects unsafe provider notes", async () => {
   await assert.rejects(() => dispatchConfirmedEffect(effect, { crm_task: { async execute() { return "bad\u0007note"; } } }, { tenantId: "agency-1", requestedBy: "owner-1", confirmedBy: "reviewer-1" }), /INVALID_EFFECT_EXECUTION_NOTE/);
 });
+
+test("fails closed when a provider exceeds the execution timeout", async () => {
+  await assert.rejects(() => dispatchConfirmedEffect(effect, { crm_task: {
+    async execute() { await new Promise(resolve => setTimeout(resolve, 150)); return "late"; },
+  } }, { tenantId: "agency-1", requestedBy: "owner-1", confirmedBy: "reviewer-1", timeoutMs: 100 }), /EFFECT_EXECUTION_TIMEOUT/);
+});

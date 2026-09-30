@@ -5,6 +5,7 @@ export interface EffectExecutionContext {
   requestedBy: string;
   confirmedBy: string;
   requestId?: string;
+  timeoutMs?: number;
 }
 
 export interface EffectHandler {
@@ -34,7 +35,18 @@ export async function dispatchConfirmedEffect(
   }
   const handler = handlers[effect.kind];
   if (!handler) throw new Error(`EFFECT_HANDLER_NOT_CONFIGURED:${effect.kind}`);
-  const note = await handler.execute(structuredClone(effect), { ...context });
+  const timeoutMs = context.timeoutMs ?? 30_000;
+  if (!Number.isInteger(timeoutMs) || timeoutMs < 100 || timeoutMs > 60_000) {
+    throw new Error("INVALID_EFFECT_EXECUTION_TIMEOUT");
+  }
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error("EFFECT_EXECUTION_TIMEOUT")), timeoutMs);
+  });
+  const execution = handler.execute(structuredClone(effect), { ...context });
+  const note = await Promise.race([execution, timeout]).finally(() => {
+    if (timer !== undefined) clearTimeout(timer);
+  });
   if (typeof note !== "string" || note.trim().length < 3 || note.length > 2_000 || /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(note)) {
     throw new Error("INVALID_EFFECT_EXECUTION_NOTE");
   }
