@@ -65,6 +65,8 @@ límites de tamaño y no admiten caracteres de control; los valores inválidos s
 rechazan localmente antes del transporte.
 Los timestamps de aprobación, transición, confirmación y reintento deben ser
 parseables como fechas; los valores no válidos se rechazan antes de la llamada.
+Los recursos de aprobación y los destinos de transición usan también la misma
+regla de identificadores seguros, sin controles y con longitud acotada.
 Las colecciones de efectos también deben devolver el `tenantId` del workspace;
 `effectsForCase()` verifica además que el `caseId` de la envolvente coincida
 con el caso solicitado y rechaza cualquier desalineación.

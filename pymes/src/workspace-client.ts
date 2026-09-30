@@ -155,7 +155,7 @@ export class WorkspaceClient {
   }
 
   async approve(input: { resourceId: string; reason: string; draftHash: string; approvedAt: string }): Promise<RemoteApproval> {
-    if (!input || typeof input.resourceId !== "string" || !input.resourceId.trim() || input.resourceId.length > 200 ||
+    if (!input || typeof input.resourceId !== "string" || !validResourceId(input.resourceId) ||
       typeof input.reason !== "string" || !validInputText(input.reason, 2_000) ||
       typeof input.draftHash !== "string" || !validInputText(input.draftHash, 512) ||
       typeof input.approvedAt !== "string" || !validTimestamp(input.approvedAt)) throw new Error("INVALID_WORKSPACE_APPROVAL_INPUT");
@@ -172,7 +172,7 @@ export class WorkspaceClient {
     return body.audit as RemoteCaseAudit[];
   }
   async transition(caseId: string, to: string, at = new Date().toISOString(), expectedVersion?: number): Promise<void> {
-    if (!validResourceId(caseId) || !to.trim() || !validTimestamp(at) || (expectedVersion !== undefined && (!Number.isInteger(expectedVersion) || expectedVersion < 0))) {
+    if (!validResourceId(caseId) || !validInputText(to, 100) || !validTimestamp(at) || (expectedVersion !== undefined && (!Number.isInteger(expectedVersion) || expectedVersion < 0))) {
       throw new Error("INVALID_WORKSPACE_TRANSITION_INPUT");
     }
     await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/cases/${encodeURIComponent(caseId)}/transition`, {
