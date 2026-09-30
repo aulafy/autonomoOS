@@ -182,6 +182,8 @@ El módulo también expone `SqliteEffectLeaseStore`, que puede compartir la mism
 `DatabaseSync` del workspace y conserva las reservas tras reinicios del proceso.
 La integración distribuida debe asociar el lease al tenant y usar un owner único
 por instancia antes de habilitar réplicas.
+Al construir `SqliteEffectLeaseStore`, usa el identificador canónico del tenant
+como `namespace`; nunca uses un namespace global compartido por todas las agencias.
 
 Para un proceso periódico se puede usar `executeConfirmedEffects`, que limita
 el lote a 100 efectos, procesa en orden y continúa cuando un proveedor falla.

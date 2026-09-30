@@ -274,3 +274,5 @@ restricción de despliegue.
 `SqliteEffectLeaseStore` ya permite persistir la reserva en la misma base SQLite;
 la activación multiworker queda condicionada a exponer esa operación mediante el
 API con aislamiento explícito por tenant y auditoría de adquisición/liberación.
+El namespace del store debe ser exactamente el tenant autenticado del worker para
+impedir que dos agencias con el mismo `effectId` compartan una reserva.
