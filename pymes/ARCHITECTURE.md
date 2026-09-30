@@ -117,6 +117,13 @@ adaptador de gateway, deduplica por `openclaw:<eventId>` y persiste un caso
 `received`. El caso conserva el texto de entrada, pero no recibe identidad,
 intención ni borrador hasta pasar por el flujo PYMES.
 
+`src/effect-dispatcher.ts` es la frontera de salida para proveedores. Un
+handler se registra por tipo de efecto y solo recibe efectos `confirmed` del
+tenant, solicitante y confirmador que figuran en el registro. El dispatcher no
+conoce credenciales ni SDKs de proveedores y devuelve una nota acotada para la
+auditoría; el servidor decide después si registra el resultado como succeeded o
+failed.
+
 `src/case-lifecycle.ts` define los estados y transiciones de un caso. Cada
 transición exige el rol adecuado y aumenta una versión monotónica; los saltos
 directos a aprobación o ejecución fallan. Un resultado `uncertain` solo puede
