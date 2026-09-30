@@ -11,6 +11,9 @@ effects, H3 local inference, and H4 restricted HTTP/API effects. See
 [implementation status](docs/IMPLEMENTATION_STATUS.md) for verified milestones
 and limitations.
 
+The supported Node.js version is recorded in [`.nvmrc`](.nvmrc) and enforced by
+the project manifests.
+
 ## Install and verify
 
 ```bash
