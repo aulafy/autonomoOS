@@ -36,6 +36,7 @@ let remoteInbox = new Map<string, { state: string; version?: number }>();
 let workspaceRetryTimer: number | null = null;
 let workspaceSyncInFlight = false;
 let workspaceAutoRefreshTimer: number | null = null;
+const WORKSPACE_REFRESH_INTERVAL_MS = 60_000;
 
 let selectedChannel: Channel | "all" = "all";
 const channelLabels: Record<Channel, string> = {
@@ -74,7 +75,7 @@ async function checkRemoteWorkspace(): Promise<void> {
     renderInbox();
     if (workspaceRetryTimer !== null) { window.clearTimeout(workspaceRetryTimer); workspaceRetryTimer = null; }
     if (workspaceAutoRefreshTimer === null) {
-      workspaceAutoRefreshTimer = window.setInterval(() => { void checkRemoteWorkspace(); }, 60000);
+      workspaceAutoRefreshTimer = window.setInterval(() => { void checkRemoteWorkspace(); }, WORKSPACE_REFRESH_INTERVAL_MS);
     }
     status.className = "workspace-pill connected";
     document.getElementById("workspace-retry")?.remove();
