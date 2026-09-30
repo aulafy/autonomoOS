@@ -153,12 +153,12 @@ export class WorkspaceClient {
   }
   async effects(): Promise<RemoteEffect[]> {
     const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/effects`);
-    if (!Array.isArray(body.effects)) throw new Error("INVALID_WORKSPACE_EFFECTS");
+    if (body.tenantId !== this.config.tenantId || !Array.isArray(body.effects)) throw new Error("INVALID_WORKSPACE_EFFECTS");
     return body.effects as RemoteEffect[];
   }
   async effectsForCase(caseId: string): Promise<RemoteEffect[]> {
     const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/cases/${encodeURIComponent(caseId)}/effects`);
-    if (!Array.isArray(body.effects)) throw new Error("INVALID_WORKSPACE_EFFECTS");
+    if (body.tenantId !== this.config.tenantId || body.caseId !== caseId || !Array.isArray(body.effects)) throw new Error("INVALID_WORKSPACE_EFFECTS");
     return body.effects as RemoteEffect[];
   }
   async effect(effectId: string): Promise<RemoteEffect> {
