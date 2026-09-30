@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { connectorStatuses, isConnectorConfig, isConnectorStatus, normalizeBootstrapIdentity, normalizeBootstrapToken, normalizeOptionalToken, parseConfiguredChannels, parseConfiguredIdSet, parseCorsOrigins, pilotConfig } from "../src/config.js";
+import { connectorStatuses, isConnectorConfig, isConnectorStatus, normalizeBootstrapIdentity, normalizeBootstrapToken, normalizeOptionalToken, parseBoundedOptionalNumber, parseConfiguredChannels, parseConfiguredIdSet, parseCorsOrigins, pilotConfig } from "../src/config.js";
 
 test("pilot configuration declares the supported communication channels", () => {
   assert.deepEqual(pilotConfig.channels, ["whatsapp", "telegram", "imessage", "email"]);
@@ -50,6 +50,13 @@ test("optional token normalization allows omission and rejects short values", ()
   assert.equal(normalizeOptionalToken("  sixteen-character-token  ", "INVALID_INGRESS"), "sixteen-character-token");
   assert.throws(() => normalizeOptionalToken("short", "INVALID_INGRESS"), /INVALID_INGRESS/);
   assert.throws(() => normalizeOptionalToken("x".repeat(4097), "INVALID_INGRESS"), /INVALID_INGRESS/);
+});
+
+test("bounded optional numbers support ingress configuration", () => {
+  assert.equal(parseBoundedOptionalNumber(undefined, 100, "ERR"), undefined);
+  assert.equal(parseBoundedOptionalNumber(" 42 ", 100, "ERR"), 42);
+  assert.throws(() => parseBoundedOptionalNumber("101", 100, "ERR"), /ERR/);
+  assert.throws(() => parseBoundedOptionalNumber("nope", 100, "ERR"), /ERR/);
 });
 
 test("bootstrap identities are trimmed and bounded", () => {

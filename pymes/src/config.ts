@@ -29,6 +29,13 @@ export function normalizeOptionalToken(value: string | undefined, errorCode: str
   return token;
 }
 
+export function parseBoundedOptionalNumber(value: string | undefined, maximum: number, errorCode: string): number | undefined {
+  if (value === undefined || value.trim() === "") return undefined;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 0 || parsed > maximum) throw new Error(errorCode);
+  return parsed;
+}
+
 export function normalizeBootstrapIdentity(value: string | undefined, fallback: string): string {
   const identity = (value ?? fallback).trim();
   if (!identity || identity.length > 200) throw new Error("INVALID_PYMES_API_BOOTSTRAP_IDENTITY");
