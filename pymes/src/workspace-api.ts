@@ -136,7 +136,7 @@ export class WorkspaceApi {
   }
 
   addSession(token: string, principal: WorkspacePrincipal): void {
-    if (!token || token.length < 16) throw new Error("INVALID_SESSION_TOKEN");
+    if (!token || token.length < 16 || token.length > 4096) throw new Error("INVALID_SESSION_TOKEN");
     if (this.repository instanceof InMemoryWorkspaceRepository) this.repository.addSession(token, principal);
     else throw new Error("SESSION_PROVISIONING_REQUIRES_REPOSITORY_OWNER");
   }

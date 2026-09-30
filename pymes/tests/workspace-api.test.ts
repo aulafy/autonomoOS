@@ -130,3 +130,7 @@ test("effects require execute permission and explicit confirmation", () => {
   assert.equal(value.handle({ method: "POST", path: "/v1/workspaces/agency-1/effects",
     authorization: "Bearer owner-token-12345", body: { ...draft, id: "effect-large", payload: { data: "x".repeat(70000) } } }).status, 400);
 });
+test("session provisioning rejects oversized tokens", () => {
+  const api = new WorkspaceApi();
+  assert.throws(() => api.addSession("x".repeat(4097), { userId: "owner", tenantId: "agency-1", role: "owner" }), /INVALID_SESSION_TOKEN/);
+});
