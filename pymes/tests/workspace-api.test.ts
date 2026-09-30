@@ -66,6 +66,20 @@ test("non-serializable effect payloads fail as a client error", () => {
   assert.equal(response.body.error, "INVALID_PENDING_EFFECT");
 });
 
+test("API rejects effect payloads that do not match their kind", () => {
+  const value = api();
+  const message = value.handle({ method: "POST", path: "/v1/workspaces/agency-1/effects",
+    authorization: "Bearer owner-token-12345", body: { id: "message-invalid", caseId: "msg-1", kind: "message",
+      payload: { text: "Falta canal" }, requestedAt: "2026-09-30T10:00:00Z", draftHash: "sha256:message" } });
+  assert.equal(message.status, 400);
+  const calendar = value.handle({ method: "POST", path: "/v1/workspaces/agency-1/effects",
+    authorization: "Bearer owner-token-12345", body: { id: "calendar-invalid", caseId: "msg-1", kind: "calendar",
+      payload: { title: "Cita", startsAt: "mañana" }, requestedAt: "2026-09-30T10:00:00Z", draftHash: "sha256:calendar" } });
+  assert.equal(calendar.status, 400);
+  assert.deepEqual(value.handle({ method: "GET", path: "/v1/workspaces/agency-1/effects",
+    authorization: "Bearer reviewer-token-1234" }).body.effects, []);
+});
+
 test("reviewer can read approvals but tenant remains isolated", () => {
   const value = api();
   const response = value.handle({ method: "GET", path: "/v1/workspaces/agency-1/approvals",
