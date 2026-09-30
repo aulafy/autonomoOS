@@ -23,7 +23,7 @@ export class InMemoryEffectLeaseStore implements EffectLeaseStore {
   }
 
   acquire(effectId: string, ownerId: string, now = Date.now()): EffectLease | null {
-    if (!effectId.trim() || !ownerId.trim()) throw new Error("INVALID_EFFECT_LEASE_ID");
+    if (!validLeaseId(effectId) || !validLeaseId(ownerId)) throw new Error("INVALID_EFFECT_LEASE_ID");
     const current = this.leases.get(effectId);
     if (current && current.expiresAt > now && current.ownerId !== ownerId) return null;
     const lease = { effectId, ownerId, expiresAt: now + this.ttlMs };
@@ -45,4 +45,8 @@ export class InMemoryEffectLeaseStore implements EffectLeaseStore {
     }
     return removed;
   }
+}
+
+function validLeaseId(value: string): boolean {
+  return typeof value === "string" && value.trim().length > 0 && value.length <= 200 && !/[\u0000-\u001f\u007f]/.test(value);
 }

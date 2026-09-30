@@ -23,4 +23,6 @@ test("lease store clears expired entries and validates configuration", () => {
   assert.equal(store.clearExpired(1_010), 1);
   assert.throws(() => new InMemoryEffectLeaseStore(100), /INVALID_EFFECT_LEASE_TTL/);
   assert.throws(() => store.acquire("", "worker-a"), /INVALID_EFFECT_LEASE_ID/);
+  assert.throws(() => store.acquire("effect\n1", "worker-a"), /INVALID_EFFECT_LEASE_ID/);
+  assert.throws(() => store.acquire("effect-1", "x".repeat(201)), /INVALID_EFFECT_LEASE_ID/);
 });
