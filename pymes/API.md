@@ -49,6 +49,8 @@ de forma tipada para la interfaz y los probes de despliegue.
 La interfaz PYMES no presenta el workspace como conectado hasta que `readyz`
 responde correctamente; durante el arranque aplica un backoff fijo de 5
 segundos y permite reintento manual.
+Cuando conecta, muestra la versión devuelta por `readyz`; esa versión identifica
+el release del workspace remoto y no el bundle estático de la interfaz.
 
 ## Ingress OpenClaw Enterprise
 
