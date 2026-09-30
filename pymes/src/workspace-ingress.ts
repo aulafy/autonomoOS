@@ -18,20 +18,27 @@ export function ingestOpenClawIntoWorkspace(input: {
   const result = ingestOpenClawEnterpriseEvent(input.envelope, input.policy);
   if (!result.accepted) return result;
   const existing = input.repository.listInbox(input.envelope.tenantId);
-  if (existing.some(record => record.id === result.message.id)) {
+  if (existing.some(record => record.id === result.message.id ||
+    (record.sourceExternalMessageId === input.envelope.inbound.externalMessageId &&
+      record.sourceChannel === input.envelope.inbound.channel))) {
     return { accepted: false, reason: "DUPLICATE_EVENT" };
   }
   const record: WorkspaceInboxRecord = {
     id: result.message.id,
     tenantId: input.envelope.tenantId,
     state: "received",
-    summary: result.message.text
+    summary: result.message.text,
+    sourceEventId: input.envelope.inbound.eventId,
+    sourceExternalMessageId: input.envelope.inbound.externalMessageId,
+    sourceChannel: input.envelope.inbound.channel
   };
   try { input.repository.appendInbox(record); }
   catch {
     // A concurrent request may win the unique inbox insert between the read
     // above and this write. Treat that race as the same idempotent duplicate.
-    if (input.repository.listInbox(input.envelope.tenantId).some(value => value.id === record.id)) {
+    if (input.repository.listInbox(input.envelope.tenantId).some(value => value.id === record.id ||
+      (value.sourceExternalMessageId === input.envelope.inbound.externalMessageId &&
+        value.sourceChannel === input.envelope.inbound.channel))) {
       return { accepted: false, reason: "DUPLICATE_EVENT" };
     }
     throw new Error("WORKSPACE_INGRESS_PERSIST_FAILED");

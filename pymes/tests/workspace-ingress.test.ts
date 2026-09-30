@@ -34,6 +34,15 @@ test("replayed gateway event is not persisted twice", () => {
   assert.equal(repository.listInbox("agency-1").length, 1);
 });
 
+test("same external message with a new gateway event id is deduplicated", () => {
+  const repository = new InMemoryWorkspaceRepository();
+  ingestOpenClawIntoWorkspace({ envelope, policy, repository });
+  const replay = { ...envelope, inbound: { ...envelope.inbound, eventId: "event-2" } };
+  assert.deepEqual(ingestOpenClawIntoWorkspace({ envelope: replay, policy, repository }),
+    { accepted: false, reason: "DUPLICATE_EVENT" });
+  assert.equal(repository.listInbox("agency-1").length, 1);
+});
+
 test("tenant mismatch is rejected before persistence", () => {
   const repository = new InMemoryWorkspaceRepository();
   const result = ingestOpenClawIntoWorkspace({ envelope: { ...envelope, tenantId: "agency-2" }, policy, repository });

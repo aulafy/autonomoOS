@@ -2,6 +2,11 @@
 
 La API es multi-tenant y requiere `Authorization: Bearer <token>` en todas las rutas de workspace. Las operaciones externas nunca se ejecutan al crearse: pasan por confirmación y resultado.
 
+Las entradas recibidas desde OpenClaw conservan `sourceEventId`,
+`sourceExternalMessageId` y `sourceChannel`. La ingesta es idempotente tanto por
+el identificador técnico del evento como por el identificador externo del
+mensaje dentro del canal, incluso si el gateway reintenta con otro `eventId`.
+
 La interfaz local puede llamar al API desde `http://127.0.0.1:5174` o
 `http://localhost:5174`; el adaptador responde al preflight `OPTIONS` y limita
 los orígenes a esos dos valores.

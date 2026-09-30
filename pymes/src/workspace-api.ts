@@ -14,6 +14,9 @@ export interface WorkspaceInboxRecord {
   tenantId: string;
   state: CaseState;
   summary: string;
+  sourceEventId?: string;
+  sourceExternalMessageId?: string;
+  sourceChannel?: string;
   version?: number;
   updatedAt?: string;
 }
