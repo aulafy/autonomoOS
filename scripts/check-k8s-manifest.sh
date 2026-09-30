@@ -7,7 +7,7 @@ if ! command -v kubectl >/dev/null 2>&1; then
 fi
 kubectl kustomize pymes/k8s >/dev/null
 manifest="$(kubectl kustomize pymes/k8s)"
-for required in "readinessProbe" "livenessProbe" "readOnlyRootFilesystem: true" "automountServiceAccountToken: false" "pymes-workspace-secrets" "PYMES_OPENCLAW_SIGNING_SECRET"; do
+for required in "replicas: 1" "readinessProbe" "livenessProbe" "readOnlyRootFilesystem: true" "automountServiceAccountToken: false" "pymes-workspace-secrets" "pymes-workspace-data" "PYMES_OPENCLAW_SIGNING_SECRET"; do
   if ! grep -Fq "${required}" <<<"${manifest}"; then
     echo "Falta requisito Kubernetes: ${required}" >&2
     exit 2
