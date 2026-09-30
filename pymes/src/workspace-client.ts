@@ -143,7 +143,7 @@ export class WorkspaceClient {
       const record = item as Record<string, unknown>;
       return record.tenantId !== this.config.tenantId || typeof record.id !== "string" || !record.id ||
         typeof record.state !== "string" || typeof record.summary !== "string";
-    })) throw new Error("INVALID_WORKSPACE_INBOX");
+    }) || new Set(body.items.map(item => (item as Record<string, unknown>).id)).size !== body.items.length) throw new Error("INVALID_WORKSPACE_INBOX");
     return body.items as RemoteInboxRecord[];
   }
   async connectors(): Promise<RemoteConnector[]> {
