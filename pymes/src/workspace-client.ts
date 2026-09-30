@@ -63,6 +63,9 @@ function validInputText(value: string, maxLength: number): boolean {
 function validTimestamp(value: string): boolean {
   return validInputText(value, 100) && Number.isFinite(Date.parse(value));
 }
+function safeHeaderValue(value: string | null, maxLength = 200): string | null {
+  return value && value.length <= maxLength && !/[\u0000-\u001f\u007f]/.test(value) ? value : null;
+}
 export class WorkspaceConflictError extends Error {
   constructor(readonly currentVersion: number) { super(`CASE_VERSION_CONFLICT_CURRENT_${currentVersion}`); }
 }
@@ -144,7 +147,7 @@ export class WorkspaceClient {
       if (response.status === 409 && record.error === "CASE_VERSION_CONFLICT" && typeof record.currentVersion === "number") {
         throw new WorkspaceConflictError(record.currentVersion);
       }
-      throw new WorkspaceHttpError(response.status, typeof record.error === "string" ? record.error : "WORKSPACE_REQUEST_FAILED", this.lastResponseRequestIdValue, response.headers.get("retry-after"));
+      throw new WorkspaceHttpError(response.status, typeof record.error === "string" ? record.error : "WORKSPACE_REQUEST_FAILED", this.lastResponseRequestIdValue, safeHeaderValue(response.headers.get("retry-after")));
     }
     return body as Record<string, unknown>;
   }
