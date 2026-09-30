@@ -90,6 +90,15 @@ test("API rejects effect payloads that do not match their kind", () => {
     authorization: "Bearer reviewer-token-1234" }).body.effects, []);
 });
 
+test("effects endpoint filters confirmed status and rejects unknown filters", () => {
+  const value = api();
+  const created = value.handle({ method: "POST", path: "/v1/workspaces/agency-1/effects", authorization: "Bearer owner-token-12345", body: { id: "call-filter", caseId: "msg-1", kind: "call", payload: { objective: "Revisar", questions: [] }, requestedAt: "2026-09-30T10:00:00Z", draftHash: "sha256:filter" } });
+  assert.equal(created.status, 201);
+  assert.deepEqual(value.handle({ method: "GET", path: "/v1/workspaces/agency-1/effects?status=confirmed", authorization: "Bearer reviewer-token-1234" }).body.effects, []);
+  assert.equal(value.handle({ method: "GET", path: "/v1/workspaces/agency-1/effects?status=failed", authorization: "Bearer reviewer-token-1234" }).status, 400);
+  assert.equal(value.handle({ method: "GET", path: "/v1/workspaces/agency-2/effects?status=confirmed", authorization: "Bearer reviewer-token-1234" }).status, 403);
+});
+
 test("API preserves safe multiline message drafts", () => {
   const value = api();
   const response = value.handle({ method: "POST", path: "/v1/workspaces/agency-1/effects",
