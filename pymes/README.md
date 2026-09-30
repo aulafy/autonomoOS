@@ -123,6 +123,11 @@ emparejados y conversaciones consentidas. Publica en
 El token se recorta y exige 16 caracteres efectivos; cada lista admite hasta
 100 identificadores de 200 caracteres como máximo. Los valores bootstrap de
 tenant y usuario también se recortan y están limitados a 200 caracteres.
+La ventana temporal se configura con `PYMES_OPENCLAW_MAX_EVENT_AGE_MS` y
+`PYMES_OPENCLAW_MAX_FUTURE_SKEW_MS`; ambos valores deben ser enteros no
+negativos dentro de los límites documentados en [DEPLOYMENT.md](DEPLOYMENT.md).
+Cada recepción conserva procedencia, auditoría e idempotencia por mensaje
+externo y canal, incluso tras reiniciar SQLite.
 
 La cola de revisión y las ofertas transcritas se guardan ahora en un almacén
 versionado del navegador para no perder el trabajo al recargar. Sigue siendo
