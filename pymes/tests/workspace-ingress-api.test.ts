@@ -45,6 +45,9 @@ test("signed ingress requires a valid HMAC when configured", async () => {
   const signature = createHmac("sha256", secret).update(body).digest("hex");
   const valid = await handlePymesRequest(api, new Request("http://localhost/v1/workspaces/agency-1/ingress/openclaw", { method: "POST", headers: { "x-pymes-ingress-token": "ingress-token-123456", "x-pymes-ingress-signature": signature, "content-type": "application/json" }, body }));
   assert.equal(valid.status, 201);
+  const validBody = await valid.text();
+  assert.equal(validBody.includes(secret), false);
+  assert.equal(valid.headers.get("x-pymes-signing-secret"), null);
   const invalid = await handlePymesRequest(api, new Request("http://localhost/v1/workspaces/agency-1/ingress/openclaw", { method: "POST", headers: { "x-pymes-ingress-token": "ingress-token-123456", "x-pymes-ingress-signature": "0".repeat(64), "content-type": "application/json" }, body: JSON.stringify({ ...envelope, inbound: { ...envelope.inbound, eventId: "evt-invalid" } }) }));
   assert.equal(invalid.status, 401);
 });
