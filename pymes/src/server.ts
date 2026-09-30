@@ -6,13 +6,14 @@ import { normalizeRequestId } from "./request-id.js";
 import { normalizeBootstrapIdentity, normalizeBootstrapToken, normalizeOptionalToken, parseConfiguredChannels, parseConfiguredIdSet, parseCorsOrigins } from "./config.js";
 
 const port = Number(process.env.PYMES_API_PORT ?? 8790);
-const host = process.env.PYMES_API_HOST ?? "127.0.0.1";
+const host = (process.env.PYMES_API_HOST ?? "127.0.0.1").trim();
 const token = normalizeBootstrapToken(process.env.PYMES_API_BOOTSTRAP_TOKEN);
 const tenantId = normalizeBootstrapIdentity(process.env.PYMES_API_BOOTSTRAP_TENANT, "demo-agency");
 const userId = normalizeBootstrapIdentity(process.env.PYMES_API_BOOTSTRAP_USER, "demo-owner");
 const corsOrigins = parseCorsOrigins(process.env.PYMES_API_CORS_ORIGINS);
 
 if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error("INVALID_PYMES_API_PORT");
+if (!host || host.length > 255 || /[\u0000-\u001f\u007f]/.test(host)) throw new Error("INVALID_PYMES_API_HOST");
 const repository = new SqliteWorkspaceRepository(process.env.PYMES_API_DB_PATH ?? "./data/pymes-workspace.db");
 repository.provisionSession(token, { userId, tenantId, role: "owner" });
 const ingressToken = normalizeOptionalToken(process.env.PYMES_OPENCLAW_INGRESS_TOKEN, "INVALID_PYMES_OPENCLAW_INGRESS_TOKEN");
