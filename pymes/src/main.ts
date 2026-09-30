@@ -64,7 +64,12 @@ function renderWorkspaceMetrics(metrics: WorkspaceMetrics): void {
   target.dataset.updatedAt = metrics.generatedAt;
   const updated = document.getElementById("workspace-metrics-updated");
   if (updated) {
-    updated.textContent = `Actualizado ${new Date(metrics.generatedAt).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}`;
+    const ageMs = Date.now() - Date.parse(metrics.generatedAt);
+    const stale = ageMs > 5 * 60 * 1000;
+    updated.textContent = stale
+      ? `Datos desactualizados · ${new Date(metrics.generatedAt).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}`
+      : `Actualizado ${new Date(metrics.generatedAt).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}`;
+    updated.dataset.stale = String(stale);
   }
   target.title = failed > 0 ? `${failed} operación${failed === 1 ? "" : "es"} fallida${failed === 1 ? "" : "s"}: revisar antes de reintentar` : "Sin operaciones fallidas";
 }
