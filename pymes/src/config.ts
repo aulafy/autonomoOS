@@ -2,7 +2,8 @@ import type { Channel } from "./domain.js";
 
 export const supportedChannels = ["whatsapp", "telegram", "imessage", "email"] as const satisfies readonly Channel[];
 export type SupportedChannel = Channel;
-export type ConnectorStatus = "lectura preparada" | "conectado" | "no configurado";
+export const connectorStatuses = ["lectura preparada", "conectado", "no configurado"] as const;
+export type ConnectorStatus = typeof connectorStatuses[number];
 export type ConnectorConfig = { name: string; status: ConnectorStatus };
 
 export function normalizeBootstrapToken(value: string | undefined): string {
