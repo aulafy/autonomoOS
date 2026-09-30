@@ -208,6 +208,22 @@ test("audit versions remain monotonic across effects and transitions", () => {
   assert.deepEqual((audit.body.audit as Array<{ version: number }>).map(entry => entry.version), [0, 1, 2]);
 });
 
+test("effect lifecycle records confirmation and execution in audit", () => {
+  const value = api();
+  const auth = "Bearer owner-token-12345";
+  assert.equal(value.handle({ method: "POST", path: "/v1/workspaces/agency-1/effects",
+    authorization: auth, body: { id: "lifecycle-effect", caseId: "msg-1", kind: "call",
+      payload: { purpose: "Seguimiento" }, requestedAt: "2026-09-30T10:00:00Z", draftHash: "sha256:lifecycle" } }).status, 201);
+  assert.equal(value.handle({ method: "POST", path: "/v1/workspaces/agency-1/effects/lifecycle-effect/confirm",
+    authorization: auth, body: { confirm: true, confirmedAt: "2026-09-30T10:01:00Z" } }).status, 200);
+  assert.equal(value.handle({ method: "POST", path: "/v1/workspaces/agency-1/effects/lifecycle-effect/result",
+    authorization: auth, body: { result: "succeeded", executedAt: "2026-09-30T10:02:00Z", note: "Llamada registrada" } }).status, 200);
+  const audit = value.handle({ method: "GET", path: "/v1/workspaces/agency-1/cases/msg-1/audit",
+    authorization: "Bearer reviewer-token-1234" });
+  assert.deepEqual((audit.body.audit as Array<{ operation: string }>).map(entry => entry.operation),
+    ["effect_requested", "effect_confirmed", "effect_succeeded"]);
+});
+
 test("effects reject control characters in resource identifiers", () => {
   const value = new WorkspaceApi();
   value.addSession("owner-token-123456", { userId: "owner", tenantId: "agency-1", role: "owner" });
