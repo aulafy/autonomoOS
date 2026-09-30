@@ -58,6 +58,8 @@ no enteras o negativas con `INVALID_WORKSPACE_TRANSITION_INPUT`.
 Las lecturas de auditoría y efectos rechazan identificadores de caso o efecto
 vacíos con `INVALID_WORKSPACE_CASE_INPUT` o `INVALID_WORKSPACE_EFFECT_INPUT`
 antes de construir la URL.
+Los identificadores también están limitados a 200 caracteres y no admiten
+caracteres de control.
 Las colecciones de efectos también deben devolver el `tenantId` del workspace;
 `effectsForCase()` verifica además que el `caseId` de la envolvente coincida
 con el caso solicitado y rechaza cualquier desalineación.

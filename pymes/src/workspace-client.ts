@@ -51,6 +51,9 @@ function isRemoteApproval(value: unknown, tenantId: string): value is RemoteAppr
     typeof approval.reason === "string" && !!approval.reason &&
     typeof approval.draftHash === "string" && !!approval.draftHash;
 }
+function validResourceId(value: string): boolean {
+  return value.trim().length > 0 && value.length <= 200 && !/[\u0000-\u001f\u007f]/.test(value);
+}
 export class WorkspaceConflictError extends Error {
   constructor(readonly currentVersion: number) { super(`CASE_VERSION_CONFLICT_CURRENT_${currentVersion}`); }
 }
@@ -157,13 +160,13 @@ export class WorkspaceClient {
     return body;
   }
   async audit(caseId: string): Promise<RemoteCaseAudit[]> {
-    if (!caseId.trim()) throw new Error("INVALID_WORKSPACE_CASE_INPUT");
+    if (!validResourceId(caseId)) throw new Error("INVALID_WORKSPACE_CASE_INPUT");
     const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/cases/${encodeURIComponent(caseId)}/audit`);
     if (body.tenantId !== this.config.tenantId || body.caseId !== caseId || !Array.isArray(body.audit)) throw new Error("INVALID_WORKSPACE_AUDIT");
     return body.audit as RemoteCaseAudit[];
   }
   async transition(caseId: string, to: string, at = new Date().toISOString(), expectedVersion?: number): Promise<void> {
-    if (!caseId.trim() || !to.trim() || !at.trim() || (expectedVersion !== undefined && (!Number.isInteger(expectedVersion) || expectedVersion < 0))) {
+    if (!validResourceId(caseId) || !to.trim() || !at.trim() || (expectedVersion !== undefined && (!Number.isInteger(expectedVersion) || expectedVersion < 0))) {
       throw new Error("INVALID_WORKSPACE_TRANSITION_INPUT");
     }
     await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/cases/${encodeURIComponent(caseId)}/transition`, {
@@ -176,19 +179,19 @@ export class WorkspaceClient {
     return body.effects as RemoteEffect[];
   }
   async effectsForCase(caseId: string): Promise<RemoteEffect[]> {
-    if (!caseId.trim()) throw new Error("INVALID_WORKSPACE_CASE_INPUT");
+    if (!validResourceId(caseId)) throw new Error("INVALID_WORKSPACE_CASE_INPUT");
     const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/cases/${encodeURIComponent(caseId)}/effects`);
     if (body.tenantId !== this.config.tenantId || body.caseId !== caseId || !Array.isArray(body.effects) || !body.effects.every(isRemoteEffect)) throw new Error("INVALID_WORKSPACE_EFFECTS");
     return body.effects as RemoteEffect[];
   }
   async effect(effectId: string): Promise<RemoteEffect> {
-    if (!effectId.trim()) throw new Error("INVALID_WORKSPACE_EFFECT_INPUT");
+    if (!validResourceId(effectId)) throw new Error("INVALID_WORKSPACE_EFFECT_INPUT");
     const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/effects/${encodeURIComponent(effectId)}`);
     if (!isRemoteEffect(body)) throw new Error("INVALID_WORKSPACE_EFFECT");
     return body as unknown as RemoteEffect;
   }
   async confirmEffect(effectId: string, confirmedAt = new Date().toISOString()): Promise<RemoteEffect> {
-    if (!effectId.trim() || !confirmedAt.trim()) throw new Error("INVALID_WORKSPACE_EFFECT_INPUT");
+    if (!validResourceId(effectId) || !confirmedAt.trim()) throw new Error("INVALID_WORKSPACE_EFFECT_INPUT");
     const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/effects/${encodeURIComponent(effectId)}/confirm`, {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ confirm: true, confirmedAt })
     });
@@ -196,7 +199,7 @@ export class WorkspaceClient {
     return body;
   }
   async reportEffectResult(effectId: string, result: "succeeded" | "failed", note: string): Promise<RemoteEffect> {
-    if (!effectId.trim() || (result !== "succeeded" && result !== "failed") || !note.trim()) throw new Error("INVALID_WORKSPACE_EFFECT_INPUT");
+    if (!validResourceId(effectId) || (result !== "succeeded" && result !== "failed") || !note.trim()) throw new Error("INVALID_WORKSPACE_EFFECT_INPUT");
     const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/effects/${encodeURIComponent(effectId)}/result`, {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ result, note, executedAt: new Date().toISOString() })
     });
@@ -204,7 +207,7 @@ export class WorkspaceClient {
     return body;
   }
   async retryEffect(effectId: string, reason: string, requestedAt = new Date().toISOString()): Promise<RemoteEffect> {
-    if (!effectId.trim() || !reason.trim() || !requestedAt.trim()) throw new Error("INVALID_WORKSPACE_EFFECT_INPUT");
+    if (!validResourceId(effectId) || !reason.trim() || !requestedAt.trim()) throw new Error("INVALID_WORKSPACE_EFFECT_INPUT");
     const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/effects/${encodeURIComponent(effectId)}/retry`, {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reason, requestedAt })
     });

@@ -177,6 +177,12 @@ test("workspace client rejects empty case and effect identifiers before network 
   assert.equal(calls, 0);
 });
 
+test("workspace client rejects unsafe resource identifiers", async () => {
+  const value = new WorkspaceClient({ baseUrl: "http://127.0.0.1:8799", tenantId: "agency-1", token: "token-1234567890" }, async () => new Response("{}"));
+  await assert.rejects(() => value.audit("case\n1"), /INVALID_WORKSPACE_CASE_INPUT/);
+  await assert.rejects(() => value.effect("e".repeat(201)), /INVALID_WORKSPACE_EFFECT_INPUT/);
+});
+
 test("workspace client reads an individual effect", async () => {
   const api = new WorkspaceApi();
   api.addSession("owner-token-123456", { userId: "owner", tenantId: "agency-1", role: "owner" });
