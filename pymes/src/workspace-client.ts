@@ -83,6 +83,7 @@ function validConfig(config: WorkspaceClientConfig): void {
 
 export class WorkspaceClient {
   private lastRequestIdValue: string | null = null;
+  private lastStatusValue: number | null = null;
   constructor(private readonly config: WorkspaceClientConfig,
     private readonly fetcher: typeof fetch = fetch) {
     validConfig(config);
@@ -104,6 +105,7 @@ export class WorkspaceClient {
       if (controller.signal.aborted) throw new Error("WORKSPACE_REQUEST_TIMEOUT");
       throw error;
     }
+    this.lastStatusValue = response.status;
     const contentLength = response.headers.get("content-length");
     if (contentLength && (/^\d+$/.test(contentLength) === false || Number(contentLength) > MAX_REMOTE_RESPONSE_BYTES)) {
       throw new Error("WORKSPACE_RESPONSE_TOO_LARGE");
@@ -137,6 +139,7 @@ export class WorkspaceClient {
     return body as Record<string, unknown>;
   }
   get lastRequestId(): string | null { return this.lastRequestIdValue; }
+  get lastStatus(): number | null { return this.lastStatusValue; }
 
   async approvals(): Promise<RemoteApproval[]> {
     const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/approvals`);

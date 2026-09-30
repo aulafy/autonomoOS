@@ -419,6 +419,7 @@ test("workspace client sends a correlation request id", async () => {
   await value.inbox();
   assert.match(seen, /^[0-9a-f-]{36}$/);
   assert.equal(value.lastRequestId, seen);
+  assert.equal(value.lastStatus, 200);
 });
 
 test("workspace client disables intermediary caching", async () => {
