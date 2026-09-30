@@ -3,6 +3,7 @@ import test from "node:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { DatabaseSync } from "node:sqlite";
 import { SqliteWorkspaceRepository } from "../src/workspace-store-sqlite.js";
 
 test("SQLite repository survives a repository restart", () => {
@@ -50,6 +51,19 @@ test("SQLite audit of OpenClaw ingress survives restart", () => {
   const second = new SqliteWorkspaceRepository(path);
   assert.deepEqual(second.listCaseAudit("agency-1", "openclaw:event-1")[0]?.requestId, "req-ingress-1");
   second.close();
+  rmSync(directory, { recursive: true, force: true });
+});
+
+test("SQLite migrates legacy audit schema without losing entries", () => {
+  const directory = mkdtempSync(join(tmpdir(), "pymes-legacy-audit-"));
+  const path = join(directory, "workspace.db");
+  const legacy = new DatabaseSync(path);
+  legacy.exec("CREATE TABLE workspace_case_audit (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL, case_id TEXT NOT NULL, from_state TEXT NOT NULL, to_state TEXT NOT NULL, operation TEXT NOT NULL, actor_id TEXT NOT NULL, at TEXT NOT NULL, version INTEGER NOT NULL)");
+  legacy.prepare("INSERT INTO workspace_case_audit (id, tenant_id, case_id, from_state, to_state, operation, actor_id, at, version) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)").run("legacy-1", "agency-1", "case-1", "received", "approved", "transition", "owner", "2026-09-30T10:00:00Z", 1);
+  legacy.close();
+  const store = new SqliteWorkspaceRepository(path);
+  assert.equal(store.listCaseAudit("agency-1", "case-1")[0]?.operation, "transition");
+  store.close();
   rmSync(directory, { recursive: true, force: true });
 });
 
