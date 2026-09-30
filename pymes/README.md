@@ -169,6 +169,11 @@ El worker usa `executeRemoteEffect`: obtiene un efecto `confirmed`, llama al
 handler y registra el resultado en la API. No se deben registrar handlers que
 envíen directamente desde la interfaz ni que omitan la confirmación.
 
+Para un proceso periódico se puede usar `executeConfirmedEffects`, que limita
+el lote a 100 efectos, procesa en orden y continúa cuando un proveedor falla.
+El resultado de cada elemento debe enviarse a métricas o logs operativos sin
+incluir el texto completo de mensajes ni credenciales.
+
 La cola de revisión y las ofertas transcritas se guardan ahora en un almacén
 versionado del navegador para no perder el trabajo al recargar. Sigue siendo
 almacenamiento local de la demo, no persistencia multiusuario: el producto real
