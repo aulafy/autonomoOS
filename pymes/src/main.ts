@@ -789,6 +789,8 @@ $("pilot-context").title = `Los conectores de ${pilotConfig.crm.name} y ${pilotC
 $("pilot-context").setAttribute("aria-label", `${pilotConfig.country}. ${pilotConfig.crm.name}: ${pilotConfig.crm.status}. ${pilotConfig.calendar.name}: ${pilotConfig.calendar.status}. La autenticación y el estado operativo se gestionan en el workspace remoto.`);
 $("pilot-context").dataset.crmStatus = pilotConfig.crm.status;
 $("pilot-context").dataset.calendarStatus = pilotConfig.calendar.status;
+$("pilot-context").dataset.crmId = pilotConfig.crm.id;
+$("pilot-context").dataset.calendarId = pilotConfig.calendar.id;
 $<HTMLInputElement>("search").addEventListener("input", renderInbox);
 renderCounts();
 renderTabs();
