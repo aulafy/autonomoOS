@@ -4,7 +4,7 @@ export const supportedChannels = ["whatsapp", "telegram", "imessage", "email"] a
 export type SupportedChannel = Channel;
 export const connectorStatuses = ["lectura preparada", "conectado", "no configurado"] as const;
 export type ConnectorStatus = typeof connectorStatuses[number];
-export type ConnectorConfig = { name: string; status: ConnectorStatus };
+export type ConnectorConfig = { id: string; name: string; status: ConnectorStatus };
 
 export function normalizeBootstrapToken(value: string | undefined): string {
   const token = value?.trim() ?? "";
@@ -58,8 +58,8 @@ export function parseConfiguredChannels(value: string | undefined): Set<Supporte
 export const pilotConfig = {
   country: "España",
   timeZone: "Europe/Madrid",
-  crm: { name: "Holded", status: "lectura preparada" } satisfies ConnectorConfig,
-  calendar: { name: "Google Calendar", status: "lectura preparada" } satisfies ConnectorConfig,
+  crm: { id: "holded", name: "Holded", status: "lectura preparada" } satisfies ConnectorConfig,
+  calendar: { id: "google_calendar", name: "Google Calendar", status: "lectura preparada" } satisfies ConnectorConfig,
   channels: supportedChannels
 } as const;
 
