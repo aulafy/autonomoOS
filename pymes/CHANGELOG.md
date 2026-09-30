@@ -20,6 +20,8 @@
 - Procesamiento por lotes acotado que continúa tras fallos individuales.
 - Handlers de Google Calendar, mensajes, CRM y llamadas con timeout e
   idempotency key derivada del efecto.
+- Gateways HTTP seguros para mensajes, CRM y telefonía, con validación de
+  endpoint y token durante el arranque del servidor.
 
 ### Seguridad y operación
 
