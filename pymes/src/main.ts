@@ -29,6 +29,7 @@ const quoteChecks = new Map<string, { line: InsuranceLine; checked: Set<string>;
 const quoteOffers = workspaceStore.loadOffers();
 let remoteWorkspaceClient: WorkspaceClient | null = null;
 let remoteInbox = new Map<string, { state: string; version?: number }>();
+let workspaceRetryTimer: number | null = null;
 let selectedChannel: Channel | "all" = "all";
 const channelLabels: Record<Channel, string> = {
   whatsapp: "WhatsApp", telegram: "Telegram", imessage: "iMessage", email: "Correo"
@@ -55,6 +56,7 @@ async function checkRemoteWorkspace(): Promise<void> {
     const [approvals, inbox] = await Promise.all([client.approvals(), client.inbox()]);
     remoteWorkspaceClient = client;
     remoteInbox = new Map(inbox.map(item => [item.id, item]));
+    if (workspaceRetryTimer !== null) { window.clearTimeout(workspaceRetryTimer); workspaceRetryTimer = null; }
     status.className = "workspace-pill connected";
     document.getElementById("workspace-retry")?.remove();
     const syncedAt = new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
@@ -107,6 +109,12 @@ async function checkRemoteWorkspace(): Promise<void> {
     retry.removeAttribute("aria-busy");
     remoteWorkspaceClient = null;
     document.getElementById("workspace-logout")?.remove();
+    if (workspaceRetryTimer === null) {
+      workspaceRetryTimer = window.setTimeout(() => {
+        workspaceRetryTimer = null;
+        void checkRemoteWorkspace();
+      }, 5000);
+    }
   } finally {
     status.setAttribute("aria-busy", "false");
   }
