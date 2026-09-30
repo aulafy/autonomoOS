@@ -179,3 +179,9 @@ backup anterior hasta validar la recuperación.
   ficheros WAL durante los respaldos.
 - Las listas `PYMES_OPENCLAW_*` deben configurarse con valores explícitos en
   producción; dejar una lista vacía bloquea el ingress correspondiente.
+
+También se incluye `pymes/scripts/check-operations.sh` para supervisores que
+necesiten un código de salida: devuelve `0` si no hay fallos y la cola está bajo
+el límite, y `2` si hay operaciones fallidas, demasiados pendientes o una
+respuesta inválida. Requiere `curl`; si `jq` está instalado aplica las reglas,
+y nunca muestra el token.
