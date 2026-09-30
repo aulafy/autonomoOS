@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { parseConfiguredChannels, pilotConfig } from "../src/config.js";
+import { parseConfiguredChannels, parseCorsOrigins, pilotConfig } from "../src/config.js";
 
 test("pilot configuration declares the supported communication channels", () => {
   assert.deepEqual(pilotConfig.channels, ["whatsapp", "telegram", "imessage", "email"]);
@@ -17,4 +17,9 @@ test("missing channel configuration uses the supported defaults", () => {
 
 test("configured channels are deduplicated", () => {
   assert.deepEqual([...parseConfiguredChannels("email,email,whatsapp")], ["email", "whatsapp"]);
+});
+
+test("CORS origins use safe defaults and reject wildcard", () => {
+  assert.deepEqual(parseCorsOrigins(" https://agency.example, https://agency.example "), ["https://agency.example"]);
+  assert.throws(() => parseCorsOrigins("*"), /INVALID_PYMES_API_CORS_ORIGINS/);
 });

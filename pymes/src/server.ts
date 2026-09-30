@@ -3,17 +3,16 @@ import { WorkspaceApi } from "./workspace-api.js";
 import { handlePymesRequest } from "./api-server.js";
 import { SqliteWorkspaceRepository } from "./workspace-store-sqlite.js";
 import { normalizeRequestId } from "./request-id.js";
-import { parseConfiguredChannels } from "./config.js";
+import { parseConfiguredChannels, parseCorsOrigins } from "./config.js";
 
 const port = Number(process.env.PYMES_API_PORT ?? 8790);
 const host = process.env.PYMES_API_HOST ?? "127.0.0.1";
 const token = process.env.PYMES_API_BOOTSTRAP_TOKEN;
 const tenantId = process.env.PYMES_API_BOOTSTRAP_TENANT ?? "demo-agency";
 const userId = process.env.PYMES_API_BOOTSTRAP_USER ?? "demo-owner";
-const corsOrigins = (process.env.PYMES_API_CORS_ORIGINS ?? "http://127.0.0.1:5174,http://localhost:5174").split(",").map(value => value.trim()).filter(Boolean);
+const corsOrigins = parseCorsOrigins(process.env.PYMES_API_CORS_ORIGINS);
 
 if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error("INVALID_PYMES_API_PORT");
-if (corsOrigins.includes("*")) throw new Error("INVALID_PYMES_API_CORS_ORIGINS");
 if (!token || token.length < 16) {
   throw new Error("PYMES_API_BOOTSTRAP_TOKEN_REQUIRED");
 }
