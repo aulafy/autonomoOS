@@ -35,6 +35,13 @@ export interface RemoteConnector { id: string; name: string; status: ConnectorSt
 export interface RemoteCaseAudit { id: string; caseId: string; from: string; to: string; operation: string; actorId: string; at: string; version: number; requestId?: string; }
 export interface RemoteEffect { id: string; caseId: string; kind: string; status: string; requestedBy: string; requestedAt: string; retryCount?: number; draftHash?: string; payload: Record<string, unknown>; executionNote?: string; executedBy?: string; executedAt?: string; confirmedBy?: string; confirmedAt?: string; }
 export interface WorkspaceHealth { status: "ok" | "not_ready"; service: string; version: string; retryAfter?: string; }
+export interface WorkspaceMetrics {
+  tenantId: string;
+  generatedAt: string;
+  inbox: { total: number; byState: Record<string, number> };
+  effects: { total: number; byStatus: Record<string, number> };
+  approvals: { total: number };
+}
 function isRemoteEffect(value: unknown): value is RemoteEffect {
   if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
   const effect = value as Record<string, unknown>;
@@ -215,6 +222,21 @@ export class WorkspaceClient {
       throw new Error("INVALID_WORKSPACE_CONNECTORS");
     }
     return body.connectors as RemoteConnector[];
+  }
+  async metrics(): Promise<WorkspaceMetrics> {
+    const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/metrics`);
+    const validCounts = (value: unknown): value is Record<string, number> => value !== null && typeof value === "object" && !Array.isArray(value) &&
+      Object.entries(value).length <= 100 && Object.entries(value).every(([key, count]) => validInputText(key, 100) && Number.isInteger(count) && count >= 0 && count <= MAX_REMOTE_ITEMS);
+    const validBucket = (value: unknown, field: "byState" | "byStatus"): value is { total: number } & Record<typeof field, Record<string, number>> =>
+      value !== null && typeof value === "object" && !Array.isArray(value) && Number.isInteger((value as Record<string, unknown>).total) &&
+      ((value as Record<string, unknown>).total as number) >= 0 && ((value as Record<string, unknown>).total as number) <= MAX_REMOTE_ITEMS && validCounts((value as Record<string, unknown>)[field]);
+    if (body.tenantId !== this.config.tenantId || typeof body.generatedAt !== "string" || !validTimestamp(body.generatedAt) ||
+      !validBucket(body.inbox, "byState") || !validBucket(body.effects, "byStatus") || body.approvals === null || typeof body.approvals !== "object" ||
+      Array.isArray(body.approvals) || !Number.isInteger((body.approvals as Record<string, unknown>).total) ||
+      ((body.approvals as Record<string, unknown>).total as number) < 0 || ((body.approvals as Record<string, unknown>).total as number) > MAX_REMOTE_ITEMS) {
+      throw new Error("INVALID_WORKSPACE_METRICS");
+    }
+    return body as unknown as WorkspaceMetrics;
   }
 
   async approve(input: { resourceId: string; reason: string; draftHash: string; approvedAt: string }): Promise<RemoteApproval> {

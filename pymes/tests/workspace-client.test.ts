@@ -30,6 +30,13 @@ test("workspace client exposes health and readiness contracts", async () => {
   assert.equal((await value.ready()).status, "ok");
 });
 
+test("workspace client validates tenant-scoped operational metrics", async () => {
+  const metrics = await client().metrics();
+  assert.equal(metrics.tenantId, "agency-1");
+  assert.deepEqual(metrics.inbox, { total: 1, byState: { pending_review: 1 } });
+  assert.deepEqual(metrics.effects, { total: 0, byStatus: {} });
+});
+
 test("workspace client exposes not-ready state without throwing", async () => {
   const broken = new WorkspaceApi({
     findSession() { return null; }, listInbox() { throw new Error("DB_DOWN"); }, revokeSession() {},
