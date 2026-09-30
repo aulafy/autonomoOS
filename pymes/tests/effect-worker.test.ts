@@ -48,6 +48,16 @@ test("worker batch summary exposes only safe counters", () => {
   ]), { total: 3, succeeded: 1, failed: 1, skipped: 1 });
 });
 
+test("worker loop supports a finite max cycle run", async () => {
+  let calls = 0;
+  await runEffectWorker({ intervalMs: 250, maxCycles: 3, poll: async () => { calls += 1; return []; } });
+  assert.equal(calls, 3);
+});
+
+test("worker loop rejects unsafe max cycle values", async () => {
+  await assert.rejects(() => runEffectWorker({ maxCycles: 0, poll: async () => [] }), /INVALID_EFFECT_WORKER_MAX_CYCLES/);
+});
+
 test("worker loop reports a poll error and retries after a bounded delay", async () => {
   const controller = new AbortController();
   let calls = 0;

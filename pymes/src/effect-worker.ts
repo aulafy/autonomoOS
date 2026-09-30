@@ -87,6 +87,8 @@ export interface EffectWorkerLoopOptions {
   /** If supplied, transient poll errors are reported and retried after a bounded delay. */
   onError?: (error: unknown) => void | Promise<void>;
   retryDelayMs?: number;
+  /** Optional finite run for cron/Kubernetes Jobs; omitted means resident mode. */
+  maxCycles?: number;
 }
 
 /**
@@ -103,7 +105,11 @@ export async function runEffectWorker(input: EffectWorkerLoopOptions): Promise<v
   if (!Number.isInteger(retryDelayMs) || retryDelayMs < 250 || retryDelayMs > 300_000) {
     throw new Error("INVALID_EFFECT_WORKER_RETRY_DELAY");
   }
+  if (input.maxCycles !== undefined && (!Number.isInteger(input.maxCycles) || input.maxCycles < 1 || input.maxCycles > 10_000)) {
+    throw new Error("INVALID_EFFECT_WORKER_MAX_CYCLES");
+  }
   const signal = input.signal;
+  let cycles = 0;
   while (!signal?.aborted) {
     let results: EffectBatchResult[];
     try {
@@ -119,6 +125,8 @@ export async function runEffectWorker(input: EffectWorkerLoopOptions): Promise<v
       continue;
     }
     await input.onCycle?.(results);
+    cycles += 1;
+    if (input.maxCycles !== undefined && cycles >= input.maxCycles) break;
     if (signal?.aborted) break;
     await new Promise<void>((resolve, reject) => {
       const timer = setTimeout(resolve, intervalMs);
