@@ -49,7 +49,7 @@ export class WorkspaceClient {
     this.config = { baseUrl: new URL(config.baseUrl.trim()).toString().replace(/\/$/, ""), tenantId: config.tenantId.trim(), token: config.token.trim(), requestTimeoutMs: config.requestTimeoutMs ?? 10000 };
   }
 
-  private async request(path: string, init: RequestInit = {}): Promise<Record<string, unknown>> {
+  private async request(path: string, init: RequestInit = {}, acceptedStatuses: readonly number[] = []): Promise<Record<string, unknown>> {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), this.config.requestTimeoutMs ?? 10000);
     let response: Response;
@@ -64,7 +64,7 @@ export class WorkspaceClient {
     } finally { clearTimeout(timeout); }
     const body: unknown = await response.json();
     if (!body || typeof body !== "object" || Array.isArray(body)) throw new Error("INVALID_WORKSPACE_RESPONSE");
-    if (!response.ok) {
+    if (!response.ok && !acceptedStatuses.includes(response.status)) {
       const record = body as Record<string, unknown>;
       if (response.status === 409 && record.error === "CASE_VERSION_CONFLICT" && typeof record.currentVersion === "number") {
         throw new WorkspaceConflictError(record.currentVersion);
@@ -85,7 +85,7 @@ export class WorkspaceClient {
     return body as unknown as WorkspaceHealth;
   }
   async ready(): Promise<WorkspaceHealth> {
-    const body = await this.request("/readyz");
+    const body = await this.request("/readyz", {}, [503]);
     if ((body.status !== "ok" && body.status !== "not_ready") || typeof body.service !== "string" || typeof body.version !== "string") throw new Error("INVALID_WORKSPACE_READINESS");
     return body as unknown as WorkspaceHealth;
   }

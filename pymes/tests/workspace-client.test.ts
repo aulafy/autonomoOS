@@ -29,6 +29,17 @@ test("workspace client exposes health and readiness contracts", async () => {
   assert.equal((await value.ready()).status, "ok");
 });
 
+test("workspace client exposes not-ready state without throwing", async () => {
+  const broken = new WorkspaceApi({
+    findSession() { return null; }, listInbox() { throw new Error("DB_DOWN"); }, revokeSession() {},
+    appendInbox() {}, updateInbox() {}, appendApproval() {}, listApprovals() { return []; },
+    appendCaseAudit() {}, listCaseAudit() { return []; }, appendEffect() {}, updateEffect() {}, listEffects() { return []; }
+  });
+  const fetcher: typeof fetch = (input, init) => handlePymesRequest(broken, new Request(String(input), init));
+  const value = new WorkspaceClient({ baseUrl: "http://workspace.local", tenantId: "agency-1", token: "owner-token-123456" }, fetcher);
+  assert.equal((await value.ready()).status, "not_ready");
+});
+
 test("workspace client reads an individual effect", async () => {
   const api = new WorkspaceApi();
   api.addSession("owner-token-123456", { userId: "owner", tenantId: "agency-1", role: "owner" });
