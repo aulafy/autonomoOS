@@ -14,3 +14,4 @@
 @media(max-width:900px){.workspace-ops{display:block}.workspace-metrics{min-width:0;margin-top:16px;grid-template-columns:repeat(3,minmax(70px,1fr))}}
 @media(max-width:720px){.workspace-metrics{grid-template-columns:repeat(2,minmax(70px,1fr))}}
 .workspace-metrics[data-failed]:not([data-failed="0"]){border-radius:8px}.workspace-metrics[data-failed]:not([data-failed="0"])>div:nth-child(4){border-color:#a96b4b;background:#5e3f35}.workspace-metrics[data-failed="0"]>div:nth-child(4) strong{color:#c8f29c}
+.workspace-metrics-updated{display:block;margin-top:10px;color:#8fb9a0;font-size:10px}

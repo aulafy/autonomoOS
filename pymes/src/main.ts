@@ -62,6 +62,10 @@ function renderWorkspaceMetrics(metrics: WorkspaceMetrics): void {
     target.appendChild(item);
   }
   target.dataset.updatedAt = metrics.generatedAt;
+  const updated = document.getElementById("workspace-metrics-updated");
+  if (updated) {
+    updated.textContent = `Actualizado ${new Date(metrics.generatedAt).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}`;
+  }
   target.title = failed > 0 ? `${failed} operación${failed === 1 ? "" : "es"} fallida${failed === 1 ? "" : "s"}: revisar antes de reintentar` : "Sin operaciones fallidas";
 }
 
