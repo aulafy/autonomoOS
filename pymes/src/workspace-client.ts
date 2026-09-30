@@ -32,7 +32,7 @@ export class WorkspaceConflictError extends Error {
 function validConfig(config: WorkspaceClientConfig): void {
   let base: URL;
   try { base = new URL(config.baseUrl.trim()); } catch { throw new Error("INVALID_WORKSPACE_CLIENT_CONFIG"); }
-  if ((base.protocol !== "http:" && base.protocol !== "https:") || base.username || base.password || base.search || base.hash ||
+  if (config.baseUrl.trim().length > 2048 || (base.protocol !== "http:" && base.protocol !== "https:") || base.username || base.password || base.search || base.hash ||
     !config.tenantId.trim() || config.tenantId.trim().length > 200 || /[\u0000-\u001f\u007f]/.test(config.tenantId.trim()) || config.token.trim().length < 16 || config.token.trim().length > 4096) throw new Error("INVALID_WORKSPACE_CLIENT_CONFIG");
 }
 
