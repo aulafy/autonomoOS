@@ -72,6 +72,11 @@ test("worker loop rejects duplicate effect results", async () => {
   ] }), /INVALID_EFFECT_WORKER_RESULTS/);
 });
 
+test("worker loop rejects batches over the execution bound", async () => {
+  const results = Array.from({ length: 101 }, (_, index) => ({ effectId: `effect-${index}`, status: "succeeded" as const }));
+  await assert.rejects(() => runEffectWorker({ maxCycles: 1, poll: async () => results }), /INVALID_EFFECT_WORKER_RESULTS/);
+});
+
 test("worker loop reports a poll error and retries after a bounded delay", async () => {
   const controller = new AbortController();
   let calls = 0;
