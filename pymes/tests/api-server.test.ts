@@ -15,6 +15,7 @@ test("health endpoint is public and reports service identity", async () => {
   assert.equal(response.status, 200);
   assert.deepEqual(await response.json(), { status: "ok", service: "pymes-workspace", version: "0.1.0" });
   assert.equal(response.headers.get("permissions-policy"), "camera=(), microphone=(), geolocation=()");
+  assert.equal(response.headers.get("x-dns-prefetch-control"), "off");
 });
 
 test("health endpoint exposes an injected release version", async () => {
