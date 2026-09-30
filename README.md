@@ -18,7 +18,11 @@ npm install
 npm test
 npm run typecheck --workspaces --if-present
 npm run build
+npm run check:pymes
 ```
+
+`npm run check:pymes` ejecuta el gate completo del producto PYMES: typecheck,
+pruebas y build de la interfaz.
 
 ## Run the demos
 
