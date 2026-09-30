@@ -46,13 +46,13 @@ function isRemoteEffect(value: unknown): value is RemoteEffect {
 function isRemoteApproval(value: unknown, tenantId: string): value is RemoteApproval {
   if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
   const approval = value as Record<string, unknown>;
-  return approval.tenantId === tenantId && typeof approval.id === "string" && !!approval.id &&
-    typeof approval.resourceId === "string" && !!approval.resourceId &&
+  return approval.tenantId === tenantId && typeof approval.id === "string" && validResourceId(approval.id) &&
+    typeof approval.resourceId === "string" && validResourceId(approval.resourceId) &&
     (approval.operation === "approveOffer" || approval.operation === "executeEffect") &&
-    typeof approval.approvedBy === "string" && !!approval.approvedBy &&
+    typeof approval.approvedBy === "string" && validInputText(approval.approvedBy, 200) &&
     typeof approval.approvedAt === "string" && validTimestamp(approval.approvedAt) &&
-    typeof approval.reason === "string" && !!approval.reason &&
-    typeof approval.draftHash === "string" && !!approval.draftHash;
+    typeof approval.reason === "string" && validInputText(approval.reason, 2_000) &&
+    typeof approval.draftHash === "string" && validInputText(approval.draftHash, 512);
 }
 function validResourceId(value: string): boolean {
   return value.trim().length > 0 && value.length <= 200 && !/[\u0000-\u001f\u007f]/.test(value);

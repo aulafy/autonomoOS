@@ -84,6 +84,9 @@ La fecha de cada entrada debe ser parseable; los timestamps inválidos también
 invalidan la respuesta de auditoría completa.
 Las aprobaciones deben llevar `approvedAt` válido y los efectos `requestedAt`
 válido; si no, se rechazan las colecciones o mutaciones recibidas.
+Los textos de aprobación recibidos respetan los mismos límites que los de
+entrada: recurso y actor acotados, motivo de 2.000 caracteres y hash de 512,
+sin caracteres de control.
 Las colecciones de aprobaciones y efectos también deben tener identificadores
 únicos; los duplicados se rechazan para evitar decisiones o ejecuciones dobles.
 La bandeja aplica la misma regla a los casos para evitar que un mensaje se
