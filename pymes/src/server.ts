@@ -13,6 +13,7 @@ const userId = (process.env.PYMES_API_BOOTSTRAP_USER ?? "demo-owner").trim();
 const corsOrigins = parseCorsOrigins(process.env.PYMES_API_CORS_ORIGINS);
 
 if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error("INVALID_PYMES_API_PORT");
+if (!tenantId || !userId) throw new Error("INVALID_PYMES_API_BOOTSTRAP_IDENTITY");
 const repository = new SqliteWorkspaceRepository(process.env.PYMES_API_DB_PATH ?? "./data/pymes-workspace.db");
 repository.provisionSession(token, { userId, tenantId, role: "owner" });
 const ingressToken = process.env.PYMES_OPENCLAW_INGRESS_TOKEN;
