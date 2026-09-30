@@ -91,6 +91,9 @@ rechaza valores negativos, no numéricos o superiores a los máximos permitidos.
 
 El endpoint `/healthz` no requiere autenticación. Todas las rutas de datos
 requieren Bearer token y comprueban el tenant antes de leer o escribir.
+Cuando se configura `PYMES_OPENCLAW_SIGNING_SECRET`, debe tener entre 16 y
+4.096 caracteres efectivos y cada petición debe incluir la firma HMAC descrita
+en `API.md`; el token y la firma se validan de forma independiente.
 
 ## Operación
 
