@@ -34,6 +34,7 @@ export interface RemoteInboxRecord {
 export interface RemoteConnector { id: string; name: string; status: ConnectorStatus; }
 export interface RemoteCaseAudit { id: string; caseId: string; from: string; to: string; operation: string; actorId: string; at: string; version: number; requestId?: string; }
 export interface RemoteEffect { id: string; caseId: string; kind: string; status: string; requestedBy: string; requestedAt: string; retryCount?: number; draftHash?: string; payload: Record<string, unknown>; executionNote?: string; executedBy?: string; executedAt?: string; confirmedBy?: string; confirmedAt?: string; }
+export type WorkspaceEffectKind = "call" | "calendar" | "message" | "crm_task";
 export interface WorkspaceHealth { status: "ok" | "not_ready"; service: string; version: string; retryAfter?: string; }
 export interface WorkspaceMetrics {
   tenantId: string;
@@ -301,6 +302,22 @@ export class WorkspaceClient {
     if (body.tenantId !== this.config.tenantId || body.caseId !== caseId || !Array.isArray(body.effects) || body.effects.length > MAX_REMOTE_ITEMS || !body.effects.every(isRemoteEffect) ||
       new Set(body.effects.map(item => item.id)).size !== body.effects.length) throw new Error("INVALID_WORKSPACE_EFFECTS");
     return body.effects as RemoteEffect[];
+  }
+  async createEffect(input: { id: string; caseId: string; kind: WorkspaceEffectKind; payload: Record<string, unknown>; requestedAt?: string; draftHash: string }): Promise<RemoteEffect> {
+    if (!input || !validResourceId(input.id) || !validResourceId(input.caseId) ||
+      !["call", "calendar", "message", "crm_task"].includes(input.kind) ||
+      !input.payload || typeof input.payload !== "object" || Array.isArray(input.payload) || Object.keys(input.payload).length === 0 ||
+      new TextEncoder().encode(JSON.stringify(input.payload)).byteLength > 65536 ||
+      !validInputText(input.draftHash, 512) ||
+      (input.requestedAt !== undefined && !validTimestamp(input.requestedAt))) {
+      throw new Error("INVALID_WORKSPACE_EFFECT_INPUT");
+    }
+    const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/effects`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...input, requestedAt: input.requestedAt ?? new Date().toISOString() })
+    });
+    if (!isRemoteEffect(body)) throw new Error("INVALID_WORKSPACE_EFFECT");
+    return body;
   }
   async effect(effectId: string): Promise<RemoteEffect> {
     if (!validResourceId(effectId)) throw new Error("INVALID_WORKSPACE_EFFECT_INPUT");

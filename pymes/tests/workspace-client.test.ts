@@ -427,6 +427,18 @@ test("workspace client performs an authenticated case transition", async () => {
   assert.equal((await value.inbox())[0]?.state, "executing");
 });
 
+test("workspace client creates a governed effect draft", async () => {
+  const api = new WorkspaceApi();
+  api.addSession("owner-token-123456", { userId: "owner", tenantId: "agency-1", role: "owner" });
+  const fetcher: typeof fetch = (input, init) => handlePymesRequest(api, new Request(String(input), init));
+  const value = new WorkspaceClient({ baseUrl: "http://workspace.local", tenantId: "agency-1", token: "owner-token-123456" }, fetcher);
+  const effect = await value.createEffect({ id: "call-draft-1", caseId: "case-client", kind: "call",
+    payload: { phone: "+34600000000", purpose: "Revisar renovación" }, requestedAt: "2026-09-29T15:00:00Z", draftHash: "sha256:draft" });
+  assert.equal(effect.status, "pending");
+  assert.equal(effect.kind, "call");
+  await assert.rejects(() => value.createEffect({ id: "bad", caseId: "case-client", kind: "call", payload: {}, draftHash: "sha256:x" }), /INVALID_WORKSPACE_EFFECT_INPUT/);
+});
+
 test("workspace client exposes current version on transition conflict", async () => {
   const api = new WorkspaceApi();
   api.addSession("owner-token-123456", { userId: "owner", tenantId: "agency-1", role: "owner" });
