@@ -15,6 +15,12 @@ export function normalizeOptionalToken(value: string | undefined, errorCode: str
   return token;
 }
 
+export function normalizeBootstrapIdentity(value: string | undefined, fallback: string): string {
+  const identity = (value ?? fallback).trim();
+  if (!identity || identity.length > 200) throw new Error("INVALID_PYMES_API_BOOTSTRAP_IDENTITY");
+  return identity;
+}
+
 export function parseConfiguredIdSet(value: string | undefined, errorCode = "INVALID_PYMES_ID_LIST"): Set<string> {
   const entries = (value ?? "").split(",").map(item => item.trim()).filter(Boolean);
   if (entries.length > 100 || entries.some(item => item.length > 200)) throw new Error(errorCode);

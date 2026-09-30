@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { normalizeBootstrapToken, normalizeOptionalToken, parseConfiguredChannels, parseConfiguredIdSet, parseCorsOrigins, pilotConfig } from "../src/config.js";
+import { normalizeBootstrapIdentity, normalizeBootstrapToken, normalizeOptionalToken, parseConfiguredChannels, parseConfiguredIdSet, parseCorsOrigins, pilotConfig } from "../src/config.js";
 
 test("pilot configuration declares the supported communication channels", () => {
   assert.deepEqual(pilotConfig.channels, ["whatsapp", "telegram", "imessage", "email"]);
@@ -30,6 +30,13 @@ test("optional token normalization allows omission and rejects short values", ()
   assert.equal(normalizeOptionalToken(undefined, "INVALID_INGRESS"), undefined);
   assert.equal(normalizeOptionalToken("  sixteen-character-token  ", "INVALID_INGRESS"), "sixteen-character-token");
   assert.throws(() => normalizeOptionalToken("short", "INVALID_INGRESS"), /INVALID_INGRESS/);
+});
+
+test("bootstrap identities are trimmed and bounded", () => {
+  assert.equal(normalizeBootstrapIdentity("  agencia  ", "fallback"), "agencia");
+  assert.equal(normalizeBootstrapIdentity(undefined, "fallback"), "fallback");
+  assert.throws(() => normalizeBootstrapIdentity("   ", ""), /INVALID_PYMES_API_BOOTSTRAP_IDENTITY/);
+  assert.throws(() => normalizeBootstrapIdentity("x".repeat(201), "fallback"), /INVALID_PYMES_API_BOOTSTRAP_IDENTITY/);
 });
 
 test("configured ingress id lists are bounded and deduplicated", () => {
