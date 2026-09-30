@@ -107,7 +107,9 @@ export class WorkspaceClient {
     if (contentLength && (/^\d+$/.test(contentLength) === false || Number(contentLength) > MAX_REMOTE_RESPONSE_BYTES)) {
       throw new Error("WORKSPACE_RESPONSE_TOO_LARGE");
     }
-    const body: unknown = await response.json();
+    let body: unknown;
+    try { body = await response.json(); }
+    catch { throw new Error("INVALID_WORKSPACE_RESPONSE"); }
     if (!body || typeof body !== "object" || Array.isArray(body)) throw new Error("INVALID_WORKSPACE_RESPONSE");
     if (!response.ok && !acceptedStatuses.includes(response.status)) {
       const record = body as Record<string, unknown>;
