@@ -3,7 +3,7 @@ import type { Channel } from "./domain.js";
 export const supportedChannels = ["whatsapp", "telegram", "imessage", "email"] as const satisfies readonly Channel[];
 export type SupportedChannel = Channel;
 export type ConnectorStatus = "lectura preparada" | "conectado" | "no configurado";
-type ConnectorConfig = { name: string; status: ConnectorStatus };
+export type ConnectorConfig = { name: string; status: ConnectorStatus };
 
 export function normalizeBootstrapToken(value: string | undefined): string {
   const token = value?.trim() ?? "";
