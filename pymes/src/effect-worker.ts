@@ -113,6 +113,7 @@ export interface EffectWorkerLoopOptions {
   /** Test and graceful-shutdown hook; production callers leave it undefined. */
   signal?: AbortSignal;
   onCycle?: (results: EffectBatchResult[]) => void | Promise<void>;
+  onSummary?: (summary: EffectBatchSummary) => void | Promise<void>;
   /** If supplied, transient poll errors are reported and retried after a bounded delay. */
   onError?: (error: unknown) => void | Promise<void>;
   retryDelayMs?: number;
@@ -154,6 +155,7 @@ export async function runEffectWorker(input: EffectWorkerLoopOptions): Promise<v
       continue;
     }
     await input.onCycle?.(results);
+    await input.onSummary?.(summarizeEffectBatch(results));
     cycles += 1;
     if (input.maxCycles !== undefined && cycles >= input.maxCycles) break;
     if (signal?.aborted) break;

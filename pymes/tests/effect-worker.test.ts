@@ -54,6 +54,14 @@ test("worker loop supports a finite max cycle run", async () => {
   assert.equal(calls, 3);
 });
 
+test("worker loop emits a safe summary callback", async () => {
+  let summary: unknown;
+  await runEffectWorker({ maxCycles: 1, poll: async () => [
+    { effectId: "ok", status: "succeeded" }, { effectId: "bad", status: "failed", error: "private" },
+  ], onSummary: value => { summary = value; } });
+  assert.deepEqual(summary, { total: 2, succeeded: 1, failed: 1, skipped: 0 });
+});
+
 test("worker loop rejects unsafe max cycle values", async () => {
   await assert.rejects(() => runEffectWorker({ maxCycles: 0, poll: async () => [] }), /INVALID_EFFECT_WORKER_MAX_CYCLES/);
 });
