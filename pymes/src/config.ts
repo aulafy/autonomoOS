@@ -9,6 +9,12 @@ export function normalizeBootstrapToken(value: string | undefined): string {
   return token;
 }
 
+export function normalizeOptionalToken(value: string | undefined, errorCode: string): string | undefined {
+  const token = value?.trim() || undefined;
+  if (token !== undefined && token.length < 16) throw new Error(errorCode);
+  return token;
+}
+
 /** Missing/blank input uses safe local defaults; wildcard input is rejected. */
 export function parseCorsOrigins(value: string | undefined): string[] {
   const configured = value?.trim() ? value : "http://127.0.0.1:5174,http://localhost:5174";

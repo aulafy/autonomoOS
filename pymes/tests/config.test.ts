@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { normalizeBootstrapToken, parseConfiguredChannels, parseCorsOrigins, pilotConfig } from "../src/config.js";
+import { normalizeBootstrapToken, normalizeOptionalToken, parseConfiguredChannels, parseCorsOrigins, pilotConfig } from "../src/config.js";
 
 test("pilot configuration declares the supported communication channels", () => {
   assert.deepEqual(pilotConfig.channels, ["whatsapp", "telegram", "imessage", "email"]);
@@ -24,6 +24,12 @@ test("bootstrap token normalization trims and enforces minimum length", () => {
   assert.equal(normalizeBootstrapToken("  1234567890123456  "), "1234567890123456");
   assert.throws(() => normalizeBootstrapToken("short"), /PYMES_API_BOOTSTRAP_TOKEN_REQUIRED/);
   assert.throws(() => normalizeBootstrapToken(undefined), /PYMES_API_BOOTSTRAP_TOKEN_REQUIRED/);
+});
+
+test("optional token normalization allows omission and rejects short values", () => {
+  assert.equal(normalizeOptionalToken(undefined, "INVALID_INGRESS"), undefined);
+  assert.equal(normalizeOptionalToken("  sixteen-character-token  ", "INVALID_INGRESS"), "sixteen-character-token");
+  assert.throws(() => normalizeOptionalToken("short", "INVALID_INGRESS"), /INVALID_INGRESS/);
 });
 
 test("CORS origins use safe defaults and reject wildcard", () => {
