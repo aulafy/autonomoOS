@@ -353,6 +353,15 @@ test("workspace client reads an individual effect", async () => {
   assert.equal((await value.effectsForCase("case-1")).length, 1);
 });
 
+test("workspace client rejects unsafe remote effect identifiers", async () => {
+  const effect = { id: "effect-1\n", caseId: "case-1", kind: "call", status: "pending",
+    requestedBy: "owner", requestedAt: "2026-09-29T14:00:00Z", payload: {} };
+  const fetcher: typeof fetch = async () => new Response(JSON.stringify({ tenantId: "agency-1", effects: [effect] }), {
+    status: 200, headers: { "content-type": "application/json" } });
+  const value = new WorkspaceClient({ baseUrl: "http://workspace.local", tenantId: "agency-1", token: "owner-token-123456" }, fetcher);
+  await assert.rejects(() => value.effects(), /INVALID_WORKSPACE_EFFECTS/);
+});
+
 test("workspace client performs an authenticated case transition", async () => {
   const api = new WorkspaceApi();
   api.addSession("owner-token-123456", { userId: "owner", tenantId: "agency-1", role: "owner" });

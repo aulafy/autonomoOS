@@ -130,6 +130,8 @@ Si el servidor declara otro tipo de contenido, devuelve
 Cada efecto individual debe incluir como mínimo `id`, `caseId`, `kind`,
 `status`, `requestedBy` y `requestedAt`; el cliente rechaza efectos incompletos
 con `INVALID_WORKSPACE_EFFECT` antes de permitir confirmaciones o reintentos.
+`id` y `caseId` usan el identificador seguro del workspace: texto no vacío, de
+hasta 200 caracteres y sin caracteres de control.
 El `payload` de un efecto debe ser un objeto JSON, nunca un array, `null` o una
 primitiva.
 Si aparece `retryCount`, debe ser un entero entre 0 y 1.000.

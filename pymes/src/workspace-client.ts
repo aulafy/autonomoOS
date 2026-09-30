@@ -35,7 +35,7 @@ export interface WorkspaceHealth { status: "ok" | "not_ready"; service: string; 
 function isRemoteEffect(value: unknown): value is RemoteEffect {
   if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
   const effect = value as Record<string, unknown>;
-  return typeof effect.id === "string" && effect.id.length > 0 &&
+  return typeof effect.id === "string" && validResourceId(effect.id) &&
     typeof effect.caseId === "string" && validResourceId(effect.caseId) &&
     typeof effect.kind === "string" && validInputText(effect.kind, 200) &&
     typeof effect.status === "string" && validInputText(effect.status, 100) &&
