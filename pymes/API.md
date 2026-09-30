@@ -19,6 +19,8 @@ si no, el API genera un UUID. Las respuestas usan `Cache-Control: no-store`,
 `Cross-Origin-Resource-Policy: same-origin`, `Cross-Origin-Opener-Policy:
 same-origin`, además de
 `Referrer-Policy: no-referrer`.
+También incluye `Permissions-Policy` para desactivar cámara, micrófono y
+geolocalización.
 El cliente remoto exige una URL base HTTP/HTTPS sin credenciales, query ni
 fragmento y con un máximo de 2.048 caracteres. Sus peticiones usan un timeout
 de 10.000 ms por defecto; `requestTimeoutMs` permite ajustar entre 100 y 60.000

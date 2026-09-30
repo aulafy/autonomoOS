@@ -62,6 +62,7 @@ const server = createServer(async (request, nodeResponse) => {
       nodeResponse.setHeader("content-security-policy", "default-src 'none'; frame-ancestors 'none'");
       nodeResponse.setHeader("cross-origin-resource-policy", "same-origin");
       nodeResponse.setHeader("cross-origin-opener-policy", "same-origin");
+      nodeResponse.setHeader("permissions-policy", "camera=(), microphone=(), geolocation=()");
       nodeResponse.setHeader("x-request-id", requestId);
       nodeResponse.end(JSON.stringify({ error: "BODY_TOO_LARGE" }));
       return;
@@ -87,6 +88,7 @@ const server = createServer(async (request, nodeResponse) => {
       nodeResponse.setHeader("content-security-policy", "default-src 'none'; frame-ancestors 'none'");
       nodeResponse.setHeader("cross-origin-resource-policy", "same-origin");
       nodeResponse.setHeader("cross-origin-opener-policy", "same-origin");
+      nodeResponse.setHeader("permissions-policy", "camera=(), microphone=(), geolocation=()");
       nodeResponse.setHeader("x-request-id", requestId);
       nodeResponse.end(JSON.stringify({ error: "INTERNAL_SERVER_ERROR" }));
       console.error("PYMES request failed", { requestId, error: safeError(error) });
