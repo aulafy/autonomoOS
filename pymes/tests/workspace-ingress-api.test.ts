@@ -55,6 +55,15 @@ test("HTTP ingress rejects a null envelope without an internal error", async () 
   assert.deepEqual(await response.json(), { error: "INVALID_EVENT" });
 });
 
+test("direct workspace requests do not persist unsafe correlation ids", () => {
+  const api = new WorkspaceApi(undefined, { token: "ingress-token-123456", policy });
+  api.addSession("owner-token-123456", { userId: "owner", tenantId: "agency-1", role: "owner" });
+  const result = api.handle({ method: "POST", path: "/v1/workspaces/agency-1/ingress/openclaw", ingressToken: "ingress-token-123456", requestId: "bad\nrequest", body: envelope });
+  assert.equal(result.status, 201);
+  const audit = api.handle({ method: "GET", path: "/v1/workspaces/agency-1/cases/openclaw:evt-api-1/audit", authorization: "Bearer owner-token-123456" });
+  assert.equal((audit.body.audit as Array<{ requestId?: string }>)[0]?.requestId, undefined);
+});
+
 test("internal ingress reports duplicate events as a conflict", async () => {
   const api = new WorkspaceApi(undefined, { token: "ingress-token-123456", policy });
   const init = { method: "POST", headers: { "x-pymes-ingress-token": "ingress-token-123456", "content-type": "application/json" }, body: JSON.stringify(envelope) } as const;

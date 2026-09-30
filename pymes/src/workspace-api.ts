@@ -134,6 +134,10 @@ function tokensEqual(left: string | undefined, right: string | undefined): boole
   const b = Buffer.from(right, "utf8");
   return a.length === b.length && timingSafeEqual(a, b);
 }
+function safeRequestId(value: string | undefined): string | undefined {
+  return value !== undefined && value.length > 0 && value.length <= 200 && !/[\u0000-\u001f\u007f]/.test(value)
+    ? value : undefined;
+}
 
 /**
  * Small HTTP contract for the first PYMES server. It owns authorization and
@@ -180,7 +184,7 @@ export class WorkspaceApi {
       if (result.accepted) {
         this.repository.appendCaseAudit({ id: `audit-${tenantId}-${result.record.id}-0`, tenantId,
           caseId: result.record.id, from: "received", to: "received", operation: "openclaw_ingress",
-          actorId: "openclaw-gateway", requestId: request.requestId, at: request.body && typeof request.body === "object" && !Array.isArray(request.body) &&
+          actorId: "openclaw-gateway", requestId: safeRequestId(request.requestId), at: request.body && typeof request.body === "object" && !Array.isArray(request.body) &&
             typeof (request.body as Record<string, unknown>).inbound === "object" && (request.body as Record<string, unknown>).inbound !== null &&
             typeof ((request.body as Record<string, unknown>).inbound as Record<string, unknown>).receivedAt === "string"
             ? ((request.body as Record<string, unknown>).inbound as Record<string, unknown>).receivedAt as string
