@@ -236,7 +236,11 @@ function renderInbox() {
       el("span", "", `· ${item.message.insuranceLine ? insuranceLines[item.message.insuranceLine] : "Por clasificar"}`),
       el("span", "", `· ${dayTime(item.message.receivedAt)}`));
     const remote = remoteInbox.get(item.id);
-    if (remote) meta.append(el("span", "remote-state", `· Workspace: ${remoteStateNames[remote.state] ?? remote.state} · v${remote.version ?? 0}`));
+    if (remote) {
+      const remoteState = el("span", "remote-state", `· Workspace: ${remoteStateNames[remote.state] ?? remote.state} · v${remote.version ?? 0}`);
+      remoteState.title = `Estado técnico: ${remote.state}; versión ${remote.version ?? 0}`;
+      meta.append(remoteState);
+    }
     button.append(head, meta, el("p", "", item.message.text));
     button.addEventListener("click", () => {
       selectedId = item.id;
