@@ -249,7 +249,7 @@ export class WorkspaceClient {
     if (!validResourceId(effectId)) throw new Error("INVALID_WORKSPACE_EFFECT_INPUT");
     const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/effects/${encodeURIComponent(effectId)}`);
     if (!isRemoteEffect(body)) throw new Error("INVALID_WORKSPACE_EFFECT");
-    return body as unknown as RemoteEffect;
+    return body;
   }
   async confirmEffect(effectId: string, confirmedAt = new Date().toISOString()): Promise<RemoteEffect> {
     if (!validResourceId(effectId) || !validTimestamp(confirmedAt)) throw new Error("INVALID_WORKSPACE_EFFECT_INPUT");
