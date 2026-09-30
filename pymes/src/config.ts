@@ -2,7 +2,8 @@ export const pilotConfig = {
   country: "España",
   timeZone: "Europe/Madrid",
   crm: { name: "Holded", status: "por conectar" },
-  calendar: { name: "Google Calendar", status: "por conectar" }
+  calendar: { name: "Google Calendar", status: "por conectar" },
+  channels: ["whatsapp", "telegram", "imessage", "email"] as const
 } as const;
 
 export const insuranceLines = {
