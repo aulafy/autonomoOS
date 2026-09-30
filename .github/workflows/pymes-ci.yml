@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - "pymes/**"
+      - "scripts/**"
       - "package.json"
       - "package-lock.json"
       - ".npmrc"
@@ -13,6 +14,7 @@ on:
   pull_request:
     paths:
       - "pymes/**"
+      - "scripts/**"
       - "package.json"
       - "package-lock.json"
       - ".npmrc"
@@ -65,9 +67,11 @@ jobs:
       - run: npm run check:pymes
       - name: Validate operational scripts
         run: |
-          bash -n pymes/scripts/backup-volume.sh pymes/scripts/verify-backup.sh
+          bash -n pymes/scripts/backup-volume.sh pymes/scripts/verify-backup.sh pymes/scripts/check-operations.sh scripts/check-k8s-manifest.sh
           test -x pymes/scripts/backup-volume.sh
           test -x pymes/scripts/verify-backup.sh
+          test -x pymes/scripts/check-operations.sh
+          test -x scripts/check-k8s-manifest.sh
           tmp_dir="$(mktemp -d)"
           trap 'rm -rf "$tmp_dir"' EXIT
           printf 'smoke\n' > "$tmp_dir/data.txt"
@@ -79,6 +83,8 @@ jobs:
             echo 'Corrupted backup was incorrectly accepted' >&2
             exit 1
           fi
+      - name: Validate Kubernetes overlay
+        run: npm run check:k8s
       - name: Validate deployment compose file
         env:
           PYMES_API_BOOTSTRAP_TOKEN: ci-compose-validation-token
