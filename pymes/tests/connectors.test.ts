@@ -27,7 +27,8 @@ test("Holded reads an exact phone match without fetching the whole address book"
 test("Google Calendar reads all pages and keeps timed and all-day events", async () => {
   let calledUrl: URL | undefined;
   const pageTokens: Array<string | null> = [];
-  const fetcher: typeof fetch = async url => {
+  const fetcher: typeof fetch = async (url, init) => {
+    assert.ok(init?.signal instanceof AbortSignal);
     calledUrl = new URL(String(url));
     pageTokens.push(calledUrl.searchParams.get("pageToken"));
     if (calledUrl.searchParams.get("pageToken") === "next") {
