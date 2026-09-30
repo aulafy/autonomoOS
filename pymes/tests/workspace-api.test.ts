@@ -199,7 +199,7 @@ test("effect requests leave an auditable case entry", () => {
   const value = api();
   const response = value.handle({ method: "POST", path: "/v1/workspaces/agency-1/effects",
     authorization: "Bearer owner-token-12345", requestId: "req-effect-1", body: { id: "audited-effect", caseId: "msg-1", kind: "crm_task",
-      payload: { title: "Seguimiento" }, requestedAt: "2026-09-30T10:00:00Z", draftHash: "sha256:audit" } });
+      payload: { title: "Seguimiento", contactId: "contact-1" }, requestedAt: "2026-09-30T10:00:00Z", draftHash: "sha256:audit" } });
   assert.equal(response.status, 201);
   const audit = value.handle({ method: "GET", path: "/v1/workspaces/agency-1/cases/msg-1/audit",
     authorization: "Bearer reviewer-token-1234" });
@@ -211,7 +211,7 @@ test("audit versions remain monotonic across effects and transitions", () => {
   for (const id of ["effect-a", "effect-b"]) {
     assert.equal(value.handle({ method: "POST", path: "/v1/workspaces/agency-1/effects",
       authorization: "Bearer owner-token-12345", body: { id, caseId: "msg-1", kind: "crm_task",
-        payload: { title: id }, requestedAt: "2026-09-30T10:00:00Z", draftHash: `sha256:${id}` } }).status, 201);
+      payload: { title: id, contactId: "contact-1" }, requestedAt: "2026-09-30T10:00:00Z", draftHash: `sha256:${id}` } }).status, 201);
   }
   assert.equal(value.handle({ method: "POST", path: "/v1/workspaces/agency-1/cases/msg-1/transition",
     authorization: "Bearer reviewer-token-1234", body: { to: "approved", at: "2026-09-30T10:01:00Z" } }).status, 200);
@@ -225,7 +225,7 @@ test("effect lifecycle records confirmation and execution in audit", () => {
   const auth = "Bearer owner-token-12345";
   assert.equal(value.handle({ method: "POST", path: "/v1/workspaces/agency-1/effects",
     authorization: auth, body: { id: "lifecycle-effect", caseId: "msg-1", kind: "call",
-      payload: { purpose: "Seguimiento" }, requestedAt: "2026-09-30T10:00:00Z", draftHash: "sha256:lifecycle" } }).status, 201);
+      payload: { objective: "Seguimiento", questions: ["Confirmar resultado"] }, requestedAt: "2026-09-30T10:00:00Z", draftHash: "sha256:lifecycle" } }).status, 201);
   assert.equal(value.handle({ method: "POST", path: "/v1/workspaces/agency-1/effects/lifecycle-effect/confirm",
     authorization: auth, body: { confirm: true, confirmedAt: "2026-09-30T10:01:00Z" } }).status, 200);
   assert.equal(value.handle({ method: "POST", path: "/v1/workspaces/agency-1/effects/lifecycle-effect/result",
