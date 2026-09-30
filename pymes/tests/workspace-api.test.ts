@@ -25,6 +25,15 @@ test("API authenticates and isolates inbox by tenant", () => {
     authorization: "Bearer reviewer-token-1234" }).status, 403);
 });
 
+test("attention endpoint returns only cases requiring intervention", () => {
+  const value = api();
+  value.addInbox({ id: "uncertain-1", tenantId: "agency-1", state: "uncertain", summary: "Resultado incierto", updatedAt: "2026-09-29T09:00:00Z" });
+  value.addInbox({ id: "done-1", tenantId: "agency-1", state: "approved", summary: "Ya aprobado", updatedAt: "2026-09-29T08:00:00Z" });
+  const response = value.handle({ method: "GET", path: "/v1/workspaces/agency-1/attention", authorization: "Bearer reviewer-token-1234" });
+  assert.equal(response.status, 200);
+  assert.deepEqual((response.body.items as Array<{ id: string }>).map(item => item.id), ["msg-1", "uncertain-1"]);
+});
+
 test("connector registry is authenticated and tenant scoped", () => {
   const value = api();
   const own = value.handle({ method: "GET", path: "/v1/workspaces/agency-1/connectors",

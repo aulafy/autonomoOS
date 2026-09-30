@@ -245,6 +245,7 @@ ingress queda sin canales permitidos y bloquea esos eventos.
 
 - `POST /v1/workspaces/:tenant/session/revoke` — revoca el token Bearer actual y devuelve `{ "status": "revoked" }`. Las siguientes llamadas con ese token reciben `401`.
 - `GET /v1/workspaces/:tenant/inbox` — casos del tenant autenticado.
+- `GET /v1/workspaces/:tenant/attention` — solo casos `pending_review` o `uncertain`, ordenados por antigüedad y limitados a 100.
 - `GET /v1/workspaces/:tenant/connectors` — IDs, nombres y estados de los
   conectores read-only del tenant autenticado.
   El cliente valida cada registro y rechaza respuestas malformadas aunque el
