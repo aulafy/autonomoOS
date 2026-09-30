@@ -14,8 +14,14 @@ if [[ ! "${PYMES_API_TENANT}" =~ ^[A-Za-z0-9._-]{1,200}$ ]]; then
   echo "PYMES_API_TENANT no es válido" >&2
   exit 2
 fi
+timeout_seconds="${PYMES_API_TIMEOUT_SECONDS:-10}"
+pending_limit="${PYMES_PENDING_REVIEW_LIMIT:-20}"
+if [[ ! "${timeout_seconds}" =~ ^[1-9][0-9]{0,2}$ || ! "${pending_limit}" =~ ^[0-9]{1,5}$ ]]; then
+  echo "PYMES_API_TIMEOUT_SECONDS o PYMES_PENDING_REVIEW_LIMIT no son válidos" >&2
+  exit 2
+fi
 endpoint="${base_url}/v1/workspaces/${PYMES_API_TENANT}/metrics"
-body="$(curl --fail --silent --show-error --max-time "${PYMES_API_TIMEOUT_SECONDS:-10}" \
+body="$(curl --fail --silent --show-error --max-time "${timeout_seconds}" \
   -H "Authorization: Bearer ${PYMES_API_TOKEN}" \
   -H 'Accept: application/json' "${endpoint}")"
 
@@ -26,7 +32,6 @@ fi
 
 failed="$(jq -r '.effects.byStatus.failed // 0' <<<"${body}")"
 pending="$(jq -r '.inbox.byState.pending_review // 0' <<<"${body}")"
-pending_limit="${PYMES_PENDING_REVIEW_LIMIT:-20}"
 if [[ ! "${failed}" =~ ^[0-9]+$ || ! "${pending}" =~ ^[0-9]+$ || ! "${pending_limit}" =~ ^[0-9]+$ ]]; then
   echo "Respuesta de métricas no válida" >&2
   exit 2
