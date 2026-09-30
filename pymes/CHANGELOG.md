@@ -28,6 +28,12 @@
   workers, conservando filtrado local compatible.
 - Sesión de servicio con rol `worker`, token dedicado y permisos HTTP mínimos
   para ejecutar efectos sin reutilizar credenciales de propietario.
+- Búsqueda previa por `pymesEffectId` en Google Calendar para reutilizar citas
+  creadas antes de un reintento de transporte y evitar duplicados.
+- Ciclo residente `runEffectWorker` con abortado ordenado, backoff acotado ante
+  errores de polling y modo finito mediante `maxCycles` para CronJobs.
+- Resúmenes de lote seguros que exponen solo contadores operativos y nunca
+  payloads, mensajes o credenciales.
 
 ### Seguridad y operación
 
