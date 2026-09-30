@@ -5,7 +5,8 @@ export type SupportedChannel = Channel;
 
 export function parseConfiguredChannels(value: string | undefined): Set<SupportedChannel> {
   const allowed = new Set<SupportedChannel>(supportedChannels);
-  return new Set((value ?? "").split(",").map(item => item.trim()).filter((item): item is SupportedChannel => allowed.has(item as SupportedChannel)));
+  const configured = value?.trim() ? value : supportedChannels.join(",");
+  return new Set(configured.split(",").map(item => item.trim()).filter((item): item is SupportedChannel => allowed.has(item as SupportedChannel)));
 }
 
 export const pilotConfig = {

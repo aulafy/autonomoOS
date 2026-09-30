@@ -9,3 +9,7 @@ test("pilot configuration declares the supported communication channels", () => 
 test("configured channels discard unknown values and whitespace", () => {
   assert.deepEqual([...parseConfiguredChannels(" whatsapp,unknown, imessage ")], ["whatsapp", "imessage"]);
 });
+
+test("missing channel configuration uses the supported defaults", () => {
+  assert.deepEqual([...parseConfiguredChannels(undefined)], ["whatsapp", "telegram", "imessage", "email"]);
+});
