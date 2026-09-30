@@ -37,6 +37,25 @@ test("workspace client validates tenant-scoped operational metrics", async () =>
   assert.deepEqual(metrics.effects, { total: 0, byStatus: {} });
 });
 
+test("HTTP metrics route authenticates and preserves tenant isolation", async () => {
+  const api = new WorkspaceApi();
+  api.addSession("owner-token-123456", { userId: "owner", tenantId: "agency-1", role: "owner" });
+  api.addInbox({ id: "metric-case", tenantId: "agency-1", state: "pending_review", summary: "Caso de prueba" });
+  const unauthorized = await handlePymesRequest(api, new Request("http://workspace.local/v1/workspaces/agency-1/metrics"));
+  assert.equal(unauthorized.status, 401);
+  const authorized = await handlePymesRequest(api, new Request("http://workspace.local/v1/workspaces/agency-1/metrics", {
+    headers: { authorization: "Bearer owner-token-123456" }
+  }));
+  assert.equal(authorized.status, 200);
+  const body = await authorized.json() as { tenantId: string; inbox: { total: number } };
+  assert.equal(body.tenantId, "agency-1");
+  assert.equal(body.inbox.total, 1);
+  const other = await handlePymesRequest(api, new Request("http://workspace.local/v1/workspaces/agency-2/metrics", {
+    headers: { authorization: "Bearer owner-token-123456" }
+  }));
+  assert.equal(other.status, 403);
+});
+
 test("workspace client exposes not-ready state without throwing", async () => {
   const broken = new WorkspaceApi({
     findSession() { return null; }, listInbox() { throw new Error("DB_DOWN"); }, revokeSession() {},
