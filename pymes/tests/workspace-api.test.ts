@@ -25,6 +25,16 @@ test("API authenticates and isolates inbox by tenant", () => {
     authorization: "Bearer reviewer-token-1234" }).status, 403);
 });
 
+test("connector registry is authenticated and tenant scoped", () => {
+  const value = api();
+  const own = value.handle({ method: "GET", path: "/v1/workspaces/agency-1/connectors",
+    authorization: "Bearer reviewer-token-1234" });
+  assert.equal(own.status, 200);
+  assert.deepEqual((own.body.connectors as Array<{ id: string }>).map(connector => connector.id), ["holded", "google_calendar"]);
+  assert.equal(value.handle({ method: "GET", path: "/v1/workspaces/agency-2/connectors",
+    authorization: "Bearer reviewer-token-1234" }).status, 403);
+});
+
 test("agent cannot approve; reviewer approval is recorded", () => {
   const value = api();
   const body = { resourceId: "offer-1", reason: "Revisada con el documento original",
