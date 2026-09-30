@@ -91,6 +91,9 @@ Comprueba la instalación con `GET /healthz` antes de conectar la interfaz.
 
 Cuando la interfaz está conectada a un workspace remoto muestra `Cerrar
 sesión`; ese control revoca el token en el API y elimina la credencial local.
+Las peticiones del cliente usan 10 segundos por defecto; se puede configurar
+`requestTimeoutMs` entre 100 y 60.000 ms y capturar
+`WORKSPACE_REQUEST_TIMEOUT` para ofrecer un reintento.
 
 El ingress interno de OpenClaw Enterprise se activa por separado con
 `PYMES_OPENCLAW_INGRESS_TOKEN` y listas de agente, recurso, canales, remitentes
