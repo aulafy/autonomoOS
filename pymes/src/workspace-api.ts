@@ -120,7 +120,7 @@ function jsonRecord(value: unknown): Record<string, unknown> | null {
 }
 
 function pathParts(path: string): string[] | null {
-  const parts = path.split("/").filter(Boolean);
+  const parts = path.split("?")[0].split("/").filter(Boolean);
   return parts.length ? parts : null;
 }
 
@@ -314,7 +314,10 @@ export class WorkspaceApi {
     }
     if (request.method === "GET" && parts[3] === "effects" && parts.length === 4) {
       try { requirePermission(principal, "readInbox", resource); } catch { return { status: 403, body: { error: "WORKSPACE_PERMISSION_DENIED" } }; }
-      return { status: 200, body: { tenantId, effects: this.repository.listEffects(tenantId) } };
+      const query = request.path.includes("?") ? new URLSearchParams(request.path.slice(request.path.indexOf("?") + 1)).get("status") : null;
+      if (query !== null && query !== "confirmed") return { status: 400, body: { error: "INVALID_EFFECT_STATUS_FILTER" } };
+      const effects = this.repository.listEffects(tenantId).filter(effect => query === null || effect.status === query);
+      return { status: 200, body: { tenantId, effects } };
     }
     if (request.method === "GET" && parts[3] === "effects" && parts.length === 5) {
       try { requirePermission(principal, "readInbox", resource); } catch { return { status: 403, body: { error: "WORKSPACE_PERMISSION_DENIED" } }; }
