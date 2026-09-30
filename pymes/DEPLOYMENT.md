@@ -26,6 +26,13 @@ La misma versión se guarda en el label OCI
 `org.opencontainers.image.version`, para identificar el artefacto en un
 registry o inventario de contenedores sin arrancarlo.
 
+Al construir la imagen directamente, pasa el mismo valor como argumento:
+
+```bash
+docker build --build-arg PYMES_API_VERSION=2026.09.30 \
+  --file pymes/Dockerfile --tag pymes-workspace:2026.09.30 .
+```
+
 ## Interfaz
 
 ```bash
