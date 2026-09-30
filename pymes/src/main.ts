@@ -435,6 +435,13 @@ function renderDetail(item: WorkItem) {
       const block = el("div", "detail-block");
       block.appendChild(el("strong", "", `Operaciones pendientes · ${own.length}`));
       if (!own.length) block.appendChild(el("p", "", "No hay efectos externos pendientes."));
+      const activeKinds = new Set(own.filter(effect => effect.status === "pending" || effect.status === "confirmed").map(effect => effect.kind));
+      const markIfActive = (button: HTMLButtonElement, kind: string): void => {
+        if (!activeKinds.has(kind)) return;
+        button.disabled = true;
+        button.textContent = `${button.textContent} · ya preparada`;
+        button.title = "Ya existe una operación activa de este tipo para el caso";
+      };
       if (item.identityStatus === "linked") {
         const task = el("button", "review-button", "Preparar tarea CRM");
         task.type = "button";
@@ -457,6 +464,7 @@ function renderDetail(item: WorkItem) {
           }
         });
         block.appendChild(task);
+        markIfActive(task, "crm_task");
         const message = el("button", "review-button", "Preparar mensaje");
         message.type = "button";
         message.title = "Guarda el borrador para revisión; no envía ningún mensaje automáticamente";
@@ -478,6 +486,7 @@ function renderDetail(item: WorkItem) {
           }
         });
         block.appendChild(message);
+        markIfActive(message, "message");
         const callPlan = buildCallPlan(item, brief);
         const call = el("button", "review-button", "Preparar llamada");
         call.type = "button";
@@ -500,6 +509,7 @@ function renderDetail(item: WorkItem) {
           }
         });
         block.appendChild(call);
+        markIfActive(call, "call");
         if (callPlan.nextAppointment) {
           const calendar = el("button", "review-button", "Preparar cita de calendario");
           calendar.type = "button";
@@ -522,6 +532,7 @@ function renderDetail(item: WorkItem) {
             }
           });
           block.appendChild(calendar);
+          markIfActive(calendar, "calendar");
         }
       }
       for (const effect of own) {
