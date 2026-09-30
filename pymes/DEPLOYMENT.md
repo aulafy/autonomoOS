@@ -80,8 +80,13 @@ PYMES_OPENCLAW_AGENT_IDS='agent-1' \
 PYMES_OPENCLAW_RESOURCE_IDS='resource-1' \
 PYMES_OPENCLAW_CHANNELS='whatsapp,telegram,email' \
 PYMES_OPENCLAW_PAIRED_SENDERS='sender-1' \
-PYMES_OPENCLAW_CONSENTED_CONVERSATIONS='conversation-1'
+PYMES_OPENCLAW_CONSENTED_CONVERSATIONS='conversation-1' \
+PYMES_OPENCLAW_MAX_EVENT_AGE_MS='604800000' \
+PYMES_OPENCLAW_MAX_FUTURE_SKEW_MS='600000'
 ```
+
+Las dos últimas variables controlan la ventana temporal de eventos. El servidor
+rechaza valores negativos, no numéricos o superiores a los máximos permitidos.
 
 El endpoint `/healthz` no requiere autenticación. Todas las rutas de datos
 requieren Bearer token y comprueban el tenant antes de leer o escribir.
