@@ -168,6 +168,7 @@ const topicNames: Record<Topic, string> = {
 const priorityNames = { urgent: "URGENTE", high: "PRÓXIMA", normal: "NORMAL" };
 const effectStatusNames: Record<string, string> = { pending: "Pendiente", confirmed: "Confirmada", succeeded: "Realizada", failed: "Fallida" };
 const effectKindNames: Record<string, string> = { call: "Llamada", calendar: "Cita", message: "Mensaje", crm_task: "Tarea CRM" };
+const remoteStateNames: Record<string, string> = { pending_review: "Pendiente de revisión", approved: "Aprobado", executing: "En ejecución", completed: "Completado", failed: "Fallido" };
 const contactName = (item: WorkItem) => item.contact?.name ?? "Contacto sin identificar";
 const dayTime = (iso: string) => new Date(iso).toLocaleString("es-ES", {
   day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
@@ -235,7 +236,7 @@ function renderInbox() {
       el("span", "", `· ${item.message.insuranceLine ? insuranceLines[item.message.insuranceLine] : "Por clasificar"}`),
       el("span", "", `· ${dayTime(item.message.receivedAt)}`));
     const remote = remoteInbox.get(item.id);
-    if (remote) meta.append(el("span", "remote-state", `· Workspace: ${remote.state} · v${remote.version ?? 0}`));
+    if (remote) meta.append(el("span", "remote-state", `· Workspace: ${remoteStateNames[remote.state] ?? remote.state} · v${remote.version ?? 0}`));
     button.append(head, meta, el("p", "", item.message.text));
     button.addEventListener("click", () => {
       selectedId = item.id;
