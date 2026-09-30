@@ -3,7 +3,7 @@ import { WorkspaceApi } from "./workspace-api.js";
 import { handlePymesRequest } from "./api-server.js";
 import { SqliteWorkspaceRepository } from "./workspace-store-sqlite.js";
 import { normalizeRequestId } from "./request-id.js";
-import { normalizeBootstrapIdentity, normalizeBootstrapToken, normalizeOptionalToken, parseBoundedOptionalNumber, parseConfiguredChannels, parseConfiguredIdSet, parseCorsOrigins } from "./config.js";
+import { normalizeBootstrapIdentity, normalizeBootstrapToken, normalizeOptionalToken, parseBoundedOptionalNumber, parseConfiguredChannels, parseConfiguredIdSet, parseCorsOrigins, parseOptionalProviderGateway } from "./config.js";
 
 const port = Number(process.env.PYMES_API_PORT ?? 8790);
 const host = (process.env.PYMES_API_HOST ?? "127.0.0.1").trim();
@@ -11,6 +11,10 @@ const token = normalizeBootstrapToken(process.env.PYMES_API_BOOTSTRAP_TOKEN);
 const tenantId = normalizeBootstrapIdentity(process.env.PYMES_API_BOOTSTRAP_TENANT, "demo-agency");
 const userId = normalizeBootstrapIdentity(process.env.PYMES_API_BOOTSTRAP_USER, "demo-owner");
 const corsOrigins = parseCorsOrigins(process.env.PYMES_API_CORS_ORIGINS);
+// Validate optional worker gateway configuration at startup; workers consume the values separately.
+parseOptionalProviderGateway(process.env.PYMES_MESSAGE_GATEWAY_URL, process.env.PYMES_MESSAGE_GATEWAY_TOKEN, "INVALID_PYMES_MESSAGE_GATEWAY");
+parseOptionalProviderGateway(process.env.PYMES_CRM_GATEWAY_URL, process.env.PYMES_CRM_GATEWAY_TOKEN, "INVALID_PYMES_CRM_GATEWAY");
+parseOptionalProviderGateway(process.env.PYMES_CALL_GATEWAY_URL, process.env.PYMES_CALL_GATEWAY_TOKEN, "INVALID_PYMES_CALL_GATEWAY");
 
 if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error("INVALID_PYMES_API_PORT");
 if (!host || host.length > 255 || /[\u0000-\u001f\u007f]/.test(host)) throw new Error("INVALID_PYMES_API_HOST");
