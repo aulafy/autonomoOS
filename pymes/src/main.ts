@@ -60,6 +60,7 @@ async function checkRemoteWorkspace(): Promise<void> {
     if (workspaceAutoRefreshTimer !== null) { window.clearInterval(workspaceAutoRefreshTimer); workspaceAutoRefreshTimer = null; }
     status.className = "workspace-pill error";
     status.dataset.state = "error";
+    delete status.dataset.lastSync;
     status.setAttribute("aria-busy", "false");
     return;
   }
@@ -84,6 +85,7 @@ async function checkRemoteWorkspace(): Promise<void> {
     }
     status.className = "workspace-pill connected";
     status.dataset.state = "connected";
+    status.dataset.lastSync = new Date().toISOString();
     document.getElementById("workspace-retry")?.remove();
     const syncedAt = new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
     status.textContent = `● WORKSPACE CONECTADO · v${readiness.version} · ${inbox.length} casos · ${approvals.length} aprobaciones · sync ${syncedAt}`;
@@ -132,6 +134,7 @@ async function checkRemoteWorkspace(): Promise<void> {
     workspaceFailureCount += 1;
     status.className = "workspace-pill error";
     status.dataset.state = error instanceof Error && error.message === "WORKSPACE_NOT_READY" ? "starting" : "error";
+    delete status.dataset.lastSync;
     const requestId = error instanceof Error && "requestId" in error ? String((error as { requestId?: unknown }).requestId ?? "") : "";
     const httpStatus = error instanceof Error && "status" in error && typeof (error as { status?: unknown }).status === "number" ? String((error as { status: number }).status) : "";
     const retryAfter = error instanceof Error && "retryAfter" in error ? String((error as { retryAfter?: unknown }).retryAfter ?? "") : "";
