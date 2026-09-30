@@ -65,6 +65,9 @@ jobs:
           grep -q '^PYMES_MESSAGE_GATEWAY_URL=' pymes/.env.example
           grep -q '^PYMES_CRM_GATEWAY_URL=' pymes/.env.example
           grep -q '^PYMES_CALL_GATEWAY_URL=' pymes/.env.example
+          grep -q 'PYMES_MESSAGE_GATEWAY_TOKEN' pymes/docker-compose.yml
+          grep -q 'PYMES_CRM_GATEWAY_TOKEN' pymes/docker-compose.yml
+          grep -q 'PYMES_CALL_GATEWAY_TOKEN' pymes/docker-compose.yml
           grep -q 'message-gateway-token' pymes/k8s/deployment.yaml pymes/k8s/secret.example.yaml
           grep -q 'crm-gateway-token' pymes/k8s/deployment.yaml pymes/k8s/secret.example.yaml
           grep -q 'call-gateway-token' pymes/k8s/deployment.yaml pymes/k8s/secret.example.yaml
