@@ -479,6 +479,27 @@ function renderDetail(item: WorkItem) {
         });
         block.appendChild(message);
         const callPlan = buildCallPlan(item, brief);
+        const call = el("button", "review-button", "Preparar llamada");
+        call.type = "button";
+        call.title = "Guarda el plan de llamada; no realiza ninguna llamada automáticamente";
+        call.addEventListener("click", async () => {
+          call.disabled = true;
+          try {
+            await remoteWorkspaceClient!.createEffect({
+              id: `call-${item.id}-${Date.now()}`,
+              caseId: item.id,
+              kind: "call",
+              payload: { objective: callPlan.objective, questions: callPlan.questions, contactId: item.contact!.id },
+              draftHash: `sha256:call-${item.id}`
+            });
+            await checkRemoteWorkspace();
+            renderDetail(item);
+          } catch (error) {
+            call.disabled = false;
+            call.textContent = error instanceof Error ? error.message : "No se pudo preparar la llamada";
+          }
+        });
+        block.appendChild(call);
         if (callPlan.nextAppointment) {
           const calendar = el("button", "review-button", "Preparar cita de calendario");
           calendar.type = "button";
