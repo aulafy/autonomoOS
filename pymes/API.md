@@ -53,6 +53,8 @@ Cuando conecta, muestra la versión devuelta por `readyz`; esa versión identifi
 el release del workspace remoto y no el bundle estático de la interfaz.
 El indicador visual expone además `data-state="connected|starting|error"` para
 automatización y pruebas de interfaz sin depender del texto localizado.
+Cuando está conectado añade `data-last-sync` con una fecha ISO-8601; el
+atributo se elimina al entrar en error o perder la sesión.
 
 ## Ingress OpenClaw Enterprise
 
