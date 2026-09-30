@@ -112,10 +112,14 @@ export class WorkspaceClient {
     this.lastResponseRequestIdValue = response.headers.get("x-request-id");
     const contentLength = response.headers.get("content-length");
     if (contentLength && (/^\d+$/.test(contentLength) === false || Number(contentLength) > MAX_REMOTE_RESPONSE_BYTES)) {
+      clearTimeout(timeout);
       throw new Error("WORKSPACE_RESPONSE_TOO_LARGE");
     }
     const contentType = response.headers.get("content-type")?.split(";", 1)[0].trim().toLowerCase();
-    if (contentType && contentType !== "application/json") throw new Error("INVALID_WORKSPACE_CONTENT_TYPE");
+    if (contentType && contentType !== "application/json") {
+      clearTimeout(timeout);
+      throw new Error("INVALID_WORKSPACE_CONTENT_TYPE");
+    }
     let body: unknown;
     try {
       const raw = await response.text();
