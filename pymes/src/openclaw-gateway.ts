@@ -5,7 +5,7 @@ import type { Channel, IncomingMessage } from "./domain.js";
 export interface OpenClawInboundEvent {
   eventId: string;
   externalMessageId: string;
-  channel: "whatsapp" | "telegram" | "imessage" | "email";
+  channel: Channel;
   conversationId: string;
   senderId: string;
   receivedAt: string;
