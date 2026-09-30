@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { InMemoryEffectLeaseStore } from "../src/effect-lease.js";
+import { DatabaseSync } from "node:sqlite";
+import { InMemoryEffectLeaseStore, SqliteEffectLeaseStore } from "../src/effect-lease.js";
 
 test("lease store excludes another owner until expiry", () => {
   const store = new InMemoryEffectLeaseStore(1_000);
@@ -25,4 +26,16 @@ test("lease store clears expired entries and validates configuration", () => {
   assert.throws(() => store.acquire("", "worker-a"), /INVALID_EFFECT_LEASE_ID/);
   assert.throws(() => store.acquire("effect\n1", "worker-a"), /INVALID_EFFECT_LEASE_ID/);
   assert.throws(() => store.acquire("effect-1", "x".repeat(201)), /INVALID_EFFECT_LEASE_ID/);
+});
+
+test("sqlite lease store acquires atomically and survives a second handle", () => {
+  const db = new DatabaseSync(":memory:");
+  const first = new SqliteEffectLeaseStore(db, 1_000);
+  const second = new SqliteEffectLeaseStore(db, 1_000);
+  assert.equal(first.acquire("effect-1", "worker-a", 10)?.ownerId, "worker-a");
+  assert.equal(second.acquire("effect-1", "worker-b", 20), null);
+  assert.equal(second.acquire("effect-1", "worker-b", 1_010)?.ownerId, "worker-b");
+  assert.equal(first.release("effect-1", "worker-a"), false);
+  assert.equal(second.release("effect-1", "worker-b"), true);
+  db.close();
 });
