@@ -45,6 +45,7 @@ intermedio de datos sensibles del workspace.
 Los fallos HTTP del cliente se exponen como `WorkspaceHttpError`, con `status`,
 `message`, `requestId` y `retryAfter` para decidir reautenticación, reintento,
 backoff o soporte.
+Su `requestId` usa el mismo saneamiento que `lastResponseRequestId`.
 Las rutas `POST` requieren `Content-Type: application/json`; otros tipos
 devuelven `415 UNSUPPORTED_MEDIA_TYPE`.
 Un método no permitido devuelve `405` con la cabecera `Allow` correspondiente.

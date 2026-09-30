@@ -144,7 +144,7 @@ export class WorkspaceClient {
       if (response.status === 409 && record.error === "CASE_VERSION_CONFLICT" && typeof record.currentVersion === "number") {
         throw new WorkspaceConflictError(record.currentVersion);
       }
-      throw new WorkspaceHttpError(response.status, typeof record.error === "string" ? record.error : "WORKSPACE_REQUEST_FAILED", response.headers.get("x-request-id"), response.headers.get("retry-after"));
+      throw new WorkspaceHttpError(response.status, typeof record.error === "string" ? record.error : "WORKSPACE_REQUEST_FAILED", this.lastResponseRequestIdValue, response.headers.get("retry-after"));
     }
     return body as Record<string, unknown>;
   }
