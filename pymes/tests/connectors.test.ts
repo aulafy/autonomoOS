@@ -19,6 +19,7 @@ test("Holded reads an exact phone match without fetching the whole address book"
   assert.equal(requests[0]?.url.searchParams.get("phone"), "+34600111222");
   assert.equal(requests[1]?.url.searchParams.get("mobile"), "+34600111222");
   assert.equal(requests[0]?.init?.method, "GET");
+  assert.ok(requests[0]?.init?.signal instanceof AbortSignal);
   assert.equal((requests[0]?.init?.headers as Record<string, string>).key, "demo-key");
   assert.equal(requests[0]?.url.search.includes("demo-key"), false);
 });
