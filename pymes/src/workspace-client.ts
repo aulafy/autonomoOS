@@ -31,7 +31,7 @@ export class WorkspaceConflictError extends Error {
   constructor(readonly currentVersion: number) { super(`CASE_VERSION_CONFLICT_CURRENT_${currentVersion}`); }
 }
 export class WorkspaceHttpError extends Error {
-  constructor(readonly status: number, message: string, readonly requestId: string | null) { super(message); }
+  constructor(readonly status: number, message: string, readonly requestId: string | null, readonly retryAfter: string | null) { super(message); }
 }
 
 function requestId(): string {
@@ -75,7 +75,7 @@ export class WorkspaceClient {
       if (response.status === 409 && record.error === "CASE_VERSION_CONFLICT" && typeof record.currentVersion === "number") {
         throw new WorkspaceConflictError(record.currentVersion);
       }
-      throw new WorkspaceHttpError(response.status, typeof record.error === "string" ? record.error : "WORKSPACE_REQUEST_FAILED", response.headers.get("x-request-id"));
+      throw new WorkspaceHttpError(response.status, typeof record.error === "string" ? record.error : "WORKSPACE_REQUEST_FAILED", response.headers.get("x-request-id"), response.headers.get("retry-after"));
     }
     return body as Record<string, unknown>;
   }

@@ -44,7 +44,7 @@ test("workspace client preserves HTTP error status and request id", async () => 
   const api = new WorkspaceApi();
   const fetcher: typeof fetch = (input, init) => handlePymesRequest(api, new Request(String(input), init));
   const value = new WorkspaceClient({ baseUrl: "http://workspace.local", tenantId: "agency-1", token: "owner-token-123456" }, fetcher);
-  await assert.rejects(() => value.inbox(), (error: unknown) => error instanceof WorkspaceHttpError && error.status === 401 && typeof error.requestId === "string");
+  await assert.rejects(() => value.inbox(), (error: unknown) => error instanceof WorkspaceHttpError && error.status === 401 && typeof error.requestId === "string" && error.retryAfter === null);
 });
 
 test("workspace client reads an individual effect", async () => {
