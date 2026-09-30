@@ -263,9 +263,14 @@ Ejemplo de respuesta sanitizada:
   "generatedAt": "2026-09-30T10:15:00.000Z",
   "inbox": { "total": 12, "byState": { "pending_review": 4, "completed": 8 } },
   "effects": { "total": 5, "byStatus": { "pending": 2, "failed": 1, "succeeded": 2 } },
-  "approvals": { "total": 7 }
+  "approvals": { "total": 7 },
+  "alerts": [{ "code": "FAILED_EFFECTS", "severity": "critical", "count": 1 }]
 }
 ```
+
+`alerts` solo contiene códigos operativos: `FAILED_EFFECTS` (`critical`) cuando
+hay efectos fallidos, e `INBOX_BACKLOG` (`warning`) cuando hay más de 20 casos
+pendientes de revisión. Nunca incluye contenido de mensajes.
 - `GET /v1/workspaces/:tenant/cases/:caseId/audit` — transiciones con actor, versión y fecha.
 - `GET /v1/workspaces/:tenant/effects/:effectId` — estado individual de una operación.
 - `GET /v1/workspaces/:tenant/cases/:caseId/effects` — operaciones de un caso.
