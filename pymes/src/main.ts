@@ -457,6 +457,27 @@ function renderDetail(item: WorkItem) {
           }
         });
         block.appendChild(task);
+        const message = el("button", "review-button", "Preparar mensaje");
+        message.type = "button";
+        message.title = "Guarda el borrador para revisión; no envía ningún mensaje automáticamente";
+        message.addEventListener("click", async () => {
+          message.disabled = true;
+          try {
+            await remoteWorkspaceClient!.createEffect({
+              id: `message-${item.id}-${Date.now()}`,
+              caseId: item.id,
+              kind: "message",
+              payload: { channel: item.message.channel, text: item.draft, contactId: item.contact!.id },
+              draftHash: `sha256:message-${item.id}`
+            });
+            await checkRemoteWorkspace();
+            renderDetail(item);
+          } catch (error) {
+            message.disabled = false;
+            message.textContent = error instanceof Error ? error.message : "No se pudo preparar el mensaje";
+          }
+        });
+        block.appendChild(message);
         const callPlan = buildCallPlan(item, brief);
         if (callPlan.nextAppointment) {
           const calendar = el("button", "review-button", "Preparar cita de calendario");
