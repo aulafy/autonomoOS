@@ -41,6 +41,8 @@ servicio. `GET /readyz` comprueba
 además que el repositorio responde; devuelve `503` con `status: "not_ready"`
 si el almacenamiento no está disponible.
 En ese caso incluye `Retry-After: 5` para facilitar el backoff del orquestador.
+`WorkspaceClient.health()` y `WorkspaceClient.ready()` exponen estos contratos
+de forma tipada para la interfaz y los probes de despliegue.
 
 ## Ingress OpenClaw Enterprise
 
