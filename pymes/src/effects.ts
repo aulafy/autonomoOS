@@ -11,7 +11,7 @@ function safeMultilineText(value: string, maxLength: number): boolean {
 }
 function validPayloadForKind(kind: EffectKind, payload: Record<string, unknown>): boolean {
   if (kind === "message") return (payload.channel === "whatsapp" || payload.channel === "telegram" || payload.channel === "imessage" || payload.channel === "email") && typeof payload.text === "string" && safeMultilineText(payload.text, 4_000);
-  if (kind === "calendar") return typeof payload.title === "string" && safeResourceText(payload.title, 500) && typeof payload.startsAt === "string" && Number.isFinite(Date.parse(payload.startsAt));
+  if (kind === "calendar") return typeof payload.title === "string" && safeResourceText(payload.title, 500) && typeof payload.startsAt === "string" && Number.isFinite(Date.parse(payload.startsAt)) && typeof payload.endsAt === "string" && Number.isFinite(Date.parse(payload.endsAt)) && Date.parse(payload.endsAt) > Date.parse(payload.startsAt);
   if (kind === "crm_task") return typeof payload.title === "string" && safeResourceText(payload.title, 500) && typeof payload.contactId === "string" && safeResourceText(payload.contactId, 200);
   return (typeof payload.objective === "string" && safeResourceText(payload.objective, 2_000) && Array.isArray(payload.questions) && payload.questions.length <= 100 && payload.questions.every(value => typeof value === "string" && safeResourceText(value, 500))) ||
     (typeof payload.phone === "string" && safeResourceText(payload.phone, 100));

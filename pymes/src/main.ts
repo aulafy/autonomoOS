@@ -527,11 +527,14 @@ function renderDetail(item: WorkItem) {
           calendar.addEventListener("click", async () => {
             calendar.disabled = true;
             try {
+              const startsAt = new Date(callPlan.nextAppointment!.startsAt);
+              const endsAt = new Date(startsAt.getTime() + 30 * 60_000);
+              if (Number.isNaN(startsAt.getTime())) throw new Error("La cita propuesta no tiene una fecha válida");
               await remoteWorkspaceClient!.createEffect({
                 id: `calendar-${item.id}-${Date.now()}`,
                 caseId: item.id,
                 kind: "calendar",
-                payload: { title: callPlan.nextAppointment!.title, startsAt: callPlan.nextAppointment!.startsAt, contactId: item.contact!.id },
+                payload: { title: callPlan.nextAppointment!.title, startsAt: startsAt.toISOString(), endsAt: endsAt.toISOString(), contactId: item.contact!.id },
                 draftHash: `sha256:calendar-${item.id}`
               });
               await checkRemoteWorkspace();
@@ -551,7 +554,7 @@ function renderDetail(item: WorkItem) {
         const summary = effect.kind === "message"
           ? `${String(payload.channel ?? "canal desconocido")} · ${String(payload.text ?? "sin texto")}`
           : effect.kind === "calendar"
-            ? `${String(payload.title ?? "cita sin título")} · ${String(payload.startsAt ?? "sin fecha")}`
+            ? `${String(payload.title ?? "cita sin título")} · ${String(payload.startsAt ?? "sin fecha")}–${String(payload.endsAt ?? "sin fin")}`
             : effect.kind === "crm_task"
               ? `${String(payload.title ?? "tarea sin título")} · contacto ${String(payload.contactId ?? "pendiente")}`
               : `${String(payload.objective ?? "llamada preparada")}${payload.phone ? ` · ${String(payload.phone)}` : ""}`;

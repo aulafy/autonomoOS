@@ -36,7 +36,7 @@ export interface RemoteCaseAudit { id: string; caseId: string; from: string; to:
 export type WorkspaceEffectKind = "call" | "calendar" | "message" | "crm_task";
 export type WorkspaceEffectStatus = "pending" | "confirmed" | "succeeded" | "failed";
 export interface CallEffectPayload { objective: string; questions: string[]; contactId?: string; phone?: string; }
-export interface CalendarEffectPayload { title: string; startsAt: string; contactId?: string; }
+export interface CalendarEffectPayload { title: string; startsAt: string; endsAt: string; contactId?: string; }
 export interface MessageEffectPayload { channel: "whatsapp" | "telegram" | "imessage" | "email"; text: string; contactId?: string; }
 export interface CrmTaskEffectPayload { title: string; contactId: string; sourceMessageId?: string; }
 export type WorkspaceEffectPayload = CallEffectPayload | CalendarEffectPayload | MessageEffectPayload | CrmTaskEffectPayload;
@@ -103,7 +103,7 @@ function validRemoteEffectPayload(kind: string, value: unknown): value is Record
   if (!validEffectPayload(value)) return false;
   const payload = value as Record<string, unknown>;
   if (kind === "message") return (payload.channel === "whatsapp" || payload.channel === "telegram" || payload.channel === "imessage" || payload.channel === "email") && typeof payload.text === "string" && validMultilineText(payload.text, 4_000);
-  if (kind === "calendar") return typeof payload.title === "string" && validInputText(payload.title, 500) && typeof payload.startsAt === "string" && validTimestamp(payload.startsAt);
+  if (kind === "calendar") return typeof payload.title === "string" && validInputText(payload.title, 500) && typeof payload.startsAt === "string" && validTimestamp(payload.startsAt) && typeof payload.endsAt === "string" && validTimestamp(payload.endsAt) && Date.parse(payload.endsAt) > Date.parse(payload.startsAt);
   if (kind === "crm_task") return typeof payload.title === "string" && validInputText(payload.title, 500) && typeof payload.contactId === "string" && validResourceId(payload.contactId);
   return (typeof payload.objective === "string" && validInputText(payload.objective, 2_000) && Array.isArray(payload.questions) && payload.questions.length <= 100 && payload.questions.every(value => typeof value === "string" && validInputText(value, 500))) ||
     (typeof payload.phone === "string" && validInputText(payload.phone, 100));
