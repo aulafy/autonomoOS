@@ -34,6 +34,8 @@
   errores de polling y modo finito mediante `maxCycles` para CronJobs.
 - Resúmenes de lote seguros que exponen solo contadores operativos y nunca
   payloads, mensajes o credenciales.
+- Limpieza de listeners de cancelación en esperas largas del worker para evitar
+  acumulación de recursos durante ejecuciones residentes.
 
 ### Seguridad y operación
 
