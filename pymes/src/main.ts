@@ -132,7 +132,7 @@ async function checkRemoteWorkspace(): Promise<void> {
     const selected = brief.items.find(item => item.id === selectedId);
     if (selected) renderDetail(selected);
   } catch (error: unknown) {
-    workspaceFailureCount += 1;
+    workspaceFailureCount = Math.min(workspaceFailureCount + 1, 999);
     status.className = "workspace-pill error";
     status.dataset.state = error instanceof Error && error.message === "WORKSPACE_NOT_READY" ? "starting" : "error";
     delete status.dataset.lastSync;
