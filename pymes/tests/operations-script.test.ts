@@ -9,11 +9,13 @@ test("operations healthcheck returns healthy and alert exit codes", async () => 
     const failed = request.headers.authorization === "Bearer failed-token";
     const busy = request.headers.authorization === "Bearer busy-token";
     const stale = request.headers.authorization === "Bearer stale-token";
+    const uncertain = request.headers.authorization === "Bearer uncertain-token";
     response.setHeader("content-type", "application/json");
     response.end(JSON.stringify({ tenantId: "agency-1", generatedAt: "2026-09-30T10:00:00Z",
       inbox: { total: busy ? 21 : 1, byState: { pending_review: busy ? 21 : 1 } },
       effects: { total: failed ? 1 : 0, byStatus: failed ? { failed: 1 } : {} }, approvals: { total: 0 },
-      ...(stale ? { alerts: [{ code: "STALE_CASES", severity: "warning", count: 1 }] } : {}) }));
+      ...(stale ? { alerts: [{ code: "STALE_CASES", severity: "warning", count: 1 }] } : {}),
+      ...(uncertain ? { alerts: [{ code: "UNCERTAIN_CASES", severity: "warning", count: 1 }] } : {}) }));
   });
   await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));
   try {
@@ -33,13 +35,15 @@ test("operations healthcheck returns healthy and alert exit codes", async () => 
     });
     const healthy = await run("test-token");
     assert.equal(healthy.code, 0, healthy.stderr);
-    assert.match(healthy.stdout, /OK: 1 casos pendientes, 0 operaciones fallidas, 0 fuera de SLA/);
+    assert.match(healthy.stdout, /OK: 1 casos pendientes, 0 operaciones fallidas, 0 fuera de SLA, 0 inciertos/);
     const failed = await run("failed-token");
     assert.equal(failed.code, 2, failed.stderr);
     const busy = await run("busy-token");
     assert.equal(busy.code, 2, busy.stderr);
     const stale = await run("stale-token");
     assert.equal(stale.code, 2, stale.stderr);
+    const uncertain = await run("uncertain-token");
+    assert.equal(uncertain.code, 2, uncertain.stderr);
   } finally {
     await new Promise<void>(resolve => server.close(() => resolve()));
   }
