@@ -26,6 +26,21 @@ test("SQLite repository survives a repository restart", () => {
   rmSync(directory, { recursive: true, force: true });
 });
 
+test("SQLite repository stores session hashes and authenticates legacy sessions", () => {
+  const directory = mkdtempSync(join(tmpdir(), "pymes-session-"));
+  const repository = new SqliteWorkspaceRepository(join(directory, "workspace.db"));
+  repository.provisionSession("secure-session-token", { userId: "owner", tenantId: "agency-1", role: "owner" });
+  const stored = repository.db.prepare("SELECT token FROM workspace_sessions").get() as { token: string };
+  assert.notEqual(stored.token, "secure-session-token");
+  assert.equal(stored.token.length, 64);
+  repository.db.prepare("UPDATE workspace_sessions SET token = ?").run("legacy-session-token");
+  assert.equal(repository.findSession("legacy-session-token")?.userId, "owner");
+  const migrated = repository.db.prepare("SELECT token FROM workspace_sessions").get() as { token: string };
+  assert.equal(migrated.token.length, 64);
+  repository.close();
+  rmSync(directory, { recursive: true, force: true });
+});
+
 test("SQLite repository never returns another tenant's records", () => {
   const store = new SqliteWorkspaceRepository(":memory:");
   store.appendInbox({ id: "private", tenantId: "agency-2", state: "received", summary: "Privado" });
