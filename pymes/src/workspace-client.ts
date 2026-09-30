@@ -2,6 +2,7 @@ export interface WorkspaceClientConfig {
   baseUrl: string;
   tenantId: string;
   token: string;
+  requestTimeoutMs?: number;
 }
 
 export interface RemoteApproval {
@@ -33,21 +34,26 @@ function validConfig(config: WorkspaceClientConfig): void {
   let base: URL;
   try { base = new URL(config.baseUrl.trim()); } catch { throw new Error("INVALID_WORKSPACE_CLIENT_CONFIG"); }
   if (config.baseUrl.trim().length > 2048 || (base.protocol !== "http:" && base.protocol !== "https:") || base.username || base.password || base.search || base.hash ||
-    !config.tenantId.trim() || config.tenantId.trim().length > 200 || /[\u0000-\u001f\u007f]/.test(config.tenantId.trim()) || config.token.trim().length < 16 || config.token.trim().length > 4096) throw new Error("INVALID_WORKSPACE_CLIENT_CONFIG");
+    !config.tenantId.trim() || config.tenantId.trim().length > 200 || /[\u0000-\u001f\u007f]/.test(config.tenantId.trim()) || config.token.trim().length < 16 || config.token.trim().length > 4096 || (config.requestTimeoutMs !== undefined && (!Number.isInteger(config.requestTimeoutMs) || config.requestTimeoutMs < 100 || config.requestTimeoutMs > 60000))) throw new Error("INVALID_WORKSPACE_CLIENT_CONFIG");
 }
 
 export class WorkspaceClient {
   constructor(private readonly config: WorkspaceClientConfig,
     private readonly fetcher: typeof fetch = fetch) {
     validConfig(config);
-    this.config = { baseUrl: new URL(config.baseUrl.trim()).toString().replace(/\/$/, ""), tenantId: config.tenantId.trim(), token: config.token.trim() };
+    this.config = { baseUrl: new URL(config.baseUrl.trim()).toString().replace(/\/$/, ""), tenantId: config.tenantId.trim(), token: config.token.trim(), requestTimeoutMs: config.requestTimeoutMs ?? 10000 };
   }
 
   private async request(path: string, init: RequestInit = {}): Promise<Record<string, unknown>> {
-    const response = await this.fetcher(`${this.config.baseUrl.replace(/\/$/, "")}${path}`, {
-      ...init, headers: { Accept: "application/json", Authorization: `Bearer ${this.config.token}`,
-        ...(init.headers ?? {}) }
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), this.config.requestTimeoutMs ?? 10000);
+    let response: Response;
+    try {
+      response = await this.fetcher(`${this.config.baseUrl}${path}`, {
+        ...init, signal: controller.signal, headers: { Accept: "application/json", Authorization: `Bearer ${this.config.token}`,
+          ...(init.headers ?? {}) }
+      });
+    } finally { clearTimeout(timeout); }
     const body: unknown = await response.json();
     if (!body || typeof body !== "object" || Array.isArray(body)) throw new Error("INVALID_WORKSPACE_RESPONSE");
     if (!response.ok) {
