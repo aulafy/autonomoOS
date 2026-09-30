@@ -61,6 +61,8 @@ El contador visible de fallos consecutivos se satura en `999` para mantener un
 valor acotado durante sesiones largas.
 El indicador usa `role="status"`, `aria-live="polite"` y `aria-atomic="true"`
 para anunciar cambios completos de conexión sin interrumpir la tarea activa.
+El contexto de piloto expone `data-crm-status` y `data-calendar-status` con los
+estados tipados de Holded y Google Calendar.
 
 ## Ingress OpenClaw Enterprise
 
