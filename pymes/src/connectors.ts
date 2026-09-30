@@ -235,3 +235,30 @@ export async function sendMessageWebhook(input: {
   if (!externalId || externalId.length > 200) throw new Error("INVALID_MESSAGE_PROVIDER_RESPONSE");
   return { externalId };
 }
+
+export async function createCrmTaskWebhook(input: {
+  endpoint: string;
+  token: string;
+  title: string;
+  contactId: string;
+  dueAt?: string;
+  notes?: string;
+  idempotencyKey?: string;
+  timeoutMs?: number;
+  fetcher?: Fetcher;
+}): Promise<{ externalId: string }> {
+  requireCredential(input.token);
+  if (!input.title.trim() || input.title.length > 500 || !input.contactId.trim() || input.contactId.length > 200 || (input.dueAt !== undefined && Number.isNaN(Date.parse(input.dueAt)))) throw new Error("INVALID_CRM_TASK_INPUT");
+  let url: URL;
+  try { url = new URL(input.endpoint); } catch { throw new Error("INVALID_CRM_ENDPOINT"); }
+  if (url.protocol !== "https:" && !(url.protocol === "http:" && (url.hostname === "127.0.0.1" || url.hostname === "localhost"))) throw new Error("UNSAFE_CRM_ENDPOINT");
+  const response = await providerFetch(input.fetcher ?? fetch, url, {
+    method: "POST", headers: { Authorization: `Bearer ${input.token}`, Accept: "application/json", "Content-Type": "application/json", ...(input.idempotencyKey ? { "Idempotency-Key": input.idempotencyKey } : {}) },
+    body: JSON.stringify({ title: input.title.trim(), contactId: input.contactId.trim(), ...(input.dueAt ? { dueAt: input.dueAt } : {}), ...(input.notes ? { notes: input.notes.slice(0, 4_000) } : {}) }),
+  }, input.timeoutMs);
+  if (!response.ok) throw new Error(`CRM_PROVIDER_FAILED:${response.status}`);
+  const data = record(await response.json());
+  const externalId = nonempty(data?.externalId) ?? nonempty(data?.id);
+  if (!externalId || externalId.length > 200) throw new Error("INVALID_CRM_PROVIDER_RESPONSE");
+  return { externalId };
+}
