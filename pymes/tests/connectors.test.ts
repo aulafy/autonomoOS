@@ -80,6 +80,21 @@ test("Google Calendar creates a timed event and validates the provider response"
   assert.match(String(calledInit?.body), /Revisión de póliza/);
 });
 
+test("Google Calendar reuses an event found by its effect idempotency marker", async () => {
+  let calls = 0;
+  const event = await createGoogleCalendarEvent({
+    accessToken: "token", calendarId: "primary", title: "Revisión", startsAt: "2026-09-30T10:00:00Z", endsAt: "2026-09-30T10:30:00Z",
+    idempotencyKey: "effect-42",
+    fetcher: async (input) => {
+      calls += 1;
+      assert.match(String(input), /privateExtendedProperty=pymesEffectId%3Deffect-42/);
+      return Response.json({ items: [{ id: "already-created", summary: "Revisión", start: { dateTime: "2026-09-30T10:00:00Z" }, end: { dateTime: "2026-09-30T10:30:00Z" } }] });
+    }
+  });
+  assert.equal(calls, 1);
+  assert.equal(event.externalId, "already-created");
+});
+
 test("provider retry recovers from transient Holded failures", async () => {
   let calls = 0;
   const contacts = await findHoldedContactsByPhone({

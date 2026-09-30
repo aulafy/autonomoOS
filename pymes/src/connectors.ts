@@ -193,8 +193,35 @@ export async function createGoogleCalendarEvent(input: {
   const startsAt = validInstant(input.startsAt);
   const endsAt = validInstant(input.endsAt);
   if (!startsAt || !endsAt || Date.parse(endsAt) <= Date.parse(startsAt)) throw new Error("INVALID_CALENDAR_EVENT_TIME");
+  const endpoint = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(input.calendarId)}/events`;
+  // Google Calendar has no native Idempotency-Key header. Query the private
+  // effect marker before creating so a transport retry cannot create a second
+  // appointment after the first request already reached Google.
+  if (input.idempotencyKey) {
+    const lookup = new URL(endpoint);
+    lookup.searchParams.set("privateExtendedProperty", `pymesEffectId=${input.idempotencyKey}`);
+    lookup.searchParams.set("maxResults", "10");
+    const existingResponse = await providerFetch(input.fetcher ?? fetch, lookup, {
+      method: "GET",
+      headers: { Authorization: `Bearer ${input.accessToken}`, Accept: "application/json" },
+    }, input.timeoutMs);
+    if (!existingResponse.ok) throw new Error(`GOOGLE_CALENDAR_IDEMPOTENCY_LOOKUP_FAILED:${existingResponse.status}`);
+    const existing = record(await existingResponse.json());
+    if (!existing || !Array.isArray(existing.items)) throw new Error("GOOGLE_CALENDAR_INVALID_IDEMPOTENCY_RESPONSE");
+    for (const value of existing.items) {
+      const item = record(value);
+      const externalId = nonempty(item?.id);
+      const start = record(item?.start);
+      const end = record(item?.end);
+      const returnedStart = validInstant(start?.dateTime);
+      const returnedEnd = validInstant(end?.dateTime);
+      if (externalId && returnedStart && returnedEnd && Date.parse(returnedEnd) > Date.parse(returnedStart)) {
+        return { provider: "google_calendar", externalId, title: nonempty(item?.summary) ?? input.title.trim(), startsAt: returnedStart, endsAt: returnedEnd, allDay: false };
+      }
+    }
+  }
   const response = await providerFetch(input.fetcher ?? fetch,
-    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(input.calendarId)}/events`, {
+    endpoint, {
       method: "POST",
       headers: { Authorization: `Bearer ${input.accessToken}`, Accept: "application/json", "Content-Type": "application/json" },
       body: JSON.stringify({ summary: input.title.trim(), start: { dateTime: startsAt }, end: { dateTime: endsAt }, ...(input.idempotencyKey ? { extendedProperties: { private: { pymesEffectId: input.idempotencyKey } } } : {}) }),
