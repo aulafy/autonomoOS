@@ -66,6 +66,12 @@ test("worker loop rejects malformed batch entries", async () => {
   await assert.rejects(() => runEffectWorker({ maxCycles: 1, poll: async () => [{ effectId: "", status: "pending" } as never] }), /INVALID_EFFECT_WORKER_RESULTS/);
 });
 
+test("worker loop rejects duplicate effect results", async () => {
+  await assert.rejects(() => runEffectWorker({ maxCycles: 1, poll: async () => [
+    { effectId: "same", status: "succeeded" }, { effectId: "same", status: "failed" },
+  ] }), /INVALID_EFFECT_WORKER_RESULTS/);
+});
+
 test("worker loop reports a poll error and retries after a bounded delay", async () => {
   const controller = new AbortController();
   let calls = 0;
