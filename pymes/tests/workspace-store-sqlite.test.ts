@@ -140,3 +140,12 @@ test("SQLite effects fail closed when stored payload is corrupt", () => {
   assert.deepEqual(store.listEffects("agency-1"), []);
   store.close();
 });
+
+test("SQLite repository exposes tenant-scoped durable effect leases", () => {
+  const store = new SqliteWorkspaceRepository(":memory:");
+  const agencyA = store.effectLeaseStore("agency-a", 1_000);
+  const agencyB = store.effectLeaseStore("agency-b", 1_000);
+  assert.equal(agencyA.acquire("effect-1", "worker-a", 10)?.ownerId, "worker-a");
+  assert.equal(agencyB.acquire("effect-1", "worker-b", 10)?.ownerId, "worker-b");
+  store.close();
+});

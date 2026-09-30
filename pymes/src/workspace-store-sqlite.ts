@@ -5,6 +5,7 @@ import { dirname } from "node:path";
 import type { ApprovalRecord, CaseAuditRecord, WorkspaceInboxRecord, WorkspacePrincipal,
   WorkspaceRepository } from "./workspace-api.js";
 import type { PendingEffect } from "./effects.js";
+import { SqliteEffectLeaseStore } from "./effect-lease.js";
 
 /** Small durable repository. The API owns policy; this class owns persistence only. */
 export class SqliteWorkspaceRepository implements WorkspaceRepository {
@@ -53,6 +54,11 @@ export class SqliteWorkspaceRepository implements WorkspaceRepository {
     try { this.db.exec("ALTER TABLE workspace_effects ADD COLUMN executed_at TEXT"); } catch {}
     try { this.db.exec("ALTER TABLE workspace_effects ADD COLUMN execution_note TEXT"); } catch {}
     try { this.db.exec("ALTER TABLE workspace_effects ADD COLUMN retry_count INTEGER NOT NULL DEFAULT 0"); } catch {}
+  }
+
+  /** Creates a durable lease view isolated to one authenticated tenant. */
+  effectLeaseStore(tenantId: string, ttlMs = 60_000): SqliteEffectLeaseStore {
+    return new SqliteEffectLeaseStore(this.db, ttlMs, tenantId);
   }
   provisionSession(token: string, principal: WorkspacePrincipal): void {
     if (!token || token.length < 16 || token.length > 4096) throw new Error("INVALID_SESSION_TOKEN");
