@@ -58,9 +58,11 @@ async function checkRemoteWorkspace(): Promise<void> {
       logout.type = "button";
       logout.className = "workspace-logout";
       logout.textContent = "Cerrar sesión";
+      logout.setAttribute("aria-label", "Cerrar sesión del workspace remoto");
       logout.addEventListener("click", async () => {
         if (!remoteWorkspaceClient) return;
         logout!.disabled = true;
+        logout!.setAttribute("aria-busy", "true");
         try { await remoteWorkspaceClient.revokeSession(); } finally {
           sessionStorage.removeItem("pymes.workspace.token");
           window.location.reload();
