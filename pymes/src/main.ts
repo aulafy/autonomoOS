@@ -10,6 +10,7 @@ import { buildCallPlan } from "./call-plan.js";
 import { acceptClassification, parseClassificationProposal,
   type ClassificationProposal } from "./classification.js";
 import "./logout.css";
+import "./retry.css";
 
 const demoMorning = new Date();
 demoMorning.setHours(9, 0, 0, 0);
@@ -48,6 +49,7 @@ async function checkRemoteWorkspace(): Promise<void> {
     remoteWorkspaceClient = client;
     remoteInbox = new Map(inbox.map(item => [item.id, item]));
     status.className = "workspace-pill connected";
+    document.getElementById("workspace-retry")?.remove();
     const syncedAt = new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
     status.textContent = `● WORKSPACE CONECTADO · ${inbox.length} casos · ${approvals.length} aprobaciones · sync ${syncedAt}`;
     status.title = "Los casos y aprobaciones se leen del workspace remoto; los fixtures locales no se mezclan automáticamente.";
@@ -80,6 +82,17 @@ async function checkRemoteWorkspace(): Promise<void> {
     const detail = [httpStatus && `HTTP ${httpStatus}`, requestId].filter(Boolean).join(" · ");
     status.textContent = detail ? `● WORKSPACE NO DISPONIBLE · ${detail}` : "● WORKSPACE NO DISPONIBLE";
     status.title = detail ? `Diagnóstico de soporte: ${detail}` : "El workspace remoto no está disponible.";
+    let retry = document.getElementById("workspace-retry") as HTMLButtonElement | null;
+    if (!retry) {
+      retry = document.createElement("button");
+      retry.id = "workspace-retry";
+      retry.type = "button";
+      retry.className = "workspace-retry";
+      retry.textContent = "Reintentar";
+      retry.setAttribute("aria-label", "Reintentar conexión con el workspace");
+      retry.addEventListener("click", () => { retry!.disabled = true; void checkRemoteWorkspace(); });
+      status.parentElement?.appendChild(retry);
+    }
     remoteWorkspaceClient = null;
     document.getElementById("workspace-logout")?.remove();
   } finally {
