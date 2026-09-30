@@ -66,6 +66,9 @@ export interface EffectWorkerLoopOptions {
   /** Test and graceful-shutdown hook; production callers leave it undefined. */
   signal?: AbortSignal;
   onCycle?: (results: EffectBatchResult[]) => void | Promise<void>;
+  /** If supplied, transient poll errors are reported and retried after a bounded delay. */
+  onError?: (error: unknown) => void | Promise<void>;
+  retryDelayMs?: number;
 }
 
 /**
@@ -78,9 +81,25 @@ export async function runEffectWorker(input: EffectWorkerLoopOptions): Promise<v
   if (!Number.isInteger(intervalMs) || intervalMs < 250 || intervalMs > 300_000) {
     throw new Error("INVALID_EFFECT_WORKER_INTERVAL");
   }
+  const retryDelayMs = input.retryDelayMs ?? Math.min(intervalMs, 30_000);
+  if (!Number.isInteger(retryDelayMs) || retryDelayMs < 250 || retryDelayMs > 300_000) {
+    throw new Error("INVALID_EFFECT_WORKER_RETRY_DELAY");
+  }
   const signal = input.signal;
   while (!signal?.aborted) {
-    const results = await input.poll();
+    let results: EffectBatchResult[];
+    try {
+      results = await input.poll();
+    } catch (error) {
+      if (!input.onError) throw error;
+      await input.onError(error);
+      if (signal?.aborted) break;
+      await new Promise<void>(resolve => {
+        const timer = setTimeout(resolve, retryDelayMs);
+        signal?.addEventListener("abort", () => { clearTimeout(timer); resolve(); }, { once: true });
+      });
+      continue;
+    }
     await input.onCycle?.(results);
     if (signal?.aborted) break;
     await new Promise<void>((resolve, reject) => {

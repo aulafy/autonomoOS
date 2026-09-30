@@ -39,3 +39,15 @@ test("worker loop never overlaps polls and stops on abort", async () => {
 test("worker loop rejects unsafe polling intervals", async () => {
   await assert.rejects(() => runEffectWorker({ intervalMs: 10, poll: async () => [] }), /INVALID_EFFECT_WORKER_INTERVAL/);
 });
+
+test("worker loop reports a poll error and retries after a bounded delay", async () => {
+  const controller = new AbortController();
+  let calls = 0;
+  const errors: string[] = [];
+  await runEffectWorker({ intervalMs: 250, retryDelayMs: 250, signal: controller.signal,
+    poll: async () => { calls += 1; if (calls === 1) throw new Error("API_DOWN"); controller.abort(); return []; },
+    onError: error => { errors.push(error instanceof Error ? error.message : "unknown"); },
+  });
+  assert.equal(calls, 2);
+  assert.deepEqual(errors, ["API_DOWN"]);
+});
