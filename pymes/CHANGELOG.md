@@ -16,6 +16,10 @@
 - Preparación tipada de llamadas, mensajes, citas de calendario y tareas CRM.
 - Confirmación explícita, resultado, reintentos limitados y auditoría completa.
 - Correlación de auditoría mediante `X-Request-Id`.
+- Dispatcher y worker remoto para ejecutar solo efectos confirmados.
+- Procesamiento por lotes acotado que continúa tras fallos individuales.
+- Handlers de Google Calendar, mensajes, CRM y llamadas con timeout e
+  idempotency key derivada del efecto.
 
 ### Seguridad y operación
 
