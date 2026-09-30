@@ -41,6 +41,21 @@ test("SQLite repository stores session hashes and authenticates legacy sessions"
   rmSync(directory, { recursive: true, force: true });
 });
 
+test("SQLite repository revokes hashed sessions durably", () => {
+  const directory = mkdtempSync(join(tmpdir(), "pymes-revoke-"));
+  const path = join(directory, "workspace.db");
+  const repository = new SqliteWorkspaceRepository(path);
+  repository.provisionSession("revoke-session-token", { userId: "owner", tenantId: "agency-1", role: "owner" });
+  assert.equal(repository.findSession("revoke-session-token")?.userId, "owner");
+  repository.revokeSession("revoke-session-token");
+  assert.equal(repository.findSession("revoke-session-token"), null);
+  repository.close();
+  const reopened = new SqliteWorkspaceRepository(path);
+  assert.equal(reopened.findSession("revoke-session-token"), null);
+  reopened.close();
+  rmSync(directory, { recursive: true, force: true });
+});
+
 test("SQLite repository never returns another tenant's records", () => {
   const store = new SqliteWorkspaceRepository(":memory:");
   store.appendInbox({ id: "private", tenantId: "agency-2", state: "received", summary: "Privado" });
