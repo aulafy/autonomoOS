@@ -4,7 +4,7 @@ LABEL org.opencontainers.image.title="PYMES workspace" \
       org.opencontainers.image.version="${PYMES_API_VERSION}" \
       org.opencontainers.image.description="Governed workspace for Spanish insurance agencies"
 WORKDIR /app
-COPY package.json package-lock.json ./
+COPY package.json package-lock.json .npmrc ./
 COPY pymes/package.json pymes/package.json
 RUN npm ci
 COPY pymes pymes
