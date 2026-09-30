@@ -76,7 +76,7 @@ export class SqliteWorkspaceRepository implements WorkspaceRepository {
   listInbox(tenantId: string): WorkspaceInboxRecord[] {
     const rows = this.db.prepare(`SELECT id, tenant_id, state, summary, source_event_id, source_external_message_id, source_channel, version, updated_at FROM workspace_inbox
       WHERE tenant_id = ? ORDER BY rowid`).all(tenantId) as Array<{ id: string; tenant_id: string;
-        state: WorkspaceInboxRecord["state"]; summary: string; source_event_id: string | null; source_external_message_id: string | null; source_channel: string | null; version: number; updated_at: string | null }>;
+        state: WorkspaceInboxRecord["state"]; summary: string; source_event_id: string | null; source_external_message_id: string | null; source_channel: WorkspaceInboxRecord["sourceChannel"] | null; version: number; updated_at: string | null }>;
     return rows.map(row => ({ id: row.id, tenantId: row.tenant_id, state: row.state, summary: row.summary,
       ...(row.source_event_id ? { sourceEventId: row.source_event_id } : {}),
       ...(row.source_external_message_id ? { sourceExternalMessageId: row.source_external_message_id } : {}),

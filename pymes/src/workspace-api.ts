@@ -7,6 +7,7 @@ import { transitionCase, type CaseState } from "./case-lifecycle.js";
 import { createPendingEffect, MAX_EFFECT_RETRIES, type EffectKind, type PendingEffect } from "./effects.js";
 import type { OpenClawEnterpriseEnvelope, OpenClawEnterprisePolicy } from "./openclaw-gateway.js";
 import { pilotConfig } from "./config.js";
+import type { Channel } from "./domain.js";
 export type { ApprovalRecord, WorkspacePrincipal } from "./workspace-policy.js";
 
 export interface WorkspaceInboxRecord {
@@ -16,7 +17,7 @@ export interface WorkspaceInboxRecord {
   summary: string;
   sourceEventId?: string;
   sourceExternalMessageId?: string;
-  sourceChannel?: string;
+  sourceChannel?: Channel;
   version?: number;
   updatedAt?: string;
 }
