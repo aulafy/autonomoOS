@@ -62,6 +62,10 @@ Sus claves `openclaw-ingress-token` y `openclaw-signing-secret` son opcionales;
 si faltan, el ingress OpenClaw queda desactivado de forma segura.
 La base se puede aplicar con `kubectl apply -k pymes/k8s`; crea el Secret real
 antes de arrancar el Deployment.
+Para clusters con NetworkPolicy, revisa
+[`k8s/network-policy.example.yaml`](k8s/network-policy.example.yaml): exige
+etiquetar el namespace cliente con `pymes-client=true`, permite DNS y HTTPS
+saliente para Holded/Google Calendar y bloquea el resto del tráfico.
 
 ## Interfaz
 
