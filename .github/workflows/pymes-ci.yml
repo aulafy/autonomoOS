@@ -38,6 +38,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Audit runtime dependencies
+        run: npm audit --omit=dev --audit-level=high
       - name: Verify lockfile remains clean
         run: git diff --exit-code -- package.json package-lock.json
       - name: Verify supported Node runtime
