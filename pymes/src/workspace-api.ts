@@ -5,6 +5,7 @@ import { createApproval, requirePermission, type ApprovalRecord,
 import { ingestOpenClawIntoWorkspace } from "./workspace-ingress.js";
 import { transitionCase, type CaseState } from "./case-lifecycle.js";
 import { createPendingEffect, MAX_EFFECT_RETRIES, type EffectKind, type PendingEffect } from "./effects.js";
+import { InMemoryEffectLeaseStore, type EffectLeaseStore } from "./effect-lease.js";
 import type { OpenClawEnterpriseEnvelope, OpenClawEnterprisePolicy } from "./openclaw-gateway.js";
 import { pilotConfig } from "./config.js";
 import type { Channel } from "./domain.js";
@@ -54,12 +55,21 @@ export interface WorkspaceRepository {
   listEffects(tenantId: string, caseId?: string): PendingEffect[];
   appendApproval(approval: ApprovalRecord): void;
   listApprovals(tenantId: string): ApprovalRecord[];
+  effectLeaseStore?(tenantId: string): EffectLeaseStore;
 }
 
 export class InMemoryWorkspaceRepository implements WorkspaceRepository {
   private readonly sessions = new Map<string, WorkspacePrincipal>();
   private readonly inbox = new Map<string, WorkspaceInboxRecord[]>();
   private readonly approvals: ApprovalRecord[] = [];
+  private readonly leases = new Map<string, EffectLeaseStore>();
+  effectLeaseStore(tenantId: string): EffectLeaseStore {
+    const existing = this.leases.get(tenantId);
+    if (existing) return existing;
+    const store = new InMemoryEffectLeaseStore();
+    this.leases.set(tenantId, store);
+    return store;
+  }
   addSession(token: string, principal: WorkspacePrincipal): void {
     if (!token || token.length < 16 || token.length > 4096) throw new Error("INVALID_SESSION_TOKEN");
     this.sessions.set(hashSessionToken(token), structuredClone(principal));
@@ -353,6 +363,21 @@ export class WorkspaceApi {
         this.auditEffect(tenantId, confirmed, "effect_confirmed", body.confirmedAt, principal.userId, safeRequestId(request.requestId));
         return { status: 200, body: confirmed as unknown as Record<string, unknown> };
       } catch (error) { const message = error instanceof Error ? error.message : "EFFECT_CONFIRMATION_FAILED"; return { status: message === "WORKSPACE_PERMISSION_DENIED" ? 403 : 400, body: { error: message } }; }
+    }
+    if (request.method === "POST" && parts[3] === "effects" && parts[5] === "lease" && parts.length === 6) {
+      const body = jsonRecord(request.body);
+      if (!body || typeof body.ownerId !== "string") return { status: 400, body: { error: "INVALID_EFFECT_LEASE" } };
+      const effect = this.repository.listEffects(tenantId).find(value => value.id === parts[4]);
+      if (!effect) return { status: 404, body: { error: "EFFECT_NOT_FOUND" } };
+      try {
+        requirePermission(principal, "executeEffect", { tenantId, id: effect.caseId });
+        if (effect.status !== "confirmed") throw new Error("EFFECT_NOT_CONFIRMED");
+        const store = this.repository.effectLeaseStore?.(tenantId);
+        if (!store) throw new Error("EFFECT_LEASE_UNAVAILABLE");
+        const lease = store.acquire(effect.id, body.ownerId, Date.now());
+        if (!lease) return { status: 409, body: { error: "EFFECT_LEASE_UNAVAILABLE" } };
+        return { status: 200, body: lease as unknown as Record<string, unknown> };
+      } catch (error) { const message = error instanceof Error ? error.message : "EFFECT_LEASE_FAILED"; return { status: message === "WORKSPACE_PERMISSION_DENIED" ? 403 : 400, body: { error: message } }; }
     }
     if (request.method === "POST" && parts[3] === "effects" && parts[5] === "result" && parts.length === 6) {
       const body = jsonRecord(request.body);
