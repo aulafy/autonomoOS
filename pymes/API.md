@@ -133,6 +133,8 @@ con `INVALID_WORKSPACE_EFFECT` antes de permitir confirmaciones o reintentos.
 El `payload` de un efecto debe ser un objeto JSON, nunca un array, `null` o una
 primitiva.
 Si aparece `retryCount`, debe ser un entero entre 0 y 1.000.
+Si aparece `draftHash`, se limita a 512 caracteres y no admite controles para
+conservar la procedencia del borrador.
 `executionNote` permite saltos de línea para conservar el historial de
 reintentos, pero mantiene límites y bloquea controles no imprimibles.
 Los metadatos opcionales de confirmación (`confirmedBy`, `confirmedAt`) deben

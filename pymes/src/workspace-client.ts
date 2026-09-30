@@ -30,7 +30,7 @@ export interface RemoteInboxRecord {
 }
 export interface RemoteConnector { id: string; name: string; status: ConnectorStatus; }
 export interface RemoteCaseAudit { id: string; caseId: string; from: string; to: string; actorId: string; at: string; version: number; }
-export interface RemoteEffect { id: string; caseId: string; kind: string; status: string; requestedBy: string; requestedAt: string; retryCount?: number; payload: Record<string, unknown>; executionNote?: string; executedBy?: string; executedAt?: string; }
+export interface RemoteEffect { id: string; caseId: string; kind: string; status: string; requestedBy: string; requestedAt: string; retryCount?: number; draftHash?: string; payload: Record<string, unknown>; executionNote?: string; executedBy?: string; executedAt?: string; confirmedBy?: string; confirmedAt?: string; }
 export interface WorkspaceHealth { status: "ok" | "not_ready"; service: string; version: string; retryAfter?: string; }
 function isRemoteEffect(value: unknown): value is RemoteEffect {
   if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
@@ -41,6 +41,7 @@ function isRemoteEffect(value: unknown): value is RemoteEffect {
     typeof effect.status === "string" && validInputText(effect.status, 100) &&
     typeof effect.requestedBy === "string" && validInputText(effect.requestedBy, 200) &&
     typeof effect.requestedAt === "string" && validTimestamp(effect.requestedAt) &&
+    (effect.draftHash === undefined || (typeof effect.draftHash === "string" && validInputText(effect.draftHash, 512))) &&
     effect.payload !== null && typeof effect.payload === "object" && !Array.isArray(effect.payload) &&
     (effect.retryCount === undefined || (Number.isInteger(effect.retryCount) && (effect.retryCount as number) >= 0 && (effect.retryCount as number) <= 1_000)) &&
     (effect.executionNote === undefined || (typeof effect.executionNote === "string" && validMultilineText(effect.executionNote, 2_000))) &&
