@@ -309,6 +309,11 @@ export class WorkspaceApi {
         const effect = createPendingEffect({ id: body.id, tenantId, caseId: body.caseId, kind: body.kind as EffectKind,
           payload: jsonRecord(body.payload)!, principal, requestedAt: body.requestedAt, draftHash: body.draftHash });
         this.repository.appendEffect(effect);
+        const currentCase = this.repository.listInbox(tenantId).find(value => value.id === effect.caseId);
+        this.repository.appendCaseAudit({ id: `audit-${tenantId}-${effect.caseId}-effect-${effect.id}`, tenantId,
+          caseId: effect.caseId, from: currentCase?.state ?? "received", to: currentCase?.state ?? "received",
+          operation: "effect_requested", actorId: principal.userId, at: effect.requestedAt,
+          version: currentCase?.version ?? 0 });
         return { status: 201, body: effect as unknown as Record<string, unknown> };
       } catch (error) { const message = error instanceof Error ? error.message : "INVALID_PENDING_EFFECT"; return { status: message === "WORKSPACE_PERMISSION_DENIED" ? 403 : 400, body: { error: message } }; }
     }

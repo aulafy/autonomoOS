@@ -183,6 +183,17 @@ test("effects require execute permission and explicit confirmation", () => {
     authorization: "Bearer owner-token-12345", body: { ...draft, id: "effect-large", payload: { data: "x".repeat(70000) } } }).status, 400);
 });
 
+test("effect requests leave an auditable case entry", () => {
+  const value = api();
+  const response = value.handle({ method: "POST", path: "/v1/workspaces/agency-1/effects",
+    authorization: "Bearer owner-token-12345", body: { id: "audited-effect", caseId: "msg-1", kind: "crm_task",
+      payload: { title: "Seguimiento" }, requestedAt: "2026-09-30T10:00:00Z", draftHash: "sha256:audit" } });
+  assert.equal(response.status, 201);
+  const audit = value.handle({ method: "GET", path: "/v1/workspaces/agency-1/cases/msg-1/audit",
+    authorization: "Bearer reviewer-token-1234" });
+  assert.deepEqual((audit.body.audit as Array<{ operation: string; actorId: string }>).map(entry => [entry.operation, entry.actorId]), [["effect_requested", "u-owner"]]);
+});
+
 test("effects reject control characters in resource identifiers", () => {
   const value = new WorkspaceApi();
   value.addSession("owner-token-123456", { userId: "owner", tenantId: "agency-1", role: "owner" });
