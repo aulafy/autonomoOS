@@ -40,6 +40,10 @@ El cliente remoto valida además la bandeja: cada caso debe tener `tenantId`,
 `id`, `state` y `summary`, y el `tenantId` debe coincidir con el workspace
 solicitado. Una respuesta mezclada se rechaza completa con
 `INVALID_WORKSPACE_INBOX`.
+Las aprobaciones remotas siguen la misma regla de tenant y además deben
+incluir identificador, recurso, operación, actor, fecha, motivo y hash del
+borrador; de lo contrario el cliente responde con
+`INVALID_WORKSPACE_APPROVALS`.
 
 ## Salud
 

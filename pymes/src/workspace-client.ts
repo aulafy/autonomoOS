@@ -86,7 +86,18 @@ export class WorkspaceClient {
 
   async approvals(): Promise<RemoteApproval[]> {
     const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/approvals`);
-    if (!Array.isArray(body.approvals)) throw new Error("INVALID_WORKSPACE_APPROVALS");
+    if (!Array.isArray(body.approvals) || body.approvals.some(item => {
+      if (item === null || typeof item !== "object" || Array.isArray(item)) return true;
+      const approval = item as Record<string, unknown>;
+      return approval.tenantId !== this.config.tenantId ||
+        typeof approval.id !== "string" || !approval.id ||
+        typeof approval.resourceId !== "string" || !approval.resourceId ||
+        (approval.operation !== "approveOffer" && approval.operation !== "executeEffect") ||
+        typeof approval.approvedBy !== "string" || !approval.approvedBy ||
+        typeof approval.approvedAt !== "string" || !approval.approvedAt ||
+        typeof approval.reason !== "string" || !approval.reason ||
+        typeof approval.draftHash !== "string" || !approval.draftHash;
+    })) throw new Error("INVALID_WORKSPACE_APPROVALS");
     return body.approvals as RemoteApproval[];
   }
   async health(): Promise<WorkspaceHealth> {

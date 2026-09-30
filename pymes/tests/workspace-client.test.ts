@@ -92,6 +92,14 @@ test("workspace client rejects inbox records for another tenant", async () => {
   await assert.rejects(() => value.inbox(), /INVALID_WORKSPACE_INBOX/);
 });
 
+test("workspace client rejects approvals for another tenant", async () => {
+  const fetcher: typeof fetch = async () => new Response(JSON.stringify({ approvals: [
+    { id: "approval-1", tenantId: "agency-2", resourceId: "offer-1", operation: "approveOffer", approvedBy: "owner", approvedAt: "2026-09-30T10:00:00Z", reason: "Revisada", draftHash: "sha256:v1" }
+  ] }), { status: 200, headers: { "content-type": "application/json" } });
+  const value = new WorkspaceClient({ baseUrl: "http://127.0.0.1:8799", tenantId: "agency-1", token: "token-1234567890" }, fetcher);
+  await assert.rejects(() => value.approvals(), /INVALID_WORKSPACE_APPROVALS/);
+});
+
 test("workspace client reads an individual effect", async () => {
   const api = new WorkspaceApi();
   api.addSession("owner-token-123456", { userId: "owner", tenantId: "agency-1", role: "owner" });
