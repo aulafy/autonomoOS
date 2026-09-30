@@ -37,7 +37,9 @@ test("workspace client exposes not-ready state without throwing", async () => {
   });
   const fetcher: typeof fetch = (input, init) => handlePymesRequest(broken, new Request(String(input), init));
   const value = new WorkspaceClient({ baseUrl: "http://workspace.local", tenantId: "agency-1", token: "owner-token-123456" }, fetcher);
-  assert.equal((await value.ready()).status, "not_ready");
+  const readiness = await value.ready();
+  assert.equal(readiness.status, "not_ready");
+  assert.equal(readiness.retryAfter, "5");
 });
 
 test("workspace client preserves HTTP error status and request id", async () => {
