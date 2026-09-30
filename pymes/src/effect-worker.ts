@@ -6,6 +6,22 @@ function asPending(effect: RemoteEffect): PendingEffect {
   return { ...effect, retryCount: effect.retryCount ?? 0, draftHash: effect.draftHash ?? "remote-draft" } as unknown as PendingEffect;
 }
 
+function waitForWorkerDelay(delayMs: number, signal: AbortSignal | undefined): Promise<void> {
+  return new Promise(resolve => {
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      signal?.removeEventListener("abort", finish);
+      resolve();
+    };
+    const timer = setTimeout(finish, delayMs);
+    signal?.addEventListener("abort", finish, { once: true });
+    if (signal?.aborted) finish();
+  });
+}
+
 /** Executes one remote confirmed effect and records the provider outcome. */
 export async function executeRemoteEffect(input: {
   client: WorkspaceClient;
@@ -118,21 +134,13 @@ export async function runEffectWorker(input: EffectWorkerLoopOptions): Promise<v
       if (!input.onError) throw error;
       await input.onError(error);
       if (signal?.aborted) break;
-      await new Promise<void>(resolve => {
-        const timer = setTimeout(resolve, retryDelayMs);
-        signal?.addEventListener("abort", () => { clearTimeout(timer); resolve(); }, { once: true });
-      });
+      await waitForWorkerDelay(retryDelayMs, signal);
       continue;
     }
     await input.onCycle?.(results);
     cycles += 1;
     if (input.maxCycles !== undefined && cycles >= input.maxCycles) break;
     if (signal?.aborted) break;
-    await new Promise<void>((resolve, reject) => {
-      const timer = setTimeout(resolve, intervalMs);
-      signal?.addEventListener("abort", () => { clearTimeout(timer); resolve(); }, { once: true });
-      if (signal?.aborted) { clearTimeout(timer); resolve(); }
-      void reject;
-    });
+    await waitForWorkerDelay(intervalMs, signal);
   }
 }
