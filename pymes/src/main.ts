@@ -62,6 +62,7 @@ async function checkRemoteWorkspace(): Promise<void> {
     status.className = "workspace-pill error";
     status.dataset.state = "error";
     delete status.dataset.lastSync;
+    delete status.dataset.failures;
     status.setAttribute("aria-busy", "false");
     return;
   }
@@ -79,6 +80,7 @@ async function checkRemoteWorkspace(): Promise<void> {
     remoteWorkspaceClient = client;
     remoteInbox = new Map(inbox.map(item => [item.id, item]));
     workspaceFailureCount = 0;
+    delete status.dataset.failures;
     renderInbox();
     if (workspaceRetryTimer !== null) { window.clearTimeout(workspaceRetryTimer); workspaceRetryTimer = null; }
     if (workspaceAutoRefreshTimer === null) {
@@ -136,6 +138,7 @@ async function checkRemoteWorkspace(): Promise<void> {
     status.className = "workspace-pill error";
     status.dataset.state = error instanceof Error && error.message === "WORKSPACE_NOT_READY" ? "starting" : "error";
     delete status.dataset.lastSync;
+    status.dataset.failures = String(workspaceFailureCount);
     const requestId = error instanceof Error && "requestId" in error ? String((error as { requestId?: unknown }).requestId ?? "") : "";
     const httpStatus = error instanceof Error && "status" in error && typeof (error as { status?: unknown }).status === "number" ? String((error as { status: number }).status) : "";
     const retryAfter = error instanceof Error && "retryAfter" in error ? String((error as { retryAfter?: unknown }).retryAfter ?? "") : "";
