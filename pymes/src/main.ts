@@ -4,7 +4,7 @@ import { insuranceLines, pilotConfig, type InsuranceLine } from "./config.js";
 import { evaluateQuoteIntake, quoteRequirements } from "./quote-intake.js";
 import { offersForCase, recordQuoteOffer, type OfferEntry, type QuoteOffer } from "./quote-offers.js";
 import { createWorkspaceStore } from "./workspace-store.js";
-import { WorkspaceClient, WorkspaceConflictError, type RemoteInboxRecord } from "./workspace-client.js";
+import { WorkspaceClient, WorkspaceConflictError, type RemoteInboxRecord, type WorkspaceMetrics } from "./workspace-client.js";
 import { MAX_EFFECT_RETRIES } from "./effects.js";
 import { buildCallPlan } from "./call-plan.js";
 import { acceptClassification, parseClassificationProposal,
@@ -39,6 +39,26 @@ let workspaceSyncInFlight = false;
 let workspaceAutoRefreshTimer: number | null = null;
 const WORKSPACE_REFRESH_INTERVAL_MS = 60_000;
 let workspaceFailureCount = 0;
+
+function renderWorkspaceMetrics(metrics: WorkspaceMetrics): void {
+  const target = document.getElementById("workspace-metrics");
+  if (!target) return;
+  target.replaceChildren();
+  const rows: Array<[string, string]> = [
+    ["Casos", String(metrics.inbox.total)],
+    ["Pendientes", String(metrics.inbox.byState.pending_review ?? 0)],
+    ["Operaciones", String(metrics.effects.total)],
+    ["Aprobaciones", String(metrics.approvals.total)]
+  ];
+  for (const [label, value] of rows) {
+    const item = document.createElement("div");
+    const caption = document.createElement("span"); caption.textContent = label;
+    const count = document.createElement("strong"); count.textContent = value;
+    item.append(caption, count);
+    target.appendChild(item);
+  }
+  target.dataset.updatedAt = metrics.generatedAt;
+}
 
 let selectedChannel: Channel | "all" = "all";
 const channelLabels: Record<Channel, string> = {
@@ -77,9 +97,10 @@ async function checkRemoteWorkspace(): Promise<void> {
       unavailable.retryAfter = readiness.retryAfter ?? "5s";
       throw unavailable;
     }
-    const [approvals, inbox, connectors] = await Promise.all([client.approvals(), client.inbox(), client.connectors()]);
+    const [approvals, inbox, connectors, metrics] = await Promise.all([client.approvals(), client.inbox(), client.connectors(), client.metrics()]);
     remoteWorkspaceClient = client;
     remoteInbox = new Map(inbox.map(item => [item.id, item]));
+    renderWorkspaceMetrics(metrics);
     workspaceFailureCount = 0;
     status.dataset.connectorCount = String(connectors.length);
     delete status.dataset.failures;
