@@ -33,3 +33,8 @@
 Las claves `openclaw-ingress-token` y `openclaw-signing-secret` son opcionales.
 Añádelas al Secret para activar el ingress firmado; si no existen, el servicio
 arranca con el ingress desactivado.
+
+`network-policy.example.yaml` es opcional. Si el cluster aplica NetworkPolicy,
+etiqueta el namespace de la interfaz o gateway con `pymes-client=true` antes de
+activarla. Permite DNS y HTTPS saliente para conectores, y bloquea el resto del
+tráfico por defecto.
