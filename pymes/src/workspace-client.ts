@@ -1,5 +1,6 @@
 import { isConnectorConfig, type ConnectorStatus } from "./config.js";
 const MAX_REMOTE_ITEMS = 10_000;
+const MAX_REMOTE_RESPONSE_BYTES = 1_048_576;
 
 export interface WorkspaceClientConfig {
   baseUrl: string;
@@ -102,6 +103,10 @@ export class WorkspaceClient {
       if (controller.signal.aborted) throw new Error("WORKSPACE_REQUEST_TIMEOUT");
       throw error;
     } finally { clearTimeout(timeout); }
+    const contentLength = response.headers.get("content-length");
+    if (contentLength && (/^\d+$/.test(contentLength) === false || Number(contentLength) > MAX_REMOTE_RESPONSE_BYTES)) {
+      throw new Error("WORKSPACE_RESPONSE_TOO_LARGE");
+    }
     const body: unknown = await response.json();
     if (!body || typeof body !== "object" || Array.isArray(body)) throw new Error("INVALID_WORKSPACE_RESPONSE");
     if (!response.ok && !acceptedStatuses.includes(response.status)) {

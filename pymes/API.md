@@ -89,6 +89,8 @@ registro de conectores a 100; una respuesta mayor se rechaza para proteger la
 memoria y el renderizado del workspace.
 Los campos visibles de la bandeja y los metadatos de efectos también tienen
 longitudes máximas para impedir payloads que saturen la interfaz.
+El cliente rechaza respuestas con `Content-Length` superior a 1 MiB mediante
+`WORKSPACE_RESPONSE_TOO_LARGE` antes de parsear el JSON.
 Cada efecto individual debe incluir como mínimo `id`, `caseId`, `kind`,
 `status`, `requestedBy` y `requestedAt`; el cliente rechaza efectos incompletos
 con `INVALID_WORKSPACE_EFFECT` antes de permitir confirmaciones o reintentos.

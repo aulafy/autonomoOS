@@ -265,6 +265,12 @@ test("workspace client rejects oversized inbox summaries", async () => {
   await assert.rejects(() => client.inbox(), /INVALID_WORKSPACE_INBOX/);
 });
 
+test("workspace client rejects oversized response headers before parsing", async () => {
+  const fetcher: typeof fetch = async () => new Response("{}", { status: 200, headers: { "content-type": "application/json", "content-length": "1048577" } });
+  const client = new WorkspaceClient({ baseUrl: "http://127.0.0.1:8799", tenantId: "agency-1", token: "token-1234567890" }, fetcher);
+  await assert.rejects(() => client.inbox(), /WORKSPACE_RESPONSE_TOO_LARGE/);
+});
+
 test("workspace client reads an individual effect", async () => {
   const api = new WorkspaceApi();
   api.addSession("owner-token-123456", { userId: "owner", tenantId: "agency-1", role: "owner" });
