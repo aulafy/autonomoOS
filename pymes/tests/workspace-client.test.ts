@@ -327,6 +327,8 @@ test("workspace client exposes and validates inbox source provenance", async () 
   assert.equal((await client.inbox())[0]?.sourceChannel, "whatsapp");
   const invalid: typeof fetch = async () => new Response(JSON.stringify({ tenantId: "agency-1", items: [{ id: "case-1", tenantId: "agency-1", state: "received", summary: "Mensaje", sourceChannel: "whatsapp\n" }] }), { status: 200, headers: { "content-type": "application/json" } });
   await assert.rejects(() => new WorkspaceClient({ baseUrl: "http://127.0.0.1:8799", tenantId: "agency-1", token: "token-1234567890" }, invalid).inbox(), /INVALID_WORKSPACE_INBOX/);
+  const unknown: typeof fetch = async () => new Response(JSON.stringify({ tenantId: "agency-1", items: [{ id: "case-1", tenantId: "agency-1", state: "received", summary: "Mensaje", sourceChannel: "carrier-pigeon" }] }), { status: 200, headers: { "content-type": "application/json" } });
+  await assert.rejects(() => new WorkspaceClient({ baseUrl: "http://127.0.0.1:8799", tenantId: "agency-1", token: "token-1234567890" }, unknown).inbox(), /INVALID_WORKSPACE_INBOX/);
 });
 
 test("workspace client rejects malformed optional inbox metadata", async () => {
