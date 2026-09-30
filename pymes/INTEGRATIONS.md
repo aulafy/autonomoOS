@@ -50,6 +50,10 @@ Calendar consulta `GET /calendar/v3/calendars/{id}/events` con una ventana
 temporal, eventos recurrentes expandidos y un máximo de 100 por página. Una respuesta con
 otra página se consulta hasta un límite de diez; los eventos de día completo
 se conservan. Si se supera el límite, la lectura falla sin resultado parcial.
+Cada petición tiene un timeout configurable de 10 segundos por defecto. Las
+respuestas `429` y `5xx` se reintentan como máximo dos veces, respetando
+`Retry-After` hasta un tope de 2 segundos; los errores de autenticación y
+validación no se reintentan.
 Los tests usan respuestas simuladas;
 no se han usado cuentas ni datos reales. Para conectarlos hace falta un proceso
 de servidor que obtenga y proteja la clave de Holded y un token OAuth con
