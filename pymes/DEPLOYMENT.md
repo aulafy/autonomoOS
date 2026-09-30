@@ -53,7 +53,9 @@ El `ConfigMap` incluido fija `PYMES_API_CORS_ORIGINS`; reemplaza
 `https://app.example.com` por los orígenes exactos de tu interfaz y no uses `*`.
 También contiene las listas no secretas de política OpenClaw (agentes, recursos,
 canales, remitentes emparejados y conversaciones consentidas). Déjalas vacías
-para mantener cada control cerrado hasta completar el emparejamiento.
+para mantener cada control cerrado hasta completar el emparejamiento. Las
+ventanas de antigüedad y desfase futuro también se fijan en el ConfigMap y
+conservan los valores seguros del despliegue Compose.
 [`k8s/secret.example.yaml`](k8s/secret.example.yaml) solo contiene marcadores de
 posición: genera el Secret real desde tu gestor de secretos y no lo versiones.
 Sus claves `openclaw-ingress-token` y `openclaw-signing-secret` son opcionales;

@@ -61,6 +61,16 @@ spec:
                 configMapKeyRef:
                   name: pymes-workspace-config
                   key: openclaw-consented-conversations
+            - name: PYMES_OPENCLAW_MAX_EVENT_AGE_MS
+              valueFrom:
+                configMapKeyRef:
+                  name: pymes-workspace-config
+                  key: openclaw-max-event-age-ms
+            - name: PYMES_OPENCLAW_MAX_FUTURE_SKEW_MS
+              valueFrom:
+                configMapKeyRef:
+                  name: pymes-workspace-config
+                  key: openclaw-max-future-skew-ms
             - name: PYMES_API_DB_PATH
               value: /data/pymes-workspace.db
             - name: PYMES_API_BOOTSTRAP_TOKEN
@@ -157,3 +167,5 @@ data:
   openclaw-channels: whatsapp,telegram,imessage,email
   openclaw-paired-senders: ""
   openclaw-consented-conversations: ""
+  openclaw-max-event-age-ms: "604800000"
+  openclaw-max-future-skew-ms: "600000"
