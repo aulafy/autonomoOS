@@ -1,6 +1,6 @@
 # PYMES Workspace API
 
-La API es multi-tenant y requiere `Authorization: Bearer <token>` en todas las rutas de workspace. Las operaciones externas nunca se ejecutan al crearse: pasan por confirmación y resultado.
+La API es multi-tenant y requiere `Authorization: Bearer <token>` en todas las rutas de workspace. Las operaciones externas nunca se ejecutan al crearse: pasan por confirmación y resultado. Se puede enviar `X-Request-Id` (hasta 200 caracteres seguros) para correlacionar la petición con la auditoría del caso; el valor se conserva en las transiciones y en el ciclo de vida de los efectos.
 
 Las entradas recibidas desde OpenClaw conservan `sourceEventId`,
 `sourceExternalMessageId` y `sourceChannel`. La ingesta es idempotente tanto por
