@@ -94,6 +94,13 @@ test("HTTP adapter accepts explicitly configured CORS origins", async () => {
   assert.equal(response.headers.get("access-control-allow-origin"), "https://agency.example");
 });
 
+test("wildcard CORS configuration does not grant browser access", async () => {
+  const response = await handlePymesRequest(api(), new Request("http://localhost/healthz", {
+    headers: { origin: "https://agency.example" }
+  }), { allowedOrigins: ["*"] });
+  assert.equal(response.headers.get("access-control-allow-origin"), null);
+});
+
 test("HTTP adapter returns JSON and enforces authentication", async () => {
   const response = await handlePymesRequest(api(), new Request("http://localhost/v1/workspaces/agency-1/inbox"));
   assert.equal(response.status, 401);
