@@ -6,6 +6,14 @@ set -euo pipefail
 : "${PYMES_API_TENANT:?PYMES_API_TENANT es obligatorio}"
 
 base_url="${PYMES_API_BASE_URL%/}"
+if [[ "${base_url}" =~ [[:cntrl:]] || "${#base_url}" -gt 2048 || "${base_url}" != http://* && "${base_url}" != https://* ]]; then
+  echo "PYMES_API_BASE_URL no es válida" >&2
+  exit 2
+fi
+if [[ ! "${PYMES_API_TENANT}" =~ ^[A-Za-z0-9._-]{1,200}$ ]]; then
+  echo "PYMES_API_TENANT no es válido" >&2
+  exit 2
+fi
 endpoint="${base_url}/v1/workspaces/${PYMES_API_TENANT}/metrics"
 body="$(curl --fail --silent --show-error --max-time "${PYMES_API_TIMEOUT_SECONDS:-10}" \
   -H "Authorization: Bearer ${PYMES_API_TOKEN}" \
