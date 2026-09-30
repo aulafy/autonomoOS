@@ -43,6 +43,7 @@ test("configured ingress id lists are bounded and deduplicated", () => {
   assert.deepEqual([...parseConfiguredIdSet(" agent-1, agent-1, resource-2 ")], ["agent-1", "resource-2"]);
   assert.throws(() => parseConfiguredIdSet(Array.from({ length: 101 }, (_, index) => `id-${index}`).join(",")), /INVALID_PYMES_ID_LIST/);
   assert.throws(() => parseConfiguredIdSet("x".repeat(201)), /INVALID_PYMES_ID_LIST/);
+  assert.throws(() => parseConfiguredIdSet("agent-1\nagent-2"), /INVALID_PYMES_ID_LIST/);
 });
 
 test("CORS origins use safe defaults and reject wildcard", () => {

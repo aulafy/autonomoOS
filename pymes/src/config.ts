@@ -23,7 +23,7 @@ export function normalizeBootstrapIdentity(value: string | undefined, fallback: 
 
 export function parseConfiguredIdSet(value: string | undefined, errorCode = "INVALID_PYMES_ID_LIST"): Set<string> {
   const entries = (value ?? "").split(",").map(item => item.trim()).filter(Boolean);
-  if (entries.length > 100 || entries.some(item => item.length > 200)) throw new Error(errorCode);
+  if (entries.length > 100 || entries.some(item => item.length > 200 || /[\u0000-\u001f\u007f]/.test(item))) throw new Error(errorCode);
   return new Set(entries);
 }
 
