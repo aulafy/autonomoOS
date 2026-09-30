@@ -130,7 +130,11 @@ export async function runEffectWorker(input: EffectWorkerLoopOptions): Promise<v
     let results: EffectBatchResult[];
     try {
       results = await input.poll();
-      if (!Array.isArray(results)) throw new Error("INVALID_EFFECT_WORKER_RESULTS");
+      if (!Array.isArray(results) || results.length > 100 || results.some(result =>
+        !result || typeof result !== "object" || typeof result.effectId !== "string" || !result.effectId.trim() ||
+        (result.status !== "succeeded" && result.status !== "failed" && result.status !== "skipped"))) {
+        throw new Error("INVALID_EFFECT_WORKER_RESULTS");
+      }
     } catch (error) {
       if (!input.onError) throw error;
       await input.onError(error);
