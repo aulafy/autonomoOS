@@ -79,6 +79,8 @@ test("workspace client rejects invalid configuration", () => {
     /INVALID_WORKSPACE_CLIENT_CONFIG/);
   assert.throws(() => new WorkspaceClient({ baseUrl: "http://workspace.local", tenantId: "a", token: "x".repeat(4097) }),
     /INVALID_WORKSPACE_CLIENT_CONFIG/);
+  assert.throws(() => new WorkspaceClient({ baseUrl: "http://workspace.local", tenantId: "x".repeat(201), token: "owner-token-123456" }),
+    /INVALID_WORKSPACE_CLIENT_CONFIG/);
 });
 
 test("workspace client can revoke its current session", async () => {
