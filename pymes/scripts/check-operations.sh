@@ -32,7 +32,8 @@ fi
 
 failed="$(jq -r '.effects.byStatus.failed // 0' <<<"${body}")"
 pending="$(jq -r '.inbox.byState.pending_review // 0' <<<"${body}")"
-if [[ ! "${failed}" =~ ^[0-9]+$ || ! "${pending}" =~ ^[0-9]+$ || ! "${pending_limit}" =~ ^[0-9]+$ ]]; then
+stale="$(jq -r '[.alerts[]? | select(.code == "STALE_CASES") | .count] | add // 0' <<<"${body}")"
+if [[ ! "${failed}" =~ ^[0-9]+$ || ! "${pending}" =~ ^[0-9]+$ || ! "${stale}" =~ ^[0-9]+$ || ! "${pending_limit}" =~ ^[0-9]+$ ]]; then
   echo "Respuesta de métricas no válida" >&2
   exit 2
 fi
@@ -44,4 +45,8 @@ if (( pending > pending_limit )); then
   echo "Hay ${pending} casos pendientes (límite ${pending_limit})" >&2
   exit 2
 fi
-printf 'OK: %s casos pendientes, %s operaciones fallidas\n' "${pending}" "${failed}"
+if (( stale > 0 )); then
+  echo "Hay ${stale} casos pendientes fuera de SLA" >&2
+  exit 2
+fi
+printf 'OK: %s casos pendientes, %s operaciones fallidas, %s fuera de SLA\n' "${pending}" "${failed}" "${stale}"
