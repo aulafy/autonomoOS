@@ -28,6 +28,17 @@ test("SQLite repository survives a repository restart", () => {
   rmSync(directory, { recursive: true, force: true });
 });
 
+test("SQLite inbox updates preserve OpenClaw provenance", () => {
+  const store = new SqliteWorkspaceRepository(":memory:");
+  store.appendInbox({ id: "msg-1", tenantId: "agency-1", state: "received", summary: "Mensaje",
+    sourceEventId: "event-1", sourceExternalMessageId: "wa-1", sourceChannel: "whatsapp" });
+  store.updateInbox({ id: "msg-1", tenantId: "agency-1", state: "pending_review", summary: "Revisar",
+    version: 1, sourceEventId: "event-1", sourceExternalMessageId: "wa-1", sourceChannel: "whatsapp" });
+  assert.deepEqual(store.listInbox("agency-1")[0], { id: "msg-1", tenantId: "agency-1", state: "pending_review", summary: "Revisar",
+    sourceEventId: "event-1", sourceExternalMessageId: "wa-1", sourceChannel: "whatsapp", version: 1 });
+  store.close();
+});
+
 test("SQLite repository stores session hashes and authenticates legacy sessions", () => {
   const directory = mkdtempSync(join(tmpdir(), "pymes-session-"));
   const repository = new SqliteWorkspaceRepository(join(directory, "workspace.db"));
