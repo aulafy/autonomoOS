@@ -21,6 +21,7 @@ test("workspace client uses the API contract for approvals", async () => {
   assert.equal(created.resourceId, "offer-1");
   assert.equal((await value.approvals()).length, 1);
   assert.equal((await value.inbox())[0]?.id, "msg-remote");
+  assert.deepEqual((await value.connectors()).map(connector => connector.id), ["holded", "google_calendar"]);
 });
 
 test("workspace client exposes health and readiness contracts", async () => {

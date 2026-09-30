@@ -6,6 +6,7 @@ import { ingestOpenClawIntoWorkspace } from "./workspace-ingress.js";
 import { transitionCase, type CaseState } from "./case-lifecycle.js";
 import { createPendingEffect, MAX_EFFECT_RETRIES, type EffectKind, type PendingEffect } from "./effects.js";
 import type { OpenClawEnterpriseEnvelope, OpenClawEnterprisePolicy } from "./openclaw-gateway.js";
+import { pilotConfig } from "./config.js";
 export type { ApprovalRecord, WorkspacePrincipal } from "./workspace-policy.js";
 
 export interface WorkspaceInboxRecord {
@@ -190,6 +191,11 @@ export class WorkspaceApi {
       try { requirePermission(principal, "readInbox", resource); }
       catch { return { status: 403, body: { error: "WORKSPACE_PERMISSION_DENIED" } }; }
       return { status: 200, body: { tenantId, items: this.repository.listInbox(tenantId) } };
+    }
+    if (request.method === "GET" && parts[3] === "connectors" && parts.length === 4) {
+      try { requirePermission(principal, "readInbox", resource); }
+      catch { return { status: 403, body: { error: "WORKSPACE_PERMISSION_DENIED" } }; }
+      return { status: 200, body: { tenantId, connectors: [pilotConfig.crm, pilotConfig.calendar] } };
     }
     if (request.method === "GET" && parts[3] === "approvals" && parts.length === 4) {
       try { requirePermission(principal, "readInbox", resource); }

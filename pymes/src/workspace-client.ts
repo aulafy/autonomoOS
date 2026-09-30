@@ -24,6 +24,7 @@ export interface RemoteInboxRecord {
   version?: number;
   updatedAt?: string;
 }
+export interface RemoteConnector { id: string; name: string; status: string; }
 export interface RemoteCaseAudit { id: string; caseId: string; from: string; to: string; actorId: string; at: string; version: number; }
 export interface RemoteEffect { id: string; caseId: string; kind: string; status: string; requestedBy: string; requestedAt: string; retryCount?: number; payload: Record<string, unknown>; executionNote?: string; executedBy?: string; executedAt?: string; }
 export interface WorkspaceHealth { status: "ok" | "not_ready"; service: string; version: string; retryAfter?: string; }
@@ -106,6 +107,11 @@ export class WorkspaceClient {
     const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/inbox`);
     if (!Array.isArray(body.items)) throw new Error("INVALID_WORKSPACE_INBOX");
     return body.items as RemoteInboxRecord[];
+  }
+  async connectors(): Promise<RemoteConnector[]> {
+    const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/connectors`);
+    if (!Array.isArray(body.connectors)) throw new Error("INVALID_WORKSPACE_CONNECTORS");
+    return body.connectors as RemoteConnector[];
   }
 
   async approve(input: { resourceId: string; reason: string; draftHash: string; approvedAt: string }): Promise<RemoteApproval> {
