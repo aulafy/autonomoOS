@@ -54,6 +54,7 @@ export class InMemoryWorkspaceRepository implements WorkspaceRepository {
   private readonly inbox = new Map<string, WorkspaceInboxRecord[]>();
   private readonly approvals: ApprovalRecord[] = [];
   addSession(token: string, principal: WorkspacePrincipal): void {
+    if (!token || token.length < 16 || token.length > 4096) throw new Error("INVALID_SESSION_TOKEN");
     this.sessions.set(hashSessionToken(token), structuredClone(principal));
   }
   findSession(token: string): WorkspacePrincipal | null {

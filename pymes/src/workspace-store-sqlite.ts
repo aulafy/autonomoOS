@@ -49,6 +49,7 @@ export class SqliteWorkspaceRepository implements WorkspaceRepository {
     try { this.db.exec("ALTER TABLE workspace_effects ADD COLUMN retry_count INTEGER NOT NULL DEFAULT 0"); } catch {}
   }
   provisionSession(token: string, principal: WorkspacePrincipal): void {
+    if (!token || token.length < 16 || token.length > 4096) throw new Error("INVALID_SESSION_TOKEN");
     this.db.prepare(`INSERT OR REPLACE INTO workspace_sessions
       (token, user_id, tenant_id, role) VALUES (?, ?, ?, ?)`).run(hashSessionToken(token),
       principal.userId, principal.tenantId, principal.role);

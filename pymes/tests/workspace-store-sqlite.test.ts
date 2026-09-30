@@ -9,17 +9,17 @@ test("SQLite repository survives a repository restart", () => {
   const directory = mkdtempSync(join(tmpdir(), "pymes-workspace-"));
   const path = join(directory, "workspace.db");
   const first = new SqliteWorkspaceRepository(path);
-  first.provisionSession("token-1", { userId: "owner", tenantId: "agency-1", role: "owner" });
+  first.provisionSession("token-1234567890", { userId: "owner", tenantId: "agency-1", role: "owner" });
   first.appendInbox({ id: "msg-1", tenantId: "agency-1", state: "pending_review", summary: "Oferta" });
   first.appendApproval({ id: "approval-1", tenantId: "agency-1", resourceId: "offer-1",
     operation: "approveOffer", approvedBy: "owner", approvedAt: "2026-09-29T12:00:00Z",
     reason: "Revisada", draftHash: "sha256:v1" });
-  assert.equal(first.findSession("token-1")?.tenantId, "agency-1");
+  assert.equal(first.findSession("token-1234567890")?.tenantId, "agency-1");
   assert.equal(first.listInbox("agency-1").length, 1);
   assert.equal(first.listApprovals("agency-1").length, 1);
   first.close();
   const second = new SqliteWorkspaceRepository(path);
-  assert.equal(second.findSession("token-1")?.userId, "owner");
+  assert.equal(second.findSession("token-1234567890")?.userId, "owner");
   assert.equal(second.listInbox("agency-1")[0]?.id, "msg-1");
   assert.equal(second.listApprovals("agency-1")[0]?.id, "approval-1");
   second.close();
@@ -54,6 +54,13 @@ test("SQLite repository revokes hashed sessions durably", () => {
   assert.equal(reopened.findSession("revoke-session-token"), null);
   reopened.close();
   rmSync(directory, { recursive: true, force: true });
+});
+
+test("SQLite session provisioning rejects invalid token sizes", () => {
+  const store = new SqliteWorkspaceRepository(":memory:");
+  assert.throws(() => store.provisionSession("short", { userId: "owner", tenantId: "agency-1", role: "owner" }), /INVALID_SESSION_TOKEN/);
+  assert.throws(() => store.provisionSession("x".repeat(4097), { userId: "owner", tenantId: "agency-1", role: "owner" }), /INVALID_SESSION_TOKEN/);
+  store.close();
 });
 
 test("SQLite repository never returns another tenant's records", () => {
