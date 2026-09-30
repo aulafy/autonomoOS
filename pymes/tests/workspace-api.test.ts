@@ -13,6 +13,13 @@ function api() {
   return value;
 }
 
+test("worker session is least privilege at the HTTP API", () => {
+  const value = api();
+  value.addSession("worker-token-12345", { userId: "effects-worker", tenantId: "agency-1", role: "worker" });
+  assert.equal(value.handle({ method: "GET", path: "/v1/workspaces/agency-1/effects", authorization: "Bearer worker-token-12345" }).status, 200);
+  assert.equal(value.handle({ method: "POST", path: "/v1/workspaces/agency-1/approvals", authorization: "Bearer worker-token-12345", body: { resourceId: "offer-1", reason: "No", draftHash: "hash", approvedAt: "2026-09-30T10:00:00Z" } }).status, 403);
+});
+
 test("API authenticates and isolates inbox by tenant", () => {
   const value = api();
   value.addInbox({ id: "msg-1", tenantId: "agency-1", state: "approved", summary: "Actualizado" });
