@@ -95,6 +95,11 @@ Las peticiones del cliente usan 10 segundos por defecto; se puede configurar
 `requestTimeoutMs` entre 100 y 60.000 ms y capturar
 `WORKSPACE_REQUEST_TIMEOUT` para ofrecer un reintento.
 
+Antes de cargar casos, la interfaz consulta `GET /readyz`. Si el workspace
+responde `503`, muestra `WORKSPACE ARRANCANDO`, conserva el `Retry-After` y
+reintenta automáticamente cada 5 segundos; el agente también puede forzar el
+reintento con el botón visible en la cabecera.
+
 El ingress interno de OpenClaw Enterprise se activa por separado con
 `PYMES_OPENCLAW_INGRESS_TOKEN` y listas de agente, recurso, canales, remitentes
 emparejados y conversaciones consentidas. Publica en

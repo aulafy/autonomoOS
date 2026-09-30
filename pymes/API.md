@@ -46,6 +46,9 @@ si el almacenamiento no está disponible.
 En ese caso incluye `Retry-After: 5` para facilitar el backoff del orquestador.
 `WorkspaceClient.health()` y `WorkspaceClient.ready()` exponen estos contratos
 de forma tipada para la interfaz y los probes de despliegue.
+La interfaz PYMES no presenta el workspace como conectado hasta que `readyz`
+responde correctamente; durante el arranque aplica un backoff fijo de 5
+segundos y permite reintento manual.
 
 ## Ingress OpenClaw Enterprise
 
