@@ -1,4 +1,4 @@
-import { timingSafeEqual } from "node:crypto";
+import { createHash, timingSafeEqual } from "node:crypto";
 import { createApproval, requirePermission, type ApprovalRecord,
   type WorkspacePrincipal, type WorkspaceRole } from "./workspace-policy.js";
 import { ingestOpenClawIntoWorkspace } from "./workspace-ingress.js";
@@ -52,10 +52,10 @@ export class InMemoryWorkspaceRepository implements WorkspaceRepository {
   private readonly inbox = new Map<string, WorkspaceInboxRecord[]>();
   private readonly approvals: ApprovalRecord[] = [];
   addSession(token: string, principal: WorkspacePrincipal): void {
-    this.sessions.set(token, structuredClone(principal));
+    this.sessions.set(sessionKey(token), structuredClone(principal));
   }
   findSession(token: string): WorkspacePrincipal | null {
-    const value = this.sessions.get(token);
+    const value = this.sessions.get(sessionKey(token));
     return value ? structuredClone(value) : null;
   }
   listInbox(tenantId: string): WorkspaceInboxRecord[] {
@@ -119,6 +119,10 @@ function tokensEqual(left: string | undefined, right: string | undefined): boole
   const a = Buffer.from(left, "utf8");
   const b = Buffer.from(right, "utf8");
   return a.length === b.length && timingSafeEqual(a, b);
+}
+
+function sessionKey(token: string): string {
+  return createHash("sha256").update(token, "utf8").digest("hex");
 }
 
 /**
