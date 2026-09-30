@@ -41,6 +41,7 @@ export interface WorkspaceMetrics {
   inbox: { total: number; byState: Record<string, number> };
   effects: { total: number; byStatus: Record<string, number> };
   approvals: { total: number };
+  alerts?: Array<{ code: "FAILED_EFFECTS" | "INBOX_BACKLOG"; severity: "warning" | "critical"; count: number }>;
 }
 function isRemoteEffect(value: unknown): value is RemoteEffect {
   if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
@@ -235,10 +236,15 @@ export class WorkspaceClient {
       const bucket = value as { total: number } & Record<typeof field, Record<string, number>>;
       return Object.values(bucket[field]).reduce((sum, count) => sum + count, 0) === bucket.total;
     };
+    const validAlerts = body.alerts === undefined || (Array.isArray(body.alerts) && body.alerts.length <= 20 && body.alerts.every(alert =>
+      alert !== null && typeof alert === "object" && !Array.isArray(alert) &&
+      ((alert as Record<string, unknown>).code === "FAILED_EFFECTS" || (alert as Record<string, unknown>).code === "INBOX_BACKLOG") &&
+      ((alert as Record<string, unknown>).severity === "warning" || (alert as Record<string, unknown>).severity === "critical") &&
+      Number.isInteger((alert as Record<string, unknown>).count) && ((alert as Record<string, unknown>).count as number) > 0 && ((alert as Record<string, unknown>).count as number) <= MAX_REMOTE_ITEMS));
     if (body.tenantId !== this.config.tenantId || typeof body.generatedAt !== "string" || !validTimestamp(body.generatedAt) ||
       !coherentBucket(body.inbox, "byState") || !coherentBucket(body.effects, "byStatus") || body.approvals === null || typeof body.approvals !== "object" ||
       Array.isArray(body.approvals) || !Number.isInteger((body.approvals as Record<string, unknown>).total) ||
-      ((body.approvals as Record<string, unknown>).total as number) < 0 || ((body.approvals as Record<string, unknown>).total as number) > MAX_REMOTE_ITEMS) {
+      ((body.approvals as Record<string, unknown>).total as number) < 0 || ((body.approvals as Record<string, unknown>).total as number) > MAX_REMOTE_ITEMS || !validAlerts) {
       throw new Error("INVALID_WORKSPACE_METRICS");
     }
     return body as unknown as WorkspaceMetrics;

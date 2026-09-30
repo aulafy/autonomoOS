@@ -239,6 +239,8 @@ export class WorkspaceApi {
       const inbox = this.repository.listInbox(tenantId);
       const effects = this.repository.listEffects(tenantId);
       const approvals = this.repository.listApprovals(tenantId);
+      const failedEffects = effects.filter(effect => effect.status === "failed").length;
+      const pendingReview = inbox.filter(item => item.state === "pending_review").length;
       const byField = <T extends object>(items: readonly T[], field: "state" | "status"): Record<string, number> =>
         items.reduce<Record<string, number>>((counts, item) => {
           const value = (item as Record<string, unknown>)[field];
@@ -248,7 +250,11 @@ export class WorkspaceApi {
       return { status: 200, body: { tenantId, generatedAt: new Date().toISOString(),
         inbox: { total: inbox.length, byState: byField(inbox, "state") },
         effects: { total: effects.length, byStatus: byField(effects, "status") },
-        approvals: { total: approvals.length } } };
+        approvals: { total: approvals.length },
+        alerts: [
+          ...(failedEffects > 0 ? [{ code: "FAILED_EFFECTS", severity: "critical", count: failedEffects }] : []),
+          ...(pendingReview > 20 ? [{ code: "INBOX_BACKLOG", severity: "warning", count: pendingReview }] : [])
+        ] } };
     }
     if (request.method === "POST" && parts[3] === "cases" && parts[5] === "transition" && parts.length === 6) {
       const body = jsonRecord(request.body);

@@ -92,6 +92,7 @@ test("metrics expose tenant-scoped operational counts without message content", 
   const withFailure = value.handle({ method: "GET", path: "/v1/workspaces/agency-1/metrics",
     authorization: "Bearer reviewer-token-1234" });
   assert.deepEqual(withFailure.body.effects, { total: 1, byStatus: { failed: 1 } });
+  assert.deepEqual(withFailure.body.alerts, [{ code: "FAILED_EFFECTS", severity: "critical", count: 1 }]);
 });
 
 test("case transition is authenticated and leaves an audit trail", () => {
