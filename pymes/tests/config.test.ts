@@ -12,6 +12,7 @@ test("configured channels discard unknown values and whitespace", () => {
 
 test("missing channel configuration uses the supported defaults", () => {
   assert.deepEqual([...parseConfiguredChannels(undefined)], ["whatsapp", "telegram", "imessage", "email"]);
+  assert.deepEqual([...parseConfiguredChannels("   ")], ["whatsapp", "telegram", "imessage", "email"]);
 });
 
 test("configured channels are deduplicated", () => {
