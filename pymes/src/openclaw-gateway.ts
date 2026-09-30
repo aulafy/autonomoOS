@@ -42,6 +42,13 @@ function nonempty(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 
+function safeText(value: unknown, maxLength: number): value is string {
+  return nonempty(value) && value.length <= maxLength && !/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(value);
+}
+function safeMetadata(value: unknown, maxLength: number): value is string {
+  return nonempty(value) && value.length <= maxLength && !/[\u0000-\u001f\u007f]/.test(value);
+}
+
 function validTimestamp(value: string): boolean {
   return !Number.isNaN(Date.parse(value)) && /T/.test(value);
 }
@@ -53,9 +60,9 @@ function validTimestamp(value: string): boolean {
  */
 export function ingestOpenClawEvent(event: OpenClawInboundEvent,
   policy: OpenClawIngressPolicy): OpenClawIngressResult {
-  if (!nonempty(event.eventId) || !nonempty(event.externalMessageId) ||
-    !nonempty(event.conversationId) || !nonempty(event.senderId) ||
-    !nonempty(event.text) || !validTimestamp(event.receivedAt)) {
+  if (!safeMetadata(event.eventId, 200) || !safeMetadata(event.externalMessageId, 200) ||
+    !safeMetadata(event.conversationId, 200) || !safeMetadata(event.senderId, 200) ||
+    !safeText(event.text, 10_000) || !safeText(event.receivedAt, 100) || !validTimestamp(event.receivedAt)) {
     return { accepted: false, reason: "INVALID_EVENT" };
   }
   if (!policy.allowedChannels.has(event.channel)) {
@@ -83,8 +90,8 @@ export function ingestOpenClawEnterpriseEvent(
   envelope: OpenClawEnterpriseEnvelope,
   policy: OpenClawEnterprisePolicy
 ): OpenClawIngressResult {
-  if (!nonempty(envelope.tenantId) || !nonempty(envelope.agentId) ||
-    !nonempty(envelope.resourceId)) return { accepted: false, reason: "INVALID_EVENT" };
+  if (!safeMetadata(envelope.tenantId, 200) || !safeMetadata(envelope.agentId, 200) ||
+    !safeMetadata(envelope.resourceId, 200)) return { accepted: false, reason: "INVALID_EVENT" };
   if (envelope.tenantId !== policy.tenantId ||
     !policy.allowedAgentIds.has(envelope.agentId) ||
     !policy.allowedResourceIds.has(envelope.resourceId)) {

@@ -43,6 +43,13 @@ test("evento malformado no produce una tarea parcial", () => {
   assert.deepEqual(result, { accepted: false, reason: "INVALID_EVENT" });
 });
 
+test("evento OpenClaw rechaza texto y metadatos fuera de límites", () => {
+  const oversized = ingestOpenClawEvent({ ...event, text: "x".repeat(10_001) }, policy);
+  assert.deepEqual(oversized, { accepted: false, reason: "INVALID_EVENT" });
+  const control = ingestOpenClawEvent({ ...event, senderId: "sender-1\u0001" }, policy);
+  assert.deepEqual(control, { accepted: false, reason: "INVALID_EVENT" });
+});
+
 test("la envolvente Enterprise impone tenant, agente y recurso", () => {
   const enterprisePolicy = { ...policy, tenantId: "agency-1",
     allowedAgentIds: new Set(["agent-1"]), allowedResourceIds: new Set(["resource-inbox-1"]) };
