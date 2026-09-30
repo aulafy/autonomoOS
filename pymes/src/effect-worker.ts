@@ -38,6 +38,24 @@ export interface EffectBatchResult {
   error?: string;
 }
 
+export interface EffectBatchSummary {
+  total: number;
+  succeeded: number;
+  failed: number;
+  skipped: number;
+}
+
+/** Produces safe operational counters; it deliberately omits effect payloads and errors. */
+export function summarizeEffectBatch(results: readonly EffectBatchResult[]): EffectBatchSummary {
+  return results.reduce<EffectBatchSummary>((summary, result) => {
+    summary.total += 1;
+    if (result.status === "succeeded") summary.succeeded += 1;
+    else if (result.status === "failed") summary.failed += 1;
+    else summary.skipped += 1;
+    return summary;
+  }, { total: 0, succeeded: 0, failed: 0, skipped: 0 });
+}
+
 export async function executeConfirmedEffects(input: {
   client: WorkspaceClient;
   handlers: EffectHandlers;

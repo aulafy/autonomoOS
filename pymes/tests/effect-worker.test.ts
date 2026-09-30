@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { executeRemoteEffect, runEffectWorker } from "../src/effect-worker.js";
+import { executeRemoteEffect, runEffectWorker, summarizeEffectBatch } from "../src/effect-worker.js";
 import type { RemoteEffect } from "../src/workspace-client.js";
 
 const effect: RemoteEffect = { tenantId: "agency-1", id: "effect-1", caseId: "case-1", kind: "crm_task", status: "confirmed", requestedBy: "owner-1", requestedAt: "2026-09-30T08:00:00Z", confirmedBy: "reviewer-1", payload: { title: "Task", contactId: "contact-1" } };
@@ -38,6 +38,14 @@ test("worker loop never overlaps polls and stops on abort", async () => {
 
 test("worker loop rejects unsafe polling intervals", async () => {
   await assert.rejects(() => runEffectWorker({ intervalMs: 10, poll: async () => [] }), /INVALID_EFFECT_WORKER_INTERVAL/);
+});
+
+test("worker batch summary exposes only safe counters", () => {
+  assert.deepEqual(summarizeEffectBatch([
+    { effectId: "a", status: "succeeded" },
+    { effectId: "b", status: "failed", error: "secret message" },
+    { effectId: "c", status: "skipped", error: "provider token" },
+  ]), { total: 3, succeeded: 1, failed: 1, skipped: 1 });
 });
 
 test("worker loop reports a poll error and retries after a bounded delay", async () => {
