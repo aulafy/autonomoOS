@@ -1,5 +1,5 @@
 import { DatabaseSync } from "node:sqlite";
-import { createHash } from "node:crypto";
+import { hashSessionToken } from "./auth.js";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import type { ApprovalRecord, CaseAuditRecord, WorkspaceInboxRecord, WorkspacePrincipal,
@@ -48,16 +48,13 @@ export class SqliteWorkspaceRepository implements WorkspaceRepository {
     try { this.db.exec("ALTER TABLE workspace_effects ADD COLUMN execution_note TEXT"); } catch {}
     try { this.db.exec("ALTER TABLE workspace_effects ADD COLUMN retry_count INTEGER NOT NULL DEFAULT 0"); } catch {}
   }
-  private static tokenHash(token: string): string {
-    return createHash("sha256").update(token, "utf8").digest("hex");
-  }
   provisionSession(token: string, principal: WorkspacePrincipal): void {
     this.db.prepare(`INSERT OR REPLACE INTO workspace_sessions
-      (token, user_id, tenant_id, role) VALUES (?, ?, ?, ?)`).run(SqliteWorkspaceRepository.tokenHash(token),
+      (token, user_id, tenant_id, role) VALUES (?, ?, ?, ?)`).run(hashSessionToken(token),
       principal.userId, principal.tenantId, principal.role);
   }
   findSession(token: string): WorkspacePrincipal | null {
-    const hash = SqliteWorkspaceRepository.tokenHash(token);
+    const hash = hashSessionToken(token);
     const row = this.db.prepare(`SELECT user_id, tenant_id, role FROM workspace_sessions WHERE token = ?`).get(hash) as
       { user_id: string; tenant_id: string; role: WorkspacePrincipal["role"] } | undefined;
     if (row) return { userId: row.user_id, tenantId: row.tenant_id, role: row.role };
