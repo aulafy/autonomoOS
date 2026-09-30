@@ -8,6 +8,9 @@ en una bandeja priorizada, borradores y una agenda de solo lectura.
 Los mensajes sin contacto reconocido permanecen en la bandeja como casos
 pendientes de identidad; no reciben un borrador personalizado ni ficha CRM.
 
+El entorno soportado es Node.js 22 o superior. El repositorio aplica esta
+restricción automáticamente durante `npm ci`.
+
 El piloto está configurado para España y cubre coche, vida, hogar y
 responsabilidad civil para autónomos. Holded es el CRM de referencia y Google
 Calendar el calendario previsto. Ambos siguen **sin conexión real**.
