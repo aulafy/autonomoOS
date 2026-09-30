@@ -257,6 +257,13 @@ test("workspace client rejects duplicate inbox identifiers", async () => {
   await assert.rejects(() => client.inbox(), /INVALID_WORKSPACE_INBOX/);
 });
 
+test("workspace client rejects empty inbox and approval envelopes for another tenant", async () => {
+  const inbox = new WorkspaceClient({ baseUrl: "http://workspace.local", tenantId: "agency-1", token: "owner-token-123456" }, async () => new Response(JSON.stringify({ tenantId: "agency-2", items: [] }), { status: 200, headers: { "content-type": "application/json" } }));
+  await assert.rejects(() => inbox.inbox(), /INVALID_WORKSPACE_INBOX/);
+  const approvals = new WorkspaceClient({ baseUrl: "http://workspace.local", tenantId: "agency-1", token: "owner-token-123456" }, async () => new Response(JSON.stringify({ tenantId: "agency-2", approvals: [] }), { status: 200, headers: { "content-type": "application/json" } }));
+  await assert.rejects(() => approvals.approvals(), /INVALID_WORKSPACE_APPROVALS/);
+});
+
 test("workspace client rejects duplicate audit identifiers", async () => {
   const entry = { id: "audit-1", caseId: "case-1", from: "received", to: "accepted", actorId: "owner", at: "2026-09-30T10:00:00Z", version: 1 };
   const fetcher: typeof fetch = async () => new Response(JSON.stringify({ tenantId: "agency-1", caseId: "case-1", audit: [entry, { ...entry, version: 2 }] }), { status: 200, headers: { "content-type": "application/json" } });

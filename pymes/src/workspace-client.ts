@@ -157,7 +157,7 @@ export class WorkspaceClient {
 
   async approvals(): Promise<RemoteApproval[]> {
     const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/approvals`);
-    if (!Array.isArray(body.approvals) || body.approvals.length > MAX_REMOTE_ITEMS || !body.approvals.every(item => isRemoteApproval(item, this.config.tenantId)) ||
+    if (body.tenantId !== this.config.tenantId || !Array.isArray(body.approvals) || body.approvals.length > MAX_REMOTE_ITEMS || !body.approvals.every(item => isRemoteApproval(item, this.config.tenantId)) ||
       new Set(body.approvals.map(item => item.id)).size !== body.approvals.length) throw new Error("INVALID_WORKSPACE_APPROVALS");
     return body.approvals as RemoteApproval[];
   }
@@ -180,7 +180,7 @@ export class WorkspaceClient {
 
   async inbox(): Promise<RemoteInboxRecord[]> {
     const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/inbox`);
-    if (!Array.isArray(body.items) || body.items.length > MAX_REMOTE_ITEMS || body.items.some(item => {
+    if (body.tenantId !== this.config.tenantId || !Array.isArray(body.items) || body.items.length > MAX_REMOTE_ITEMS || body.items.some(item => {
       if (item === null || typeof item !== "object" || Array.isArray(item)) return true;
       const record = item as Record<string, unknown>;
       return record.tenantId !== this.config.tenantId || typeof record.id !== "string" || !record.id ||
