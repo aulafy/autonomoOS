@@ -80,6 +80,16 @@ test("API rejects effect payloads that do not match their kind", () => {
     authorization: "Bearer reviewer-token-1234" }).body.effects, []);
 });
 
+test("API preserves safe multiline message drafts", () => {
+  const value = api();
+  const response = value.handle({ method: "POST", path: "/v1/workspaces/agency-1/effects",
+    authorization: "Bearer owner-token-12345", body: { id: "message-multiline", caseId: "msg-1", kind: "message",
+      payload: { channel: "whatsapp", text: "Hola\nTe llamo esta tarde", contactId: "contact-1" },
+      requestedAt: "2026-09-30T10:00:00Z", draftHash: "sha256:multiline" } });
+  assert.equal(response.status, 201);
+  assert.equal((response.body.payload as { text: string }).text, "Hola\nTe llamo esta tarde");
+});
+
 test("reviewer can read approvals but tenant remains isolated", () => {
   const value = api();
   const response = value.handle({ method: "GET", path: "/v1/workspaces/agency-1/approvals",
