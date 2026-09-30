@@ -185,3 +185,16 @@ necesiten un código de salida: devuelve `0` si no hay fallos y la cola está ba
 el límite, y `2` si hay operaciones fallidas, demasiados pendientes o una
 respuesta inválida. Requiere `curl`; si `jq` está instalado aplica las reglas,
 y nunca muestra el token.
+
+Configuración mínima del script:
+
+```bash
+export PYMES_API_BASE_URL=https://workspace.example.com
+export PYMES_API_TOKEN='token-de-monitorizacion'
+export PYMES_API_TENANT=agency-1
+export PYMES_PENDING_REVIEW_LIMIT=20
+npm run check:operations
+```
+
+El token de monitorización debe ser independiente del token de una persona y
+rotarse según la política de la empresa.
