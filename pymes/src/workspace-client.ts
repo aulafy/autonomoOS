@@ -84,6 +84,7 @@ function validConfig(config: WorkspaceClientConfig): void {
 export class WorkspaceClient {
   private lastRequestIdValue: string | null = null;
   private lastStatusValue: number | null = null;
+  private lastResponseRequestIdValue: string | null = null;
   constructor(private readonly config: WorkspaceClientConfig,
     private readonly fetcher: typeof fetch = fetch) {
     validConfig(config);
@@ -96,6 +97,7 @@ export class WorkspaceClient {
     const correlationId = requestId();
     this.lastRequestIdValue = correlationId;
     this.lastStatusValue = null;
+    this.lastResponseRequestIdValue = null;
     let response: Response;
     try {
       response = await this.fetcher(`${this.config.baseUrl}${path}`, {
@@ -107,6 +109,7 @@ export class WorkspaceClient {
       throw error;
     }
     this.lastStatusValue = response.status;
+    this.lastResponseRequestIdValue = response.headers.get("x-request-id");
     const contentLength = response.headers.get("content-length");
     if (contentLength && (/^\d+$/.test(contentLength) === false || Number(contentLength) > MAX_REMOTE_RESPONSE_BYTES)) {
       throw new Error("WORKSPACE_RESPONSE_TOO_LARGE");
@@ -141,6 +144,7 @@ export class WorkspaceClient {
   }
   get lastRequestId(): string | null { return this.lastRequestIdValue; }
   get lastStatus(): number | null { return this.lastStatusValue; }
+  get lastResponseRequestId(): string | null { return this.lastResponseRequestIdValue; }
 
   async approvals(): Promise<RemoteApproval[]> {
     const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/approvals`);

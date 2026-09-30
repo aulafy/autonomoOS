@@ -34,6 +34,9 @@ Cada petición del cliente genera un `X-Request-Id` para correlacionar logs y
 diagnósticos; `WorkspaceClient.lastRequestId` expone el último valor enviado.
 `WorkspaceClient.lastStatus` expone el último código HTTP recibido para
 diagnóstico de soporte, sin incluir cuerpos ni credenciales.
+`WorkspaceClient.lastResponseRequestId` expone el `X-Request-Id` devuelto por
+el workspace cuando está presente, útil si un gateway genera una correlación
+distinta.
 Si una petición falla antes de recibir respuesta, `lastStatus` vuelve a
 `null` para no conservar un código obsoleto.
 También envía `Cache-Control: no-store` para impedir el almacenamiento
