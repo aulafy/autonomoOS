@@ -102,6 +102,10 @@ en `API.md`; el token y la firma se validan de forma independiente.
 - El servicio Compose se ejecuta sin capacidades Linux y con
   `no-new-privileges`; conservar estas restricciones en cualquier manifiesto
   equivalente.
+- La imagen ejecuta el proceso como usuario `node`, escucha en `0.0.0.0` dentro
+  del contenedor y declara un healthcheck que consulta `/readyz`; al migrar a
+  Kubernetes, Nomad u otro orquestador conserva esa separación entre liveness
+  (`/healthz`) y readiness (`/readyz`).
 - El root filesystem es de solo lectura; `/data` es el único almacenamiento
   persistente y `/tmp` se monta como temporal.
 - Compose concede 30 segundos para el apagado ordenado y el cierre de SQLite.
