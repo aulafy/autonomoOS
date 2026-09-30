@@ -66,10 +66,14 @@ async function providerFetch(fetcher: Fetcher, input: RequestInfo | URL, init: R
     lastResponse = response;
     if (response.status !== 429 && (response.status < 500 || response.status >= 600)) return response;
     if (attempt < 2) {
-      const retryAfter = Number(response.headers.get("retry-after"));
-      const delayMs = Number.isFinite(retryAfter) && retryAfter >= 0
-        ? Math.min(retryAfter * 1_000, 2_000)
-        : 25 * (attempt + 1);
+      const retryAfterHeader = response.headers.get("retry-after");
+      const retryAfterSeconds = retryAfterHeader === null ? Number.NaN : Number(retryAfterHeader);
+      const retryAfterDate = retryAfterHeader && Number.isNaN(retryAfterSeconds) ? Date.parse(retryAfterHeader) : Number.NaN;
+      const delayMs = Number.isFinite(retryAfterSeconds) && retryAfterSeconds >= 0
+        ? Math.min(retryAfterSeconds * 1_000, 2_000)
+        : Number.isFinite(retryAfterDate)
+          ? Math.min(Math.max(0, retryAfterDate - Date.now()), 2_000)
+          : 25 * (attempt + 1);
       await new Promise(resolve => setTimeout(resolve, delayMs));
     }
   }
