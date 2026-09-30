@@ -36,6 +36,10 @@ devuelven `415 UNSUPPORTED_MEDIA_TYPE`.
 Un método no permitido devuelve `405` con la cabecera `Allow` correspondiente.
 Una request malformada devuelve `400`; si el parser rechaza las cabeceras por
 exceso de tamaño, el servidor devuelve `431` y cierra la conexión.
+El cliente remoto valida además la bandeja: cada caso debe tener `tenantId`,
+`id`, `state` y `summary`, y el `tenantId` debe coincidir con el workspace
+solicitado. Una respuesta mezclada se rechaza completa con
+`INVALID_WORKSPACE_INBOX`.
 
 ## Salud
 

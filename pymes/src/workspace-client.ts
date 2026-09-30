@@ -107,7 +107,12 @@ export class WorkspaceClient {
 
   async inbox(): Promise<RemoteInboxRecord[]> {
     const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/inbox`);
-    if (!Array.isArray(body.items)) throw new Error("INVALID_WORKSPACE_INBOX");
+    if (!Array.isArray(body.items) || body.items.some(item => {
+      if (item === null || typeof item !== "object" || Array.isArray(item)) return true;
+      const record = item as Record<string, unknown>;
+      return record.tenantId !== this.config.tenantId || typeof record.id !== "string" || !record.id ||
+        typeof record.state !== "string" || typeof record.summary !== "string";
+    })) throw new Error("INVALID_WORKSPACE_INBOX");
     return body.items as RemoteInboxRecord[];
   }
   async connectors(): Promise<RemoteConnector[]> {
