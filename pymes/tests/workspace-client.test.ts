@@ -37,6 +37,15 @@ test("workspace client validates tenant-scoped operational metrics", async () =>
   assert.deepEqual(metrics.effects, { total: 0, byStatus: {} });
 });
 
+test("workspace client accepts uncertain case metric alerts", async () => {
+  const api = client();
+  const alertClient = new WorkspaceClient({ baseUrl: "http://workspace.local", tenantId: "agency-1", token: "owner-token-123456" }, async () => new Response(JSON.stringify({
+    tenantId: "agency-1", generatedAt: "2026-09-30T10:00:00Z", inbox: { total: 1, byState: { uncertain: 1 } }, effects: { total: 0, byStatus: {} }, approvals: { total: 0 }, alerts: [{ code: "UNCERTAIN_CASES", severity: "warning", count: 1 }]
+  }), { status: 200, headers: { "content-type": "application/json" } }));
+  assert.equal((await alertClient.metrics()).alerts?.[0]?.code, "UNCERTAIN_CASES");
+  assert.equal((await api.metrics()).tenantId, "agency-1");
+});
+
 test("workspace client consumes the tenant attention queue", async () => {
   const value = client();
   const items = await value.attention();
