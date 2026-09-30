@@ -593,6 +593,7 @@ test("workspace client rejects cross-tenant or malformed metrics", async () => {
     { tenantId: "agency-1", generatedAt: "2026-09-30T10:00:00Z", inbox: { total: -1, byState: {} }, effects: { total: 0, byStatus: {} }, approvals: { total: 0 } }
   ];
   responses.push({ tenantId: "agency-1", generatedAt: "not-a-date", inbox: { total: 0, byState: {} }, effects: { total: 0, byStatus: {} }, approvals: { total: 0 } });
+  responses.push({ tenantId: "agency-1", generatedAt: "2026-09-30T10:00:00Z", inbox: { total: 2, byState: { pending_review: 1 } }, effects: { total: 0, byStatus: {} }, approvals: { total: 0 } });
   for (const body of responses) {
     const value = new WorkspaceClient({ baseUrl: "http://workspace.local", tenantId: "agency-1", token: "owner-token-123456" },
       async () => new Response(JSON.stringify(body), { status: 200, headers: { "content-type": "application/json" } }));

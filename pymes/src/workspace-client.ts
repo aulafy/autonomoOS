@@ -230,8 +230,13 @@ export class WorkspaceClient {
     const validBucket = (value: unknown, field: "byState" | "byStatus"): value is { total: number } & Record<typeof field, Record<string, number>> =>
       value !== null && typeof value === "object" && !Array.isArray(value) && Number.isInteger((value as Record<string, unknown>).total) &&
       ((value as Record<string, unknown>).total as number) >= 0 && ((value as Record<string, unknown>).total as number) <= MAX_REMOTE_ITEMS && validCounts((value as Record<string, unknown>)[field]);
+    const coherentBucket = (value: unknown, field: "byState" | "byStatus"): boolean => {
+      if (!validBucket(value, field)) return false;
+      const bucket = value as { total: number } & Record<typeof field, Record<string, number>>;
+      return Object.values(bucket[field]).reduce((sum, count) => sum + count, 0) === bucket.total;
+    };
     if (body.tenantId !== this.config.tenantId || typeof body.generatedAt !== "string" || !validTimestamp(body.generatedAt) ||
-      !validBucket(body.inbox, "byState") || !validBucket(body.effects, "byStatus") || body.approvals === null || typeof body.approvals !== "object" ||
+      !coherentBucket(body.inbox, "byState") || !coherentBucket(body.effects, "byStatus") || body.approvals === null || typeof body.approvals !== "object" ||
       Array.isArray(body.approvals) || !Number.isInteger((body.approvals as Record<string, unknown>).total) ||
       ((body.approvals as Record<string, unknown>).total as number) < 0 || ((body.approvals as Record<string, unknown>).total as number) > MAX_REMOTE_ITEMS) {
       throw new Error("INVALID_WORKSPACE_METRICS");
