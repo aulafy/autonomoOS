@@ -233,3 +233,10 @@ npm run check:operations
 
 El token de monitorización debe ser independiente del token de una persona y
 rotarse según la política de la empresa.
+
+Los workers pueden recibir `PYMES_MESSAGE_GATEWAY_URL`/`TOKEN`,
+`PYMES_CRM_GATEWAY_URL`/`TOKEN` y `PYMES_CALL_GATEWAY_URL`/`TOKEN` para sus
+salidas. Son variables opcionales y deben inyectarse como secretos del
+despliegue; nunca se deben incluir en la interfaz ni en el repositorio. Si un
+gateway no está configurado, el efecto permanece confirmado hasta que un
+worker autorizado pueda procesarlo.
