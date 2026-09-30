@@ -157,6 +157,7 @@ export class WorkspaceClient {
     return body;
   }
   async audit(caseId: string): Promise<RemoteCaseAudit[]> {
+    if (!caseId.trim()) throw new Error("INVALID_WORKSPACE_CASE_INPUT");
     const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/cases/${encodeURIComponent(caseId)}/audit`);
     if (body.tenantId !== this.config.tenantId || body.caseId !== caseId || !Array.isArray(body.audit)) throw new Error("INVALID_WORKSPACE_AUDIT");
     return body.audit as RemoteCaseAudit[];
@@ -175,11 +176,13 @@ export class WorkspaceClient {
     return body.effects as RemoteEffect[];
   }
   async effectsForCase(caseId: string): Promise<RemoteEffect[]> {
+    if (!caseId.trim()) throw new Error("INVALID_WORKSPACE_CASE_INPUT");
     const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/cases/${encodeURIComponent(caseId)}/effects`);
     if (body.tenantId !== this.config.tenantId || body.caseId !== caseId || !Array.isArray(body.effects) || !body.effects.every(isRemoteEffect)) throw new Error("INVALID_WORKSPACE_EFFECTS");
     return body.effects as RemoteEffect[];
   }
   async effect(effectId: string): Promise<RemoteEffect> {
+    if (!effectId.trim()) throw new Error("INVALID_WORKSPACE_EFFECT_INPUT");
     const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/effects/${encodeURIComponent(effectId)}`);
     if (!isRemoteEffect(body)) throw new Error("INVALID_WORKSPACE_EFFECT");
     return body as unknown as RemoteEffect;
