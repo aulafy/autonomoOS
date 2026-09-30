@@ -73,6 +73,9 @@ Para datos dinámicos pueden usar también `isConnectorStatus()` antes de
 aceptar un estado recibido desde una API o configuración externa.
 `isConnectorConfig()` valida el objeto completo antes de incorporarlo al
 registro de integraciones.
+El cliente remoto también exige que el `tenantId` de la respuesta coincida con
+el workspace solicitado y que no haya IDs de conector duplicados; si falla
+cualquiera de esas invariantes rechaza el registro completo.
 Los conectores del piloto usan los IDs estables `holded` y `google_calendar`;
 los nombres visibles pueden cambiar sin romper esas referencias.
 
