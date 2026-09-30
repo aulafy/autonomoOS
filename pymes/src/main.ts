@@ -58,6 +58,7 @@ async function checkRemoteWorkspace(): Promise<void> {
   const token = sessionStorage.getItem("pymes.workspace.token");
   if (!baseUrl || !tenantId || !token) {
     if (workspaceAutoRefreshTimer !== null) { window.clearInterval(workspaceAutoRefreshTimer); workspaceAutoRefreshTimer = null; }
+    status.className = "workspace-pill error";
     status.dataset.state = "error";
     status.setAttribute("aria-busy", "false");
     return;
