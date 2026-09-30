@@ -3,6 +3,7 @@ import type { Channel } from "./domain.js";
 export const supportedChannels = ["whatsapp", "telegram", "imessage", "email"] as const satisfies readonly Channel[];
 export type SupportedChannel = Channel;
 
+/** Missing/blank input uses safe local defaults; wildcard input is rejected. */
 export function parseCorsOrigins(value: string | undefined): string[] {
   const configured = value?.trim() ? value : "http://127.0.0.1:5174,http://localhost:5174";
   const origins = configured.split(",").map(item => item.trim()).filter(Boolean);
@@ -11,6 +12,7 @@ export function parseCorsOrigins(value: string | undefined): string[] {
   return [...new Set(origins)];
 }
 
+/** Missing/blank input uses supported channels; explicit unknown values are removed. */
 export function parseConfiguredChannels(value: string | undefined): Set<SupportedChannel> {
   const allowed = new Set<SupportedChannel>(supportedChannels);
   const configured = value?.trim() ? value : supportedChannels.join(",");
