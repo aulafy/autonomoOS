@@ -126,6 +126,21 @@ test("provider retry handles rate limiting hints", async () => {
   assert.equal(contacts[0]?.externalId, "c-1");
 });
 
+test("provider retry accepts an HTTP date hint", async () => {
+  let calls = 0;
+  const contacts = await findHoldedContactsByPhone({
+    apiKey: "demo-key", phone: "+34600111222", timeoutMs: 1_000,
+    fetcher: async () => {
+      calls += 1;
+      return calls === 1
+        ? new Response(null, { status: 429, headers: { "retry-after": "Wed, 01 Jan 2020 00:00:00 GMT" } })
+        : Response.json([{ id: "c-1", name: "Ana Ruiz" }]);
+    }
+  });
+  assert.equal(calls, 3);
+  assert.equal(contacts[0]?.externalId, "c-1");
+});
+
 test("missing credentials and provider failures never become empty successful reads", async () => {
   await assert.rejects(() => findHoldedContactsByPhone({ apiKey: "", phone: "+34600111222" }),
     /MISSING_PROVIDER_CREDENTIAL/);
