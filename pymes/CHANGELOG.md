@@ -24,6 +24,8 @@
   endpoint y token durante el arranque del servidor.
 - Configuración de gateways propagada a Docker Compose y Kubernetes, con
   comprobaciones de CI para evitar secretos o claves de despliegue huérfanos.
+- Endpoint de efectos con `status=confirmed` para polling eficiente y seguro de
+  workers, conservando filtrado local compatible.
 
 ### Seguridad y operación
 
