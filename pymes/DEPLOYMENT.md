@@ -49,6 +49,8 @@ de aplicarla. SQLite usa un volumen `ReadWriteOnce` y la plantilla mantiene una
 sola réplica; el escalado horizontal requiere migrar primero a un almacenamiento
 transaccional compartido. La plantilla tampoco monta el token de ServiceAccount
 porque el workspace no necesita consultar la API de Kubernetes.
+[`k8s/secret.example.yaml`](k8s/secret.example.yaml) solo contiene marcadores de
+posición: genera el Secret real desde tu gestor de secretos y no lo versiones.
 
 ## Interfaz
 
