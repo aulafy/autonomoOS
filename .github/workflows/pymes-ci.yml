@@ -6,12 +6,16 @@ on:
       - "pymes/**"
       - "package.json"
       - "package-lock.json"
+      - ".npmrc"
+      - ".dockerignore"
       - ".github/workflows/pymes-ci.yml"
   pull_request:
     paths:
       - "pymes/**"
       - "package.json"
       - "package-lock.json"
+      - ".npmrc"
+      - ".dockerignore"
       - ".github/workflows/pymes-ci.yml"
 
 permissions:
