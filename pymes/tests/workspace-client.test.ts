@@ -567,3 +567,15 @@ test("workspace client drops oversized response correlation ids", async () => {
   await value.health();
   assert.equal(value.lastResponseRequestId, null);
 });
+
+test("workspace client rejects cross-tenant or malformed metrics", async () => {
+  const responses = [
+    { tenantId: "agency-2", generatedAt: "2026-09-30T10:00:00Z", inbox: { total: 0, byState: {} }, effects: { total: 0, byStatus: {} }, approvals: { total: 0 } },
+    { tenantId: "agency-1", generatedAt: "2026-09-30T10:00:00Z", inbox: { total: -1, byState: {} }, effects: { total: 0, byStatus: {} }, approvals: { total: 0 } }
+  ];
+  for (const body of responses) {
+    const value = new WorkspaceClient({ baseUrl: "http://workspace.local", tenantId: "agency-1", token: "owner-token-123456" },
+      async () => new Response(JSON.stringify(body), { status: 200, headers: { "content-type": "application/json" } }));
+    await assert.rejects(() => value.metrics(), /INVALID_WORKSPACE_METRICS/);
+  }
+});
