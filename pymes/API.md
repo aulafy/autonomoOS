@@ -63,6 +63,8 @@ El indicador usa `role="status"`, `aria-live="polite"` y `aria-atomic="true"`
 para anunciar cambios completos de conexión sin interrumpir la tarea activa.
 El contexto de piloto expone `data-crm-status` y `data-calendar-status` con los
 estados tipados de Holded y Google Calendar.
+Los adaptadores nuevos pueden reutilizar el tipo exportado `ConnectorConfig`
+junto con `ConnectorStatus` para mantener la misma semántica.
 
 ## Ingress OpenClaw Enterprise
 
