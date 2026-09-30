@@ -53,6 +53,9 @@ envolvente de otro workspace o de otro caso se rechaza con
 Cada efecto individual debe incluir como mínimo `id`, `caseId`, `kind`,
 `status`, `requestedBy` y `requestedAt`; el cliente rechaza efectos incompletos
 con `INVALID_WORKSPACE_EFFECT` antes de permitir confirmaciones o reintentos.
+Las respuestas de `confirmEffect()`, `reportEffectResult()` y `retryEffect()`
+se validan con el mismo contrato antes de devolverse al llamador; una mutación
+con respuesta incompleta no se presenta como ejecutada.
 
 ## Salud
 

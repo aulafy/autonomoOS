@@ -124,6 +124,14 @@ test("workspace client rejects incomplete individual effects", async () => {
   await assert.rejects(() => value.effect("effect-1"), /INVALID_WORKSPACE_EFFECT/);
 });
 
+test("workspace client rejects malformed effect mutation responses", async () => {
+  const fetcher: typeof fetch = async () => new Response(JSON.stringify({ id: "effect-1", status: "confirmed" }), {
+    status: 200, headers: { "content-type": "application/json" }
+  });
+  const value = new WorkspaceClient({ baseUrl: "http://127.0.0.1:8799", tenantId: "agency-1", token: "token-1234567890" }, fetcher);
+  await assert.rejects(() => value.confirmEffect("effect-1"), /INVALID_WORKSPACE_EFFECT/);
+});
+
 test("workspace client reads an individual effect", async () => {
   const api = new WorkspaceApi();
   api.addSession("owner-token-123456", { userId: "owner", tenantId: "agency-1", role: "owner" });

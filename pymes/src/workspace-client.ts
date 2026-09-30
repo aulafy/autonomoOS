@@ -180,19 +180,22 @@ export class WorkspaceClient {
     const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/effects/${encodeURIComponent(effectId)}/confirm`, {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ confirm: true, confirmedAt })
     });
-    return body as unknown as RemoteEffect;
+    if (!isRemoteEffect(body)) throw new Error("INVALID_WORKSPACE_EFFECT");
+    return body;
   }
   async reportEffectResult(effectId: string, result: "succeeded" | "failed", note: string): Promise<RemoteEffect> {
     const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/effects/${encodeURIComponent(effectId)}/result`, {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ result, note, executedAt: new Date().toISOString() })
     });
-    return body as unknown as RemoteEffect;
+    if (!isRemoteEffect(body)) throw new Error("INVALID_WORKSPACE_EFFECT");
+    return body;
   }
   async retryEffect(effectId: string, reason: string, requestedAt = new Date().toISOString()): Promise<RemoteEffect> {
     const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/effects/${encodeURIComponent(effectId)}/retry`, {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reason, requestedAt })
     });
-    return body as unknown as RemoteEffect;
+    if (!isRemoteEffect(body)) throw new Error("INVALID_WORKSPACE_EFFECT");
+    return body;
   }
   async revokeSession(): Promise<void> {
     await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/session/revoke`, {
