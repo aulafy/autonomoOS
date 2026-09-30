@@ -154,6 +154,21 @@ Para entornos empresariales se puede activar la firma HMAC con
 El runbook de conexión para el repositorio Enterprise está en
 [OPENCLAW_ENTERPRISE.md](OPENCLAW_ENTERPRISE.md).
 
+### Ejecución de efectos
+
+Los proveedores se conectan en un worker mediante handlers explícitos:
+
+| Efecto | Handler | Proveedor esperado |
+| --- | --- | --- |
+| `calendar` | `googleCalendarEffectHandler` | Google Calendar |
+| `message` | `messageEffectHandler` | WhatsApp, Telegram, iMessage o email |
+| `crm_task` | `crmTaskEffectHandler` | Holded u otro CRM |
+| `call` | `callEffectHandler` | proveedor de telefonía |
+
+El worker usa `executeRemoteEffect`: obtiene un efecto `confirmed`, llama al
+handler y registra el resultado en la API. No se deben registrar handlers que
+envíen directamente desde la interfaz ni que omitan la confirmación.
+
 La cola de revisión y las ofertas transcritas se guardan ahora en un almacén
 versionado del navegador para no perder el trabajo al recargar. Sigue siendo
 almacenamiento local de la demo, no persistencia multiusuario: el producto real
