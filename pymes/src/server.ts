@@ -32,12 +32,18 @@ const server = createServer(async (request, nodeResponse) => {
   const chunks: Buffer[] = [];
   let bytes = 0;
   let bodyTooLarge = false;
+  let requestAborted = false;
+  request.on("aborted", () => {
+    requestAborted = true;
+    chunks.length = 0;
+  });
   request.on("data", chunk => {
     bytes += chunk.length;
     if (bytes <= 1_048_576) chunks.push(chunk);
     else bodyTooLarge = true;
   });
   request.on("end", async () => {
+    if (requestAborted || nodeResponse.writableEnded) return;
     if (bodyTooLarge || bytes > 1_048_576) {
       const requestId = normalizeRequestId(typeof request.headers["x-request-id"] === "string" ? request.headers["x-request-id"] : undefined);
       nodeResponse.statusCode = 413;
