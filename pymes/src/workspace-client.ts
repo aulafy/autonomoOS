@@ -108,6 +108,7 @@ export class WorkspaceClient {
           ...(init.headers ?? {}) }
       });
     } catch (error) {
+      clearTimeout(timeout);
       if (controller.signal.aborted) throw new Error("WORKSPACE_REQUEST_TIMEOUT");
       throw error;
     }
