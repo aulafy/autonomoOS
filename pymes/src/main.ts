@@ -12,6 +12,7 @@ import { acceptClassification, parseClassificationProposal,
 import "./logout.css";
 import "./retry.css";
 import "./refresh.css";
+import "./snapshot.css";
 import { retryDelayMs } from "./retry-delay.js";
 
 const demoMorning = new Date();
