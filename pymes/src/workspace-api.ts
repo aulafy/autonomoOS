@@ -175,7 +175,16 @@ export class WorkspaceApi {
         policy: this.ingress.policy,
         repository: this.repository
       });
-      if (result.accepted) return { status: 201, body: result.record as unknown as Record<string, unknown> };
+      if (result.accepted) {
+        this.repository.appendCaseAudit({ id: `audit-${tenantId}-${result.record.id}-0`, tenantId,
+          caseId: result.record.id, from: "received", to: "received", operation: "openclaw_ingress",
+          actorId: "openclaw-gateway", at: request.body && typeof request.body === "object" && !Array.isArray(request.body) &&
+            typeof (request.body as Record<string, unknown>).inbound === "object" && (request.body as Record<string, unknown>).inbound !== null &&
+            typeof ((request.body as Record<string, unknown>).inbound as Record<string, unknown>).receivedAt === "string"
+            ? ((request.body as Record<string, unknown>).inbound as Record<string, unknown>).receivedAt as string
+            : new Date().toISOString(), version: 0 });
+        return { status: 201, body: result.record as unknown as Record<string, unknown> };
+      }
       return { status: result.reason === "DUPLICATE_EVENT" ? 409 : 400, body: { error: result.reason } };
     }
     const token = tokenFrom(request);
