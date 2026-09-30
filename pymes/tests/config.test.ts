@@ -4,6 +4,8 @@ import { normalizeBootstrapIdentity, normalizeBootstrapToken, normalizeOptionalT
 
 test("pilot configuration declares the supported communication channels", () => {
   assert.deepEqual(pilotConfig.channels, ["whatsapp", "telegram", "imessage", "email"]);
+  assert.equal(pilotConfig.crm.status, "lectura preparada");
+  assert.equal(pilotConfig.calendar.status, "lectura preparada");
 });
 
 test("configured channels discard unknown values and whitespace", () => {
