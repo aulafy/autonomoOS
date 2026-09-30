@@ -329,7 +329,7 @@ caracteres. La aplicación utiliza, como mínimo, estas formas de payload:
 
 - `call`: `{ "objective": "...", "questions": ["..."], "contactId": "..." }`.
 - `calendar`: `{ "title": "...", "startsAt": "ISO-8601", "contactId": "..." }`.
-- `message`: `{ "channel": "whatsapp|telegram|imessage|email", "text": "...", "contactId": "..." }`.
+- `message`: `{ "channel": "whatsapp|telegram|imessage|email", "text": "...", "contactId": "..." }`; `text` puede contener saltos de línea seguros.
 - `crm_task`: `{ "title": "...", "contactId": "...", "sourceMessageId": "..." }`.
 
 Estas formas describen una propuesta de trabajo; no autorizan por sí mismas el
