@@ -43,6 +43,18 @@ spec:
                 secretKeyRef:
                   name: pymes-workspace-secrets
                   key: tenant
+            - name: PYMES_OPENCLAW_INGRESS_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: pymes-workspace-secrets
+                  key: openclaw-ingress-token
+                  optional: true
+            - name: PYMES_OPENCLAW_SIGNING_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: pymes-workspace-secrets
+                  key: openclaw-signing-secret
+                  optional: true
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true

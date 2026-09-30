@@ -51,6 +51,8 @@ transaccional compartido. La plantilla tampoco monta el token de ServiceAccount
 porque el workspace no necesita consultar la API de Kubernetes.
 [`k8s/secret.example.yaml`](k8s/secret.example.yaml) solo contiene marcadores de
 posición: genera el Secret real desde tu gestor de secretos y no lo versiones.
+Sus claves `openclaw-ingress-token` y `openclaw-signing-secret` son opcionales;
+si faltan, el ingress OpenClaw queda desactivado de forma segura.
 
 ## Interfaz
 
