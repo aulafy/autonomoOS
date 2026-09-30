@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { normalizeBootstrapToken, normalizeOptionalToken, parseConfiguredChannels, parseCorsOrigins, pilotConfig } from "../src/config.js";
+import { normalizeBootstrapToken, normalizeOptionalToken, parseConfiguredChannels, parseConfiguredIdSet, parseCorsOrigins, pilotConfig } from "../src/config.js";
 
 test("pilot configuration declares the supported communication channels", () => {
   assert.deepEqual(pilotConfig.channels, ["whatsapp", "telegram", "imessage", "email"]);
@@ -30,6 +30,12 @@ test("optional token normalization allows omission and rejects short values", ()
   assert.equal(normalizeOptionalToken(undefined, "INVALID_INGRESS"), undefined);
   assert.equal(normalizeOptionalToken("  sixteen-character-token  ", "INVALID_INGRESS"), "sixteen-character-token");
   assert.throws(() => normalizeOptionalToken("short", "INVALID_INGRESS"), /INVALID_INGRESS/);
+});
+
+test("configured ingress id lists are bounded and deduplicated", () => {
+  assert.deepEqual([...parseConfiguredIdSet(" agent-1, agent-1, resource-2 ")], ["agent-1", "resource-2"]);
+  assert.throws(() => parseConfiguredIdSet(Array.from({ length: 101 }, (_, index) => `id-${index}`).join(",")), /INVALID_PYMES_ID_LIST/);
+  assert.throws(() => parseConfiguredIdSet("x".repeat(201)), /INVALID_PYMES_ID_LIST/);
 });
 
 test("CORS origins use safe defaults and reject wildcard", () => {

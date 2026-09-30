@@ -3,7 +3,7 @@ import { WorkspaceApi } from "./workspace-api.js";
 import { handlePymesRequest } from "./api-server.js";
 import { SqliteWorkspaceRepository } from "./workspace-store-sqlite.js";
 import { normalizeRequestId } from "./request-id.js";
-import { normalizeBootstrapToken, normalizeOptionalToken, parseConfiguredChannels, parseCorsOrigins } from "./config.js";
+import { normalizeBootstrapToken, normalizeOptionalToken, parseConfiguredChannels, parseConfiguredIdSet, parseCorsOrigins } from "./config.js";
 
 const port = Number(process.env.PYMES_API_PORT ?? 8790);
 const host = process.env.PYMES_API_HOST ?? "127.0.0.1";
@@ -17,14 +17,13 @@ if (!tenantId || !userId) throw new Error("INVALID_PYMES_API_BOOTSTRAP_IDENTITY"
 const repository = new SqliteWorkspaceRepository(process.env.PYMES_API_DB_PATH ?? "./data/pymes-workspace.db");
 repository.provisionSession(token, { userId, tenantId, role: "owner" });
 const ingressToken = normalizeOptionalToken(process.env.PYMES_OPENCLAW_INGRESS_TOKEN, "INVALID_PYMES_OPENCLAW_INGRESS_TOKEN");
-const csv = (value: string | undefined) => new Set((value ?? "").split(",").map(item => item.trim()).filter(Boolean));
 const api = new WorkspaceApi(repository, ingressToken ? { token: ingressToken, policy: {
   tenantId,
-  allowedAgentIds: csv(process.env.PYMES_OPENCLAW_AGENT_IDS),
-  allowedResourceIds: csv(process.env.PYMES_OPENCLAW_RESOURCE_IDS),
+  allowedAgentIds: parseConfiguredIdSet(process.env.PYMES_OPENCLAW_AGENT_IDS),
+  allowedResourceIds: parseConfiguredIdSet(process.env.PYMES_OPENCLAW_RESOURCE_IDS),
   allowedChannels: parseConfiguredChannels(process.env.PYMES_OPENCLAW_CHANNELS),
-  pairedSenderIds: csv(process.env.PYMES_OPENCLAW_PAIRED_SENDERS),
-  consentedConversationIds: csv(process.env.PYMES_OPENCLAW_CONSENTED_CONVERSATIONS)
+  pairedSenderIds: parseConfiguredIdSet(process.env.PYMES_OPENCLAW_PAIRED_SENDERS),
+  consentedConversationIds: parseConfiguredIdSet(process.env.PYMES_OPENCLAW_CONSENTED_CONVERSATIONS)
 } } : undefined);
 const server = createServer(async (request, nodeResponse) => {
   const chunks: Buffer[] = [];

@@ -15,6 +15,12 @@ export function normalizeOptionalToken(value: string | undefined, errorCode: str
   return token;
 }
 
+export function parseConfiguredIdSet(value: string | undefined, errorCode = "INVALID_PYMES_ID_LIST"): Set<string> {
+  const entries = (value ?? "").split(",").map(item => item.trim()).filter(Boolean);
+  if (entries.length > 100 || entries.some(item => item.length > 200)) throw new Error(errorCode);
+  return new Set(entries);
+}
+
 /** Missing/blank input uses safe local defaults; wildcard input is rejected. */
 export function parseCorsOrigins(value: string | undefined): string[] {
   const configured = value?.trim() ? value : "http://127.0.0.1:5174,http://localhost:5174";
