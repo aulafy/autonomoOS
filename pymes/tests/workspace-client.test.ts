@@ -117,5 +117,5 @@ test("workspace client aborts a request after its configured timeout", async () 
     init?.signal?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")), { once: true });
   });
   const value = new WorkspaceClient({ baseUrl: "http://workspace.local", tenantId: "agency-1", token: "owner-token-123456", requestTimeoutMs: 100 }, fetcher);
-  await assert.rejects(() => value.inbox(), (error: unknown) => error instanceof DOMException && error.name === "AbortError");
+  await assert.rejects(() => value.inbox(), /WORKSPACE_REQUEST_TIMEOUT/);
 });

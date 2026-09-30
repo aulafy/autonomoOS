@@ -53,6 +53,9 @@ export class WorkspaceClient {
         ...init, signal: controller.signal, headers: { Accept: "application/json", Authorization: `Bearer ${this.config.token}`,
           ...(init.headers ?? {}) }
       });
+    } catch (error) {
+      if (controller.signal.aborted) throw new Error("WORKSPACE_REQUEST_TIMEOUT");
+      throw error;
     } finally { clearTimeout(timeout); }
     const body: unknown = await response.json();
     if (!body || typeof body !== "object" || Array.isArray(body)) throw new Error("INVALID_WORKSPACE_RESPONSE");
