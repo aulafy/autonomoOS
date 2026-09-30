@@ -32,6 +32,7 @@ test("attention endpoint returns only cases requiring intervention", () => {
   const response = value.handle({ method: "GET", path: "/v1/workspaces/agency-1/attention", authorization: "Bearer reviewer-token-1234" });
   assert.equal(response.status, 200);
   assert.deepEqual((response.body.items as Array<{ id: string }>).map(item => item.id), ["uncertain-1", "msg-1"]);
+  assert.equal(value.handle({ method: "GET", path: "/v1/workspaces/agency-2/attention", authorization: "Bearer reviewer-token-1234" }).status, 403);
 });
 
 test("connector registry is authenticated and tenant scoped", () => {
