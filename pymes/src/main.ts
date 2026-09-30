@@ -89,7 +89,8 @@ async function checkRemoteWorkspace(): Promise<void> {
     const retryAfter = error instanceof Error && "retryAfter" in error ? String((error as { retryAfter?: unknown }).retryAfter ?? "") : "";
     const retryHint = retryAfter ? `reintento sugerido en ${retryAfter}` : "";
     const detail = [httpStatus && `HTTP ${httpStatus}`, retryHint, requestId].filter(Boolean).join(" · ");
-    status.textContent = detail ? `● WORKSPACE NO DISPONIBLE · ${detail}` : "● WORKSPACE NO DISPONIBLE";
+    const notReady = error instanceof Error && error.message === "WORKSPACE_NOT_READY";
+    status.textContent = notReady ? `● WORKSPACE ARRANCANDO${detail ? ` · ${detail}` : ""}` : detail ? `● WORKSPACE NO DISPONIBLE · ${detail}` : "● WORKSPACE NO DISPONIBLE";
     status.title = detail ? `Diagnóstico de soporte: ${detail}` : "El workspace remoto no está disponible.";
     let retry = document.getElementById("workspace-retry") as HTMLButtonElement | null;
     if (!retry) {
