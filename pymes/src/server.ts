@@ -86,9 +86,11 @@ const server = createServer(async (request, nodeResponse) => {
     }
   });
 });
-server.on("clientError", (_error, socket) => {
+server.on("clientError", (error, socket) => {
   if (!socket.writable) return;
-  socket.end("HTTP/1.1 400 Bad Request\r\nConnection: close\r\nContent-Length: 0\r\n\r\n");
+  const status = (error as Error & { code?: string }).code === "HPE_HEADER_OVERFLOW"
+    ? "431 Request Header Fields Too Large" : "400 Bad Request";
+  socket.end(`HTTP/1.1 ${status}\r\nConnection: close\r\nContent-Length: 0\r\n\r\n`);
 });
 // Boundaries for production clients and reverse proxies.
 server.headersTimeout = 10_000;
