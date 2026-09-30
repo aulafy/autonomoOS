@@ -39,7 +39,9 @@ En ese caso incluye `Retry-After: 5` para facilitar el backoff del orquestador.
 canal, remitente emparejado y consentimiento. Un evento aceptado devuelve
 `201`; un evento ya procesado devuelve `409 DUPLICATE_EVENT`. El ingress
 siempre crea un caso neutral en estado `received` y no envía respuestas por sí
-mismo.
+mismo. Si no se define `PYMES_OPENCLAW_CHANNELS`, se usan WhatsApp, Telegram,
+iMessage y email; los nombres desconocidos de una configuración explícita se
+descartan.
 
 ## Bandeja y trazabilidad
 
