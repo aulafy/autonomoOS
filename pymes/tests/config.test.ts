@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { normalizeBootstrapIdentity, normalizeBootstrapToken, normalizeOptionalToken, parseConfiguredChannels, parseConfiguredIdSet, parseCorsOrigins, pilotConfig } from "../src/config.js";
+import { connectorStatuses, normalizeBootstrapIdentity, normalizeBootstrapToken, normalizeOptionalToken, parseConfiguredChannels, parseConfiguredIdSet, parseCorsOrigins, pilotConfig } from "../src/config.js";
 
 test("pilot configuration declares the supported communication channels", () => {
   assert.deepEqual(pilotConfig.channels, ["whatsapp", "telegram", "imessage", "email"]);
   assert.equal(pilotConfig.crm.status, "lectura preparada");
   assert.equal(pilotConfig.calendar.status, "lectura preparada");
+  assert.deepEqual(connectorStatuses, ["lectura preparada", "conectado", "no configurado"]);
 });
 
 test("configured channels discard unknown values and whitespace", () => {
