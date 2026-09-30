@@ -85,6 +85,8 @@ test("workspace client rejects invalid configuration", () => {
     /INVALID_WORKSPACE_CLIENT_CONFIG/);
   assert.throws(() => new WorkspaceClient({ baseUrl: "https://user:pass@workspace.local", tenantId: "agency-1", token: "owner-token-123456" }),
     /INVALID_WORKSPACE_CLIENT_CONFIG/);
+  assert.throws(() => new WorkspaceClient({ baseUrl: "https://workspace.local/?tenant=other", tenantId: "agency-1", token: "owner-token-123456" }),
+    /INVALID_WORKSPACE_CLIENT_CONFIG/);
   assert.throws(() => new WorkspaceClient({ baseUrl: "http://workspace.local", tenantId: "agency-1\nother", token: "owner-token-123456" }),
     /INVALID_WORKSPACE_CLIENT_CONFIG/);
 });
