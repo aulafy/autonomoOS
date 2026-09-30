@@ -178,6 +178,10 @@ evitar duplicados entre workers del mismo proceso. Si una reserva no está
 disponible, el resultado es `skipped` con `EFFECT_LEASE_UNAVAILABLE`; la reserva
 propia se libera siempre al terminar. Para varios procesos o réplicas, sustituye
 esta implementación local por un lease persistente antes de escalar.
+El módulo también expone `SqliteEffectLeaseStore`, que puede compartir la misma
+`DatabaseSync` del workspace y conserva las reservas tras reinicios del proceso.
+La integración distribuida debe asociar el lease al tenant y usar un owner único
+por instancia antes de habilitar réplicas.
 
 Para un proceso periódico se puede usar `executeConfirmedEffects`, que limita
 el lote a 100 efectos, procesa en orden y continúa cuando un proveedor falla.

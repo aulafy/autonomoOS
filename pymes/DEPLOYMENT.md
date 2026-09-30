@@ -271,3 +271,6 @@ Hasta que se incorpore leasing atómico en el contrato de efectos, mantén una s
 instancia de worker por tenant; el API no asigna reservas entre workers.
 El `leaseStore` actual es una protección local del proceso y no sustituye esa
 restricción de despliegue.
+`SqliteEffectLeaseStore` ya permite persistir la reserva en la misma base SQLite;
+la activación multiworker queda condicionada a exponer esa operación mediante el
+API con aislamiento explícito por tenant y auditoría de adquisición/liberación.
