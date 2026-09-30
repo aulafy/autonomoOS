@@ -48,25 +48,27 @@ export class InMemoryEffectLeaseStore implements EffectLeaseStore {
 }
 
 export class SqliteEffectLeaseStore implements EffectLeaseStore {
-  constructor(private readonly db: DatabaseSync, private readonly ttlMs = 60_000) {
+  constructor(private readonly db: DatabaseSync, private readonly ttlMs = 60_000, private readonly namespace = "default") {
     if (!Number.isInteger(ttlMs) || ttlMs < 1_000 || ttlMs > 300_000) throw new Error("INVALID_EFFECT_LEASE_TTL");
+    if (!validLeaseId(namespace)) throw new Error("INVALID_EFFECT_LEASE_NAMESPACE");
     this.db.exec("CREATE TABLE IF NOT EXISTS effect_leases (effect_id TEXT PRIMARY KEY, owner_id TEXT NOT NULL, expires_at INTEGER NOT NULL)");
   }
 
   acquire(effectId: string, ownerId: string, now = Date.now()): EffectLease | null {
     if (!validLeaseId(effectId) || !validLeaseId(ownerId)) throw new Error("INVALID_EFFECT_LEASE_ID");
+    const key = `${this.namespace}:${effectId}`;
     const result = this.db.prepare(`
       INSERT INTO effect_leases (effect_id, owner_id, expires_at) VALUES (?, ?, ?)
       ON CONFLICT(effect_id) DO UPDATE SET owner_id = excluded.owner_id, expires_at = excluded.expires_at
       WHERE effect_leases.expires_at <= ? OR effect_leases.owner_id = excluded.owner_id
-    `).run(effectId, ownerId, now + this.ttlMs, now);
+    `).run(key, ownerId, now + this.ttlMs, now);
     if (Number(result.changes) !== 1) return null;
     return { effectId, ownerId, expiresAt: now + this.ttlMs };
   }
 
   release(effectId: string, ownerId: string): boolean {
     if (!validLeaseId(effectId) || !validLeaseId(ownerId)) throw new Error("INVALID_EFFECT_LEASE_ID");
-    return Number(this.db.prepare("DELETE FROM effect_leases WHERE effect_id = ? AND owner_id = ?").run(effectId, ownerId).changes) === 1;
+    return Number(this.db.prepare("DELETE FROM effect_leases WHERE effect_id = ? AND owner_id = ?").run(`${this.namespace}:${effectId}`, ownerId).changes) === 1;
   }
 
   clearExpired(now = Date.now()): number {

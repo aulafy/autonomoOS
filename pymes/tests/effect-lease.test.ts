@@ -30,12 +30,14 @@ test("lease store clears expired entries and validates configuration", () => {
 
 test("sqlite lease store acquires atomically and survives a second handle", () => {
   const db = new DatabaseSync(":memory:");
-  const first = new SqliteEffectLeaseStore(db, 1_000);
-  const second = new SqliteEffectLeaseStore(db, 1_000);
+  const first = new SqliteEffectLeaseStore(db, 1_000, "agency-a");
+  const second = new SqliteEffectLeaseStore(db, 1_000, "agency-a");
   assert.equal(first.acquire("effect-1", "worker-a", 10)?.ownerId, "worker-a");
   assert.equal(second.acquire("effect-1", "worker-b", 20), null);
   assert.equal(second.acquire("effect-1", "worker-b", 1_010)?.ownerId, "worker-b");
   assert.equal(first.release("effect-1", "worker-a"), false);
   assert.equal(second.release("effect-1", "worker-b"), true);
+  const otherTenant = new SqliteEffectLeaseStore(db, 1_000, "agency-b");
+  assert.equal(otherTenant.acquire("effect-1", "worker-b", 20)?.ownerId, "worker-b");
   db.close();
 });
