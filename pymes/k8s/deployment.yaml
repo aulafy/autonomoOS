@@ -36,6 +36,31 @@ spec:
                 configMapKeyRef:
                   name: pymes-workspace-config
                   key: cors-origins
+            - name: PYMES_OPENCLAW_AGENT_IDS
+              valueFrom:
+                configMapKeyRef:
+                  name: pymes-workspace-config
+                  key: openclaw-agent-ids
+            - name: PYMES_OPENCLAW_RESOURCE_IDS
+              valueFrom:
+                configMapKeyRef:
+                  name: pymes-workspace-config
+                  key: openclaw-resource-ids
+            - name: PYMES_OPENCLAW_CHANNELS
+              valueFrom:
+                configMapKeyRef:
+                  name: pymes-workspace-config
+                  key: openclaw-channels
+            - name: PYMES_OPENCLAW_PAIRED_SENDERS
+              valueFrom:
+                configMapKeyRef:
+                  name: pymes-workspace-config
+                  key: openclaw-paired-senders
+            - name: PYMES_OPENCLAW_CONSENTED_CONVERSATIONS
+              valueFrom:
+                configMapKeyRef:
+                  name: pymes-workspace-config
+                  key: openclaw-consented-conversations
             - name: PYMES_API_DB_PATH
               value: /data/pymes-workspace.db
             - name: PYMES_API_BOOTSTRAP_TOKEN
@@ -127,3 +152,8 @@ metadata:
 data:
   # Sustituye por los orígenes exactos de la interfaz, separados por comas.
   cors-origins: https://app.example.com
+  openclaw-agent-ids: ""
+  openclaw-resource-ids: ""
+  openclaw-channels: whatsapp,telegram,imessage,email
+  openclaw-paired-senders: ""
+  openclaw-consented-conversations: ""
