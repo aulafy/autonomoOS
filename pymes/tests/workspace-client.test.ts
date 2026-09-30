@@ -116,6 +116,14 @@ test("workspace client rejects audit for another tenant or case", async () => {
   await assert.rejects(() => value.audit("case-1"), /INVALID_WORKSPACE_AUDIT/);
 });
 
+test("workspace client rejects incomplete individual effects", async () => {
+  const fetcher: typeof fetch = async () => new Response(JSON.stringify({ id: "effect-1", status: "pending" }), {
+    status: 200, headers: { "content-type": "application/json" }
+  });
+  const value = new WorkspaceClient({ baseUrl: "http://127.0.0.1:8799", tenantId: "agency-1", token: "token-1234567890" }, fetcher);
+  await assert.rejects(() => value.effect("effect-1"), /INVALID_WORKSPACE_EFFECT/);
+});
+
 test("workspace client reads an individual effect", async () => {
   const api = new WorkspaceApi();
   api.addSession("owner-token-123456", { userId: "owner", tenantId: "agency-1", role: "owner" });
