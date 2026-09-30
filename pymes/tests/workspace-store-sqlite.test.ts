@@ -45,10 +45,10 @@ test("SQLite audit of OpenClaw ingress survives restart", () => {
   const first = new SqliteWorkspaceRepository(path);
   first.appendCaseAudit({ id: "audit-event-1", tenantId: "agency-1", caseId: "openclaw:event-1",
     from: "received", to: "received", operation: "openclaw_ingress", actorId: "openclaw-gateway",
-    at: "2026-09-30T10:00:00Z", version: 0 });
+    at: "2026-09-30T10:00:00Z", version: 0, requestId: "req-ingress-1" });
   first.close();
   const second = new SqliteWorkspaceRepository(path);
-  assert.deepEqual(second.listCaseAudit("agency-1", "openclaw:event-1")[0]?.operation, "openclaw_ingress");
+  assert.deepEqual(second.listCaseAudit("agency-1", "openclaw:event-1")[0]?.requestId, "req-ingress-1");
   second.close();
   rmSync(directory, { recursive: true, force: true });
 });
