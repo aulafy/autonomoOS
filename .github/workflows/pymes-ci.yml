@@ -65,6 +65,8 @@ jobs:
       - name: Validate repository diff
         run: git diff --check
       - run: npm run check:pymes
+      - name: Validate OpenClaw ingress contract
+        run: npm run check:openclaw-contract
       - name: Validate operational scripts
         run: |
           bash -n pymes/scripts/backup-volume.sh pymes/scripts/verify-backup.sh pymes/scripts/check-operations.sh scripts/check-k8s-manifest.sh
