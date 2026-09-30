@@ -97,6 +97,18 @@ test("provider retry recovers from transient transport failures", async () => {
   assert.equal(contacts[0]?.externalId, "c-1");
 });
 
+test("provider retry stops after the bounded attempt count", async () => {
+  let calls = 0;
+  await assert.rejects(() => findHoldedContactsByPhone({
+    apiKey: "demo-key", phone: "+34600111222", timeoutMs: 1_000,
+    fetcher: async () => {
+      calls += 1;
+      return new Response(null, { status: 503 });
+    }
+  }), /HOLDED_READ_FAILED:503/);
+  assert.equal(calls, 3);
+});
+
 test("missing credentials and provider failures never become empty successful reads", async () => {
   await assert.rejects(() => findHoldedContactsByPhone({ apiKey: "", phone: "+34600111222" }),
     /MISSING_PROVIDER_CREDENTIAL/);
