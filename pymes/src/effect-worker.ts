@@ -59,3 +59,35 @@ export async function executeConfirmedEffects(input: {
   }
   return results;
 }
+
+export interface EffectWorkerLoopOptions {
+  poll: () => Promise<EffectBatchResult[]>;
+  intervalMs?: number;
+  /** Test and graceful-shutdown hook; production callers leave it undefined. */
+  signal?: AbortSignal;
+  onCycle?: (results: EffectBatchResult[]) => void | Promise<void>;
+}
+
+/**
+ * Runs the bounded worker poll cycle until it is aborted. The loop never
+ * overlaps polls, and an individual poll failure is surfaced to the caller so
+ * a supervisor can restart the process instead of silently losing work.
+ */
+export async function runEffectWorker(input: EffectWorkerLoopOptions): Promise<void> {
+  const intervalMs = input.intervalMs ?? 5_000;
+  if (!Number.isInteger(intervalMs) || intervalMs < 250 || intervalMs > 300_000) {
+    throw new Error("INVALID_EFFECT_WORKER_INTERVAL");
+  }
+  const signal = input.signal;
+  while (!signal?.aborted) {
+    const results = await input.poll();
+    await input.onCycle?.(results);
+    if (signal?.aborted) break;
+    await new Promise<void>((resolve, reject) => {
+      const timer = setTimeout(resolve, intervalMs);
+      signal?.addEventListener("abort", () => { clearTimeout(timer); resolve(); }, { once: true });
+      if (signal?.aborted) { clearTimeout(timer); resolve(); }
+      void reject;
+    });
+  }
+}

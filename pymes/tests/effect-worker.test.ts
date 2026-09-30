@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { executeRemoteEffect } from "../src/effect-worker.js";
+import { executeRemoteEffect, runEffectWorker } from "../src/effect-worker.js";
 import type { RemoteEffect } from "../src/workspace-client.js";
 
 const effect: RemoteEffect = { tenantId: "agency-1", id: "effect-1", caseId: "case-1", kind: "crm_task", status: "confirmed", requestedBy: "owner-1", requestedAt: "2026-09-30T08:00:00Z", confirmedBy: "reviewer-1", payload: { title: "Task", contactId: "contact-1" } };
@@ -16,4 +16,26 @@ test("worker records provider failure", async () => {
   const client = { async effect() { return effect; }, async reportEffectResult(_id: string, result: "succeeded" | "failed", note: string) { return { ...effect, status: result, executionNote: note }; } } as unknown as import("../src/workspace-client.js").WorkspaceClient;
   const result = await executeRemoteEffect({ client, effectId: "effect-1", handlers: { crm_task: { async execute() { throw new Error("PROVIDER_DOWN"); } } } });
   assert.equal(result.status, "failed"); assert.equal(result.executionNote, "PROVIDER_DOWN");
+});
+
+test("worker loop never overlaps polls and stops on abort", async () => {
+  const controller = new AbortController();
+  let active = 0;
+  let calls = 0;
+  const cycles: number[] = [];
+  await runEffectWorker({
+    intervalMs: 250, signal: controller.signal,
+    poll: async () => {
+      active += 1; assert.equal(active, 1); calls += 1;
+      await new Promise(resolve => setTimeout(resolve, 1));
+      active -= 1; if (calls === 2) controller.abort();
+      return [{ effectId: `effect-${calls}`, status: "succeeded" }];
+    },
+    onCycle: results => { cycles.push(results.length); },
+  });
+  assert.equal(calls, 2); assert.deepEqual(cycles, [1, 1]);
+});
+
+test("worker loop rejects unsafe polling intervals", async () => {
+  await assert.rejects(() => runEffectWorker({ intervalMs: 10, poll: async () => [] }), /INVALID_EFFECT_WORKER_INTERVAL/);
 });
