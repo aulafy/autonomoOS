@@ -91,3 +91,8 @@ token Bearer y, si existe, `Idempotency-Key` derivada del efecto confirmado.
 El gateway debe devolver `{ "externalId": "..." }`; cualquier respuesta sin
 identificador se considera fallida. El envío solo debe invocarse desde un
 worker después de la confirmación humana.
+
+`createCrmTaskWebhook` y `startCallWebhook` siguen el mismo contrato para CRM
+y telefonía: endpoint HTTPS, Bearer token, `Idempotency-Key`, timeout y
+respuesta `{ "externalId": "..." }`. Los gateways deben tratar esa clave como
+idempotencia por efecto y no exponer credenciales en sus respuestas.
