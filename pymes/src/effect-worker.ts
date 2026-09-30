@@ -31,3 +31,31 @@ export async function executeRemoteEffect(input: {
     return await input.client.reportEffectResult(remote.id, "failed", note.slice(0, 2_000));
   }
 }
+
+export interface EffectBatchResult {
+  effectId: string;
+  status: "succeeded" | "failed" | "skipped";
+  error?: string;
+}
+
+export async function executeConfirmedEffects(input: {
+  client: WorkspaceClient;
+  handlers: EffectHandlers;
+  requestId?: string;
+  timeoutMs?: number;
+  limit?: number;
+}): Promise<EffectBatchResult[]> {
+  const limit = input.limit ?? 20;
+  if (!Number.isInteger(limit) || limit < 1 || limit > 100) throw new Error("INVALID_EFFECT_BATCH_LIMIT");
+  const effects = (await input.client.confirmedEffects()).slice(0, limit);
+  const results: EffectBatchResult[] = [];
+  for (const effect of effects) {
+    try {
+      const result = await executeRemoteEffect({ ...input, effectId: effect.id });
+      results.push({ effectId: effect.id, status: result.status === "succeeded" ? "succeeded" : "failed" });
+    } catch (error) {
+      results.push({ effectId: effect.id, status: "skipped", error: error instanceof Error ? error.message : "EFFECT_BATCH_ITEM_FAILED" });
+    }
+  }
+  return results;
+}
