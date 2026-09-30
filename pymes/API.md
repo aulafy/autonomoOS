@@ -8,6 +8,8 @@ el identificador técnico del evento como por el identificador externo del
 mensaje dentro del canal, incluso si el gateway reintenta con otro `eventId`.
 El cliente remoto valida y expone estos campos para que la bandeja pueda mostrar
 la procedencia sin aceptar metadatos con controles o identificadores inválidos.
+El gateway rechaza eventos con más de siete días de antigüedad o con más de diez
+minutos de desfase futuro para limitar reenvíos y relojes incorrectos.
 
 La interfaz local puede llamar al API desde `http://127.0.0.1:5174` o
 `http://localhost:5174`; el adaptador responde al preflight `OPTIONS` y limita

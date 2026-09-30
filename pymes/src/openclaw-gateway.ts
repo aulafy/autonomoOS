@@ -52,6 +52,8 @@ function safeMetadata(value: unknown, maxLength: number): value is string {
 function validTimestamp(value: string): boolean {
   return !Number.isNaN(Date.parse(value)) && /T/.test(value);
 }
+const MAX_EVENT_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+const MAX_FUTURE_SKEW_MS = 10 * 60 * 1000;
 
 /**
  * Converts one gateway event into our neutral inbox model. It deliberately
@@ -62,7 +64,8 @@ export function ingestOpenClawEvent(event: OpenClawInboundEvent,
   policy: OpenClawIngressPolicy): OpenClawIngressResult {
   if (!safeMetadata(event.eventId, 200) || !safeMetadata(event.externalMessageId, 200) ||
     !safeMetadata(event.conversationId, 200) || !safeMetadata(event.senderId, 200) ||
-    !safeText(event.text, 10_000) || !safeText(event.receivedAt, 100) || !validTimestamp(event.receivedAt)) {
+    !safeText(event.text, 10_000) || !safeText(event.receivedAt, 100) || !validTimestamp(event.receivedAt) ||
+    Date.now() - Date.parse(event.receivedAt) > MAX_EVENT_AGE_MS || Date.parse(event.receivedAt) - Date.now() > MAX_FUTURE_SKEW_MS) {
     return { accepted: false, reason: "INVALID_EVENT" };
   }
   if (!policy.allowedChannels.has(event.channel)) {

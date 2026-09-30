@@ -50,6 +50,13 @@ test("evento OpenClaw rechaza texto y metadatos fuera de límites", () => {
   assert.deepEqual(control, { accepted: false, reason: "INVALID_EVENT" });
 });
 
+test("evento OpenClaw rechaza timestamps fuera de ventana", () => {
+  const old = ingestOpenClawEvent({ ...event, receivedAt: "2020-01-01T00:00:00Z" }, policy);
+  assert.deepEqual(old, { accepted: false, reason: "INVALID_EVENT" });
+  const future = new Date(Date.now() + 11 * 60 * 1000).toISOString();
+  assert.deepEqual(ingestOpenClawEvent({ ...event, receivedAt: future }, policy), { accepted: false, reason: "INVALID_EVENT" });
+});
+
 test("la envolvente Enterprise impone tenant, agente y recurso", () => {
   const enterprisePolicy = { ...policy, tenantId: "agency-1",
     allowedAgentIds: new Set(["agent-1"]), allowedResourceIds: new Set(["resource-inbox-1"]) };
