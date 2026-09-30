@@ -76,8 +76,10 @@ async function checkRemoteWorkspace(): Promise<void> {
   } catch (error: unknown) {
     status.className = "workspace-pill error";
     const requestId = error instanceof Error && "requestId" in error ? String((error as { requestId?: unknown }).requestId ?? "") : "";
-    status.textContent = requestId ? `● WORKSPACE NO DISPONIBLE · ${requestId}` : "● WORKSPACE NO DISPONIBLE";
-    status.title = requestId ? `Referencia de soporte: ${requestId}` : "El workspace remoto no está disponible.";
+    const httpStatus = error instanceof Error && "status" in error && typeof (error as { status?: unknown }).status === "number" ? String((error as { status: number }).status) : "";
+    const detail = [httpStatus && `HTTP ${httpStatus}`, requestId].filter(Boolean).join(" · ");
+    status.textContent = detail ? `● WORKSPACE NO DISPONIBLE · ${detail}` : "● WORKSPACE NO DISPONIBLE";
+    status.title = detail ? `Diagnóstico de soporte: ${detail}` : "El workspace remoto no está disponible.";
     remoteWorkspaceClient = null;
     document.getElementById("workspace-logout")?.remove();
   } finally {
