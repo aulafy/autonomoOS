@@ -81,6 +81,9 @@ operaciones fallidas, una cola de más de 20 casos o casos `pending_review` con
 más de 24 horas sin actualizar. Para supervisores existe
 `npm run check:operations`; para Kubernetes, `npm run check:k8s` valida el
 overlay antes de aplicarlo.
+La cola `GET /v1/workspaces/:tenant/attention` permite a paneles externos leer
+solo los casos `pending_review` o `uncertain`, ordenados por antigüedad y con un
+límite de 100 registros.
 
 Variables principales:
 
