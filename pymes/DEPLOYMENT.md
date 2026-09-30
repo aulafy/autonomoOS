@@ -25,6 +25,8 @@ defecto es `0.1.0`.
 La misma versión se guarda en el label OCI
 `org.opencontainers.image.version`, para identificar el artefacto en un
 registry o inventario de contenedores sin arrancarlo.
+El build usa la raíz del repositorio como contexto; las exclusiones efectivas
+de la imagen están en [`.dockerignore`](../.dockerignore).
 
 Al construir la imagen directamente, pasa el mismo valor como argumento:
 
