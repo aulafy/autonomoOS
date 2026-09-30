@@ -786,7 +786,7 @@ $("today").textContent = new Date(brief.generatedAt).toLocaleDateString("es-ES",
   weekday: "long", day: "numeric", month: "long", timeZone: pilotConfig.timeZone });
 $("pilot-context").textContent = `${pilotConfig.country} · ${pilotConfig.crm.name}: ${pilotConfig.crm.status} · ${pilotConfig.calendar.name}: ${pilotConfig.calendar.status}`;
 $("pilot-context").title = "Los conectores de Holded y Google Calendar están preparados para lectura. La autenticación y el estado operativo se gestionan en el workspace remoto.";
-$("pilot-context").setAttribute("aria-label", "España. Holded y Google Calendar preparados para lectura. La autenticación y el estado operativo se gestionan en el workspace remoto.");
+$("pilot-context").setAttribute("aria-label", `${pilotConfig.country}. ${pilotConfig.crm.name}: ${pilotConfig.crm.status}. ${pilotConfig.calendar.name}: ${pilotConfig.calendar.status}. La autenticación y el estado operativo se gestionan en el workspace remoto.`);
 $<HTMLInputElement>("search").addEventListener("input", renderInbox);
 renderCounts();
 renderTabs();
