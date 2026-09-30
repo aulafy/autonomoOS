@@ -7,9 +7,10 @@ import test from "node:test";
 test("operations healthcheck returns healthy and alert exit codes", async () => {
   const server = createServer((request, response) => {
     const failed = request.headers.authorization === "Bearer failed-token";
+    const busy = request.headers.authorization === "Bearer busy-token";
     response.setHeader("content-type", "application/json");
     response.end(JSON.stringify({ tenantId: "agency-1", generatedAt: "2026-09-30T10:00:00Z",
-      inbox: { total: 1, byState: { pending_review: 1 } },
+      inbox: { total: busy ? 21 : 1, byState: { pending_review: busy ? 21 : 1 } },
       effects: { total: failed ? 1 : 0, byStatus: failed ? { failed: 1 } : {} }, approvals: { total: 0 } }));
   });
   await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));
@@ -30,6 +31,8 @@ test("operations healthcheck returns healthy and alert exit codes", async () => 
     assert.equal(healthy.code, 0, healthy.stderr);
     const failed = await run("failed-token");
     assert.equal(failed.code, 2, failed.stderr);
+    const busy = await run("busy-token");
+    assert.equal(busy.code, 2, busy.stderr);
   } finally {
     await new Promise<void>(resolve => server.close(() => resolve()));
   }
