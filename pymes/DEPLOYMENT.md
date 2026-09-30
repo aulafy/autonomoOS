@@ -199,6 +199,10 @@ backup anterior hasta validar la recuperación.
     "http://127.0.0.1:8790/v1/workspaces/$PYMES_API_BOOTSTRAP_TENANT/metrics"
   ```
 
+  Para un panel operativo, la cola accionable está disponible en
+  `/v1/workspaces/$PYMES_API_BOOTSTRAP_TENANT/attention`; debe conservar la
+  misma autenticación y tratar `401` o `403` como error de configuración.
+
   La monitorización debe alertar cuando `effects.byStatus.failed` sea mayor que
   cero, cuando `inbox.byState.pending_review` supere el umbral acordado con la
   agencia, cuando la respuesta incluya `STALE_CASES` (casos pendientes con más
