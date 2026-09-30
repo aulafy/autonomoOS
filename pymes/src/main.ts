@@ -345,6 +345,11 @@ function renderDetail(item: WorkItem) {
         const snapshot = el("p", "workspace-snapshot", `Snapshot remoto · ${remoteStateNames[remote.state] ?? remote.state} · versión v${remote.version ?? 0}`);
         snapshot.title = `Estado técnico: ${remote.state}; versión ${remote.version ?? 0}`;
         trace.appendChild(snapshot);
+        if (remote.sourceChannel && remote.sourceExternalMessageId) {
+          const provenance = el("p", "workspace-provenance", `Origen del mensaje · ${channelNames[remote.sourceChannel as Channel] ?? remote.sourceChannel} · ${remote.sourceExternalMessageId}`);
+          provenance.title = remote.sourceEventId ? `Evento OpenClaw: ${remote.sourceEventId}` : "Identificador externo del mensaje";
+          trace.appendChild(provenance);
+        }
       }
       if (!entries.length) trace.appendChild(el("p", "", "Todavía no hay cambios de estado registrados."));
       for (const entry of entries) trace.appendChild(el("p", "", `v${entry.version} · ${entry.from} → ${entry.to} · ${entry.actorId} · ${dayTime(entry.at)}`));
