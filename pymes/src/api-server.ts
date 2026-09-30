@@ -11,7 +11,8 @@ function response(status: number, body: Record<string, unknown>, requestId = nor
     "cache-control": "no-store", "vary": "Origin", "x-content-type-options": "nosniff", "x-frame-options": "DENY",
     "content-security-policy": "default-src 'none'; frame-ancestors 'none'",
     "cross-origin-resource-policy": "same-origin", "cross-origin-opener-policy": "same-origin",
-    "referrer-policy": "no-referrer", "permissions-policy": "camera=(), microphone=(), geolocation=()" };
+    "referrer-policy": "no-referrer", "permissions-policy": "camera=(), microphone=(), geolocation=()",
+    "x-dns-prefetch-control": "off" };
   if (origin && allowedOrigins.includes(origin)) {
     headers["access-control-allow-origin"] = origin;
     headers["access-control-allow-headers"] = "Authorization, Content-Type, X-PYMES-Ingress-Token, X-Request-Id";
