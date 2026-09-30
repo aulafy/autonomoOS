@@ -94,6 +94,8 @@ ingress queda sin canales permitidos y bloquea esos eventos.
 - `GET /v1/workspaces/:tenant/inbox` — casos del tenant autenticado.
 - `GET /v1/workspaces/:tenant/connectors` — IDs, nombres y estados de los
   conectores read-only del tenant autenticado.
+  El cliente valida cada registro y rechaza respuestas malformadas aunque el
+  HTTP status sea `200`.
 - `GET /v1/workspaces/:tenant/approvals` — aprobaciones registradas.
 - `GET /v1/workspaces/:tenant/cases/:caseId/audit` — transiciones con actor, versión y fecha.
 - `GET /v1/workspaces/:tenant/effects/:effectId` — estado individual de una operación.
