@@ -75,6 +75,7 @@ envolvente de otro workspace o de otro caso se rechaza con
 `INVALID_WORKSPACE_AUDIT`.
 Cada entrada debe incluir transición, actor, fecha y una versión entera no
 negativa; las entradas incoherentes se rechazan antes de mostrarse.
+Las entradas de auditoría también deben tener IDs únicos dentro del historial.
 La fecha de cada entrada debe ser parseable; los timestamps inválidos también
 invalidan la respuesta de auditoría completa.
 Las aprobaciones deben llevar `approvedAt` válido y los efectos `requestedAt`

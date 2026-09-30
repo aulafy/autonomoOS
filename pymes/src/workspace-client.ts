@@ -176,7 +176,7 @@ export class WorkspaceClient {
         typeof audit.from !== "string" || !audit.from || typeof audit.to !== "string" || !audit.to ||
         typeof audit.actorId !== "string" || !audit.actorId || typeof audit.at !== "string" || !validTimestamp(audit.at) ||
         !Number.isInteger(audit.version) || (audit.version as number) < 0;
-    })) throw new Error("INVALID_WORKSPACE_AUDIT");
+    }) || new Set(body.audit.map(item => (item as Record<string, unknown>).id)).size !== body.audit.length) throw new Error("INVALID_WORKSPACE_AUDIT");
     return body.audit as RemoteCaseAudit[];
   }
   async transition(caseId: string, to: string, at = new Date().toISOString(), expectedVersion?: number): Promise<void> {
