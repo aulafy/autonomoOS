@@ -144,6 +144,21 @@ operador. La ruta del servidor acepta únicamente los ocho IDs ficticios; la
 salida no actualiza automáticamente el caso. Véase
 [evaluación del modelo](MODEL_EVALUATION.md).
 
+### Verificar conectores read-only
+
+Los conectores pueden probarse desde el servidor sin escribir en Holded ni en
+Google Calendar. La salida solo contiene conteos:
+
+```bash
+PYMES_HOLDED_API_KEY='…' npm run pilot:read --workspace=@agent-world/pymes -- holded '+34600000000'
+PYMES_GOOGLE_ACCESS_TOKEN='…' PYMES_GOOGLE_CALENDAR_ID='primary' \
+  npm run pilot:read --workspace=@agent-world/pymes -- calendar \
+  '2026-09-30T00:00:00Z' '2026-10-01T00:00:00Z'
+```
+
+Estas comprobaciones son de lectura, no modifican el CRM ni el calendario y
+deben ejecutarse en el entorno del servidor, nunca desde el navegador.
+
 ![Resumen de PYMES](demo-overview.jpg)
 
 ## Primer flujo completo que construiremos
