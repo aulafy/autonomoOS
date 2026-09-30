@@ -132,6 +132,14 @@ test("workspace client rejects malformed effect mutation responses", async () =>
   await assert.rejects(() => value.confirmEffect("effect-1"), /INVALID_WORKSPACE_EFFECT/);
 });
 
+test("workspace client rejects malformed approval mutation responses", async () => {
+  const fetcher: typeof fetch = async () => new Response(JSON.stringify({ tenantId: "agency-1", id: "approval-1" }), {
+    status: 201, headers: { "content-type": "application/json" }
+  });
+  const value = new WorkspaceClient({ baseUrl: "http://127.0.0.1:8799", tenantId: "agency-1", token: "token-1234567890" }, fetcher);
+  await assert.rejects(() => value.approve({ resourceId: "offer-1", reason: "Revisada", draftHash: "sha256:v1", approvedAt: "2026-09-30T10:00:00Z" }), /INVALID_WORKSPACE_APPROVAL/);
+});
+
 test("workspace client reads an individual effect", async () => {
   const api = new WorkspaceApi();
   api.addSession("owner-token-123456", { userId: "owner", tenantId: "agency-1", role: "owner" });

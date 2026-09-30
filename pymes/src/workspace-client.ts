@@ -40,6 +40,17 @@ function isRemoteEffect(value: unknown): value is RemoteEffect {
     typeof effect.requestedBy === "string" && effect.requestedBy.length > 0 &&
     typeof effect.requestedAt === "string" && effect.requestedAt.length > 0;
 }
+function isRemoteApproval(value: unknown, tenantId: string): value is RemoteApproval {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
+  const approval = value as Record<string, unknown>;
+  return approval.tenantId === tenantId && typeof approval.id === "string" && !!approval.id &&
+    typeof approval.resourceId === "string" && !!approval.resourceId &&
+    (approval.operation === "approveOffer" || approval.operation === "executeEffect") &&
+    typeof approval.approvedBy === "string" && !!approval.approvedBy &&
+    typeof approval.approvedAt === "string" && !!approval.approvedAt &&
+    typeof approval.reason === "string" && !!approval.reason &&
+    typeof approval.draftHash === "string" && !!approval.draftHash;
+}
 export class WorkspaceConflictError extends Error {
   constructor(readonly currentVersion: number) { super(`CASE_VERSION_CONFLICT_CURRENT_${currentVersion}`); }
 }
@@ -96,18 +107,7 @@ export class WorkspaceClient {
 
   async approvals(): Promise<RemoteApproval[]> {
     const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/approvals`);
-    if (!Array.isArray(body.approvals) || body.approvals.some(item => {
-      if (item === null || typeof item !== "object" || Array.isArray(item)) return true;
-      const approval = item as Record<string, unknown>;
-      return approval.tenantId !== this.config.tenantId ||
-        typeof approval.id !== "string" || !approval.id ||
-        typeof approval.resourceId !== "string" || !approval.resourceId ||
-        (approval.operation !== "approveOffer" && approval.operation !== "executeEffect") ||
-        typeof approval.approvedBy !== "string" || !approval.approvedBy ||
-        typeof approval.approvedAt !== "string" || !approval.approvedAt ||
-        typeof approval.reason !== "string" || !approval.reason ||
-        typeof approval.draftHash !== "string" || !approval.draftHash;
-    })) throw new Error("INVALID_WORKSPACE_APPROVALS");
+    if (!Array.isArray(body.approvals) || !body.approvals.every(item => isRemoteApproval(item, this.config.tenantId))) throw new Error("INVALID_WORKSPACE_APPROVALS");
     return body.approvals as RemoteApproval[];
   }
   async health(): Promise<WorkspaceHealth> {
@@ -149,7 +149,8 @@ export class WorkspaceClient {
     const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/approvals`, {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input)
     });
-    return body as unknown as RemoteApproval;
+    if (!isRemoteApproval(body, this.config.tenantId)) throw new Error("INVALID_WORKSPACE_APPROVAL");
+    return body;
   }
   async audit(caseId: string): Promise<RemoteCaseAudit[]> {
     const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/cases/${encodeURIComponent(caseId)}/audit`);

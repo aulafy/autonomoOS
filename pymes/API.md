@@ -44,6 +44,9 @@ Las aprobaciones remotas siguen la misma regla de tenant y además deben
 incluir identificador, recurso, operación, actor, fecha, motivo y hash del
 borrador; de lo contrario el cliente responde con
 `INVALID_WORKSPACE_APPROVALS`.
+La respuesta de `approve()` también debe cumplir el contrato completo y
+pertenecer al tenant actual; una creación malformada se rechaza con
+`INVALID_WORKSPACE_APPROVAL`.
 Las colecciones de efectos también deben devolver el `tenantId` del workspace;
 `effectsForCase()` verifica además que el `caseId` de la envolvente coincida
 con el caso solicitado y rechaza cualquier desalineación.
