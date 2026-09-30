@@ -93,7 +93,9 @@ Cuando la interfaz está conectada a un workspace remoto muestra `Cerrar
 sesión`; ese control revoca el token en el API y elimina la credencial local.
 También muestra `Actualizar` para volver a leer casos, aprobaciones y efectos
 sin recargar la aplicación; el control se bloquea mientras la sincronización
-está en curso para evitar peticiones duplicadas.
+está en curso para evitar peticiones duplicadas. Mientras permanece abierta,
+la interfaz repite esa sincronización cada 60 segundos y conserva el mismo
+bloqueo para no solapar operaciones.
 Las peticiones del cliente usan 10 segundos por defecto; se puede configurar
 `requestTimeoutMs` entre 100 y 60.000 ms y capturar
 `WORKSPACE_REQUEST_TIMEOUT` para ofrecer un reintento.
