@@ -82,7 +82,7 @@ const server = createServer(async (request, nodeResponse) => {
       nodeResponse.setHeader("cross-origin-opener-policy", "same-origin");
       nodeResponse.setHeader("x-request-id", requestId);
       nodeResponse.end(JSON.stringify({ error: "INTERNAL_SERVER_ERROR" }));
-      console.error("PYMES request failed", error);
+      console.error("PYMES request failed", { requestId, error });
     }
   });
 });
