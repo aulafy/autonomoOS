@@ -101,7 +101,8 @@ adaptador.
 `src/workspace-policy.ts` es la política común de tenant y roles. El propietario
 puede administrar la agencia y ejecutar efectos; un agente prepara trabajo pero
 no aprueba ni ejecuta; un revisor aprueba y exporta, pero no administra
-conectores. Las aprobaciones guardan actor, tenant, recurso, motivo, fecha y
+conectores; el rol `worker` solo lee la bandeja y ejecuta efectos ya confirmados.
+Las aprobaciones guardan actor, tenant, recurso, motivo, fecha y
 hash del borrador para que la API futura y OpenClaw Enterprise no dupliquen
 reglas distintas.
 
