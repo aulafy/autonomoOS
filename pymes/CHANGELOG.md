@@ -22,6 +22,8 @@
   idempotency key derivada del efecto.
 - Gateways HTTP seguros para mensajes, CRM y telefonía, con validación de
   endpoint y token durante el arranque del servidor.
+- Configuración de gateways propagada a Docker Compose y Kubernetes, con
+  comprobaciones de CI para evitar secretos o claves de despliegue huérfanos.
 
 ### Seguridad y operación
 
