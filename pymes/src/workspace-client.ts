@@ -109,7 +109,9 @@ export class WorkspaceClient {
       throw error;
     }
     this.lastStatusValue = response.status;
-    this.lastResponseRequestIdValue = response.headers.get("x-request-id");
+    const responseRequestId = response.headers.get("x-request-id");
+    this.lastResponseRequestIdValue = responseRequestId && responseRequestId.length <= 200 && !/[\u0000-\u001f\u007f]/.test(responseRequestId)
+      ? responseRequestId : null;
     const contentLength = response.headers.get("content-length");
     if (contentLength && (/^\d+$/.test(contentLength) === false || Number(contentLength) > MAX_REMOTE_RESPONSE_BYTES)) {
       clearTimeout(timeout);

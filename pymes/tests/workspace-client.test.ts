@@ -454,3 +454,10 @@ test("workspace client exposes the response correlation id", async () => {
   await value.health();
   assert.equal(value.lastResponseRequestId, "gateway-42");
 });
+
+test("workspace client drops oversized response correlation ids", async () => {
+  const fetcher: typeof fetch = async () => new Response(JSON.stringify({ status: "ok", service: "pymes-workspace", version: "0.1.0" }), { status: 200, headers: { "content-type": "application/json", "x-request-id": "x".repeat(201) } });
+  const value = new WorkspaceClient({ baseUrl: "http://workspace.local", tenantId: "agency-1", token: "owner-token-123456" }, fetcher);
+  await value.health();
+  assert.equal(value.lastResponseRequestId, null);
+});
