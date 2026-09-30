@@ -14,6 +14,7 @@ import "./retry.css";
 import "./refresh.css";
 import "./snapshot.css";
 import "./remote-state.css";
+import "./accessibility.css";
 import { retryDelayMs } from "./retry-delay.js";
 
 const demoMorning = new Date();
