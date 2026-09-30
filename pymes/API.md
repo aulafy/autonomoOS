@@ -41,7 +41,8 @@ canal, remitente emparejado y consentimiento. Un evento aceptado devuelve
 siempre crea un caso neutral en estado `received` y no envía respuestas por sí
 mismo. Si no se define `PYMES_OPENCLAW_CHANNELS`, se usan WhatsApp, Telegram,
 iMessage y email; los nombres desconocidos de una configuración explícita se
-descartan.
+descartan. Si la configuración explícita no contiene ningún canal válido, el
+ingress queda sin canales permitidos y bloquea esos eventos.
 
 ## Bandeja y trazabilidad
 
