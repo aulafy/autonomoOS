@@ -152,3 +152,15 @@ test("HTTP adapter rejects invalid JSON and unsupported methods", async () => {
   assert.equal(method.status, 405);
   assert.equal(method.headers.get("allow"), "GET, POST, OPTIONS");
 });
+
+test("HTTP adapter bounds OpenClaw ingress bodies before dispatch", async () => {
+  const api = new WorkspaceApi(undefined, { token: "ingress-token-123456", policy: {
+    tenantId: "agency-1", allowedAgentIds: new Set(["agent-1"]), allowedResourceIds: new Set(["inbox-1"]),
+    allowedChannels: new Set(["whatsapp"]), pairedSenderIds: new Set(["sender-1"]), consentedConversationIds: new Set(["conversation-1"])
+  } });
+  const response = await handlePymesRequest(api, new Request("http://localhost/v1/workspaces/agency-1/ingress/openclaw", {
+    method: "POST", headers: { "content-type": "application/json", "x-pymes-ingress-token": "ingress-token-123456", "content-length": "1048577" }, body: "{}"
+  }));
+  assert.equal(response.status, 413);
+  assert.deepEqual(await response.json(), { error: "BODY_TOO_LARGE" });
+});
