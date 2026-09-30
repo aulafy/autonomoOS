@@ -9,7 +9,7 @@ COPY pymes/package.json pymes/package.json
 RUN npm ci
 COPY pymes pymes
 RUN mkdir -p /data && chown -R node:node /app /data
-ENV NODE_ENV=production PYMES_API_HOST=0.0.0.0 PYMES_API_PORT=8790 PYMES_API_DB_PATH=/data/pymes-workspace.db
+ENV NODE_ENV=production PYMES_API_VERSION=${PYMES_API_VERSION} PYMES_API_HOST=0.0.0.0 PYMES_API_PORT=8790 PYMES_API_DB_PATH=/data/pymes-workspace.db
 USER node
 EXPOSE 8790
 STOPSIGNAL SIGTERM
