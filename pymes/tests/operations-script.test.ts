@@ -22,15 +22,18 @@ test("operations healthcheck returns healthy and alert exit codes", async () => 
     const base = `http://127.0.0.1:${address.port}`;
     const env = { ...process.env, PYMES_API_BASE_URL: base, PYMES_API_TOKEN: "test-token", PYMES_API_TENANT: "agency-1" };
     const cwd = fileURLToPath(new URL("..", import.meta.url));
-    const run = (token: string) => new Promise<{ code: number | null; stderr: string }>((resolve, reject) => {
+    const run = (token: string) => new Promise<{ code: number | null; stdout: string; stderr: string }>((resolve, reject) => {
       const child = spawn("bash", ["scripts/check-operations.sh"], { cwd, env: { ...env, PYMES_API_TOKEN: token } });
+      let stdout = "";
       let stderr = "";
+      child.stdout.on("data", chunk => { stdout += String(chunk); });
       child.stderr.on("data", chunk => { stderr += String(chunk); });
       child.once("error", reject);
-      child.once("close", code => resolve({ code, stderr }));
+      child.once("close", code => resolve({ code, stdout, stderr }));
     });
     const healthy = await run("test-token");
     assert.equal(healthy.code, 0, healthy.stderr);
+    assert.match(healthy.stdout, /OK: 1 casos pendientes, 0 operaciones fallidas, 0 fuera de SLA/);
     const failed = await run("failed-token");
     assert.equal(failed.code, 2, failed.stderr);
     const busy = await run("busy-token");
