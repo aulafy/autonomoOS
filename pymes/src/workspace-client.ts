@@ -49,8 +49,8 @@ function isRemoteEffect(value: unknown, tenantId: string): value is RemoteEffect
   const effect = value as Record<string, unknown>;
   return effect.tenantId === tenantId && typeof effect.id === "string" && validResourceId(effect.id) &&
     typeof effect.caseId === "string" && validResourceId(effect.caseId) &&
-    typeof effect.kind === "string" && validInputText(effect.kind, 200) &&
-    typeof effect.status === "string" && validInputText(effect.status, 100) &&
+    (effect.kind === "call" || effect.kind === "calendar" || effect.kind === "message" || effect.kind === "crm_task") &&
+    (effect.status === "pending" || effect.status === "confirmed" || effect.status === "succeeded" || effect.status === "failed") &&
     typeof effect.requestedBy === "string" && validInputText(effect.requestedBy, 200) &&
     typeof effect.requestedAt === "string" && validTimestamp(effect.requestedAt) &&
     (effect.draftHash === undefined || (typeof effect.draftHash === "string" && validInputText(effect.draftHash, 512))) &&
