@@ -36,6 +36,8 @@
   payloads, mensajes o credenciales.
 - Limpieza de listeners de cancelación en esperas largas del worker para evitar
   acumulación de recursos durante ejecuciones residentes.
+- Validación de lotes del worker: forma de resultados, estados permitidos,
+  tamaño máximo y ausencia de `effectId` duplicados.
 
 ### Seguridad y operación
 
