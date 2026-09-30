@@ -269,8 +269,9 @@ Ejemplo de respuesta sanitizada:
 ```
 
 `alerts` solo contiene códigos operativos: `FAILED_EFFECTS` (`critical`) cuando
-hay efectos fallidos, e `INBOX_BACKLOG` (`warning`) cuando hay más de 20 casos
-pendientes de revisión. Nunca incluye contenido de mensajes.
+hay efectos fallidos, `INBOX_BACKLOG` (`warning`) cuando hay más de 20 casos
+pendientes de revisión, y `STALE_CASES` (`warning`) cuando hay casos pendientes
+con una actualización de hace más de 24 horas. Nunca incluye contenido de mensajes.
 - `GET /v1/workspaces/:tenant/cases/:caseId/audit` — transiciones con actor, versión y fecha.
 - `GET /v1/workspaces/:tenant/effects/:effectId` — estado individual de una operación.
 - `GET /v1/workspaces/:tenant/cases/:caseId/effects` — operaciones de un caso.

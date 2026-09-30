@@ -53,7 +53,9 @@ function renderWorkspaceMetrics(metrics: WorkspaceMetrics): void {
       item.className = `workspace-alert ${alert.severity}`;
       item.textContent = alert.code === "FAILED_EFFECTS"
         ? `${alert.count} operación${alert.count === 1 ? "" : "es"} fallida${alert.count === 1 ? "" : "s"}`
-        : `${alert.count} casos pendientes de revisión`;
+        : alert.code === "INBOX_BACKLOG"
+          ? `${alert.count} casos pendientes de revisión`
+          : `${alert.count} casos llevan más de 24 h pendientes`;
       alertTarget.appendChild(item);
     }
   }

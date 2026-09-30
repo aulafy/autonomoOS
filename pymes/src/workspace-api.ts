@@ -241,6 +241,8 @@ export class WorkspaceApi {
       const approvals = this.repository.listApprovals(tenantId);
       const failedEffects = effects.filter(effect => effect.status === "failed").length;
       const pendingReview = inbox.filter(item => item.state === "pending_review").length;
+      const stalePending = inbox.filter(item => item.state === "pending_review" && item.updatedAt &&
+        Number.isFinite(Date.parse(item.updatedAt)) && Date.now() - Date.parse(item.updatedAt) > 24 * 60 * 60 * 1000).length;
       const byField = <T extends object>(items: readonly T[], field: "state" | "status"): Record<string, number> =>
         items.reduce<Record<string, number>>((counts, item) => {
           const value = (item as Record<string, unknown>)[field];
@@ -253,7 +255,8 @@ export class WorkspaceApi {
         approvals: { total: approvals.length },
         alerts: [
           ...(failedEffects > 0 ? [{ code: "FAILED_EFFECTS", severity: "critical", count: failedEffects }] : []),
-          ...(pendingReview > 20 ? [{ code: "INBOX_BACKLOG", severity: "warning", count: pendingReview }] : [])
+          ...(pendingReview > 20 ? [{ code: "INBOX_BACKLOG", severity: "warning", count: pendingReview }] : []),
+          ...(stalePending > 0 ? [{ code: "STALE_CASES", severity: "warning", count: stalePending }] : [])
         ] } };
     }
     if (request.method === "POST" && parts[3] === "cases" && parts[5] === "transition" && parts.length === 6) {

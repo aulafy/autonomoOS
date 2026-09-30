@@ -95,6 +95,16 @@ test("metrics expose tenant-scoped operational counts without message content", 
   assert.deepEqual(withFailure.body.alerts, [{ code: "FAILED_EFFECTS", severity: "critical", count: 1 }]);
 });
 
+test("metrics alert on pending cases older than the operational SLA", () => {
+  const value = api();
+  value.addInbox({ id: "stale-case", tenantId: "agency-1", state: "pending_review", summary: "Consulta antigua",
+    updatedAt: "2020-01-01T09:00:00Z" });
+  const response = value.handle({ method: "GET", path: "/v1/workspaces/agency-1/metrics",
+    authorization: "Bearer reviewer-token-1234" });
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body.alerts, [{ code: "STALE_CASES", severity: "warning", count: 1 }]);
+});
+
 test("case transition is authenticated and leaves an audit trail", () => {
   const value = api();
   const response = value.handle({ method: "POST", path: "/v1/workspaces/agency-1/cases/msg-1/transition",
