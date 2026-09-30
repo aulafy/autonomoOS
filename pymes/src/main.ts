@@ -184,6 +184,7 @@ async function checkRemoteWorkspace(): Promise<void> {
     const selected = brief.items.find(item => item.id === selectedId);
     if (selected) renderDetail(selected);
   } catch (error: unknown) {
+    document.getElementById("workspace-alerts")?.replaceChildren();
     const metricsUpdated = document.getElementById("workspace-metrics-updated");
     if (metricsUpdated && metricsUpdated.textContent !== "Sin sincronizar") {
       metricsUpdated.textContent = "Sin conexión · datos potencialmente desactualizados";
