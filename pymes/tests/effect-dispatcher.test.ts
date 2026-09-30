@@ -22,6 +22,7 @@ test("dispatches only confirmed effects through the matching tenant handler", as
 test("rejects unconfirmed, cross-tenant and unconfigured effects", async () => {
   await assert.rejects(() => dispatchConfirmedEffect({ ...effect, status: "pending" }, {}, { tenantId: "agency-1", requestedBy: "owner-1", confirmedBy: "reviewer-1" }), /EFFECT_NOT_CONFIRMED/);
   await assert.rejects(() => dispatchConfirmedEffect(effect, {}, { tenantId: "agency-2", requestedBy: "owner-1", confirmedBy: "reviewer-1" }), /EFFECT_TENANT_MISMATCH/);
+  await assert.rejects(() => dispatchConfirmedEffect(effect, {}, { tenantId: "agency-1", requestedBy: "other-owner", confirmedBy: "reviewer-1" }), /EFFECT_REQUESTOR_MISMATCH/);
   await assert.rejects(() => dispatchConfirmedEffect(effect, {}, { tenantId: "agency-1", requestedBy: "owner-1", confirmedBy: "reviewer-1" }), /EFFECT_HANDLER_NOT_CONFIGURED/);
 });
 

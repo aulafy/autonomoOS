@@ -26,6 +26,9 @@ export async function dispatchConfirmedEffect(
   if (effect.tenantId !== context.tenantId || effect.tenantId.trim().length === 0) {
     throw new Error("EFFECT_TENANT_MISMATCH");
   }
+  if (effect.requestedBy !== context.requestedBy || !context.requestedBy.trim()) {
+    throw new Error("EFFECT_REQUESTOR_MISMATCH");
+  }
   if (effect.confirmedBy !== context.confirmedBy || !context.confirmedBy.trim()) {
     throw new Error("EFFECT_CONFIRMATION_MISMATCH");
   }
