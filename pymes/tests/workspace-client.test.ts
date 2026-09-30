@@ -432,3 +432,17 @@ test("workspace client disables intermediary caching", async () => {
   await value.health();
   assert.equal(cacheControl, "no-store");
 });
+
+test("workspace client clears last status when transport fails", async () => {
+  let calls = 0;
+  const fetcher: typeof fetch = async () => {
+    calls += 1;
+    if (calls === 1) return new Response(JSON.stringify({ status: "ok", service: "pymes-workspace", version: "0.1.0" }), { status: 200, headers: { "content-type": "application/json" } });
+    throw new Error("OFFLINE");
+  };
+  const value = new WorkspaceClient({ baseUrl: "http://workspace.local", tenantId: "agency-1", token: "owner-token-123456" }, fetcher);
+  await value.health();
+  assert.equal(value.lastStatus, 200);
+  await assert.rejects(() => value.health(), /OFFLINE/);
+  assert.equal(value.lastStatus, null);
+});

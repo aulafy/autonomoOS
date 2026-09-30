@@ -95,6 +95,7 @@ export class WorkspaceClient {
     const timeout = setTimeout(() => controller.abort(), this.config.requestTimeoutMs ?? 10000);
     const correlationId = requestId();
     this.lastRequestIdValue = correlationId;
+    this.lastStatusValue = null;
     let response: Response;
     try {
       response = await this.fetcher(`${this.config.baseUrl}${path}`, {
