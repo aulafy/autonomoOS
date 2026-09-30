@@ -12,7 +12,7 @@ function response(status: number, body: Record<string, unknown>, requestId = nor
     "content-security-policy": "default-src 'none'; frame-ancestors 'none'",
     "cross-origin-resource-policy": "same-origin", "cross-origin-opener-policy": "same-origin",
     "referrer-policy": "no-referrer", "permissions-policy": "camera=(), microphone=(), geolocation=()",
-    "x-dns-prefetch-control": "off" };
+    "x-dns-prefetch-control": "off", "x-permitted-cross-domain-policies": "none" };
   if (origin && allowedOrigins.includes(origin)) {
     headers["access-control-allow-origin"] = origin;
     headers["access-control-allow-headers"] = "Authorization, Content-Type, X-PYMES-Ingress-Token, X-Request-Id";
