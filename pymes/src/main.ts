@@ -299,9 +299,10 @@ function renderDetail(item: WorkItem) {
     detail.appendChild(trace);
     void remoteWorkspaceClient.audit(item.id).then(entries => {
       trace.replaceChildren(el("strong", "", `Trazabilidad · ${entries.length} transiciones`));
+      const remote = remoteInbox.get(item.id);
+      if (remote) trace.appendChild(el("p", "workspace-snapshot", `Snapshot remoto · estado ${remote.state} · versión v${remote.version ?? 0}`));
       if (!entries.length) trace.appendChild(el("p", "", "Todavía no hay cambios de estado registrados."));
       for (const entry of entries) trace.appendChild(el("p", "", `v${entry.version} · ${entry.from} → ${entry.to} · ${entry.actorId} · ${dayTime(entry.at)}`));
-      const remote = remoteInbox.get(item.id);
       const next = remote?.state === "pending_review" ? "approved" : remote?.state === "approved" ? "executing" : null;
       if (next) {
         const action = el("button", "review-button", next === "approved" ? "Aprobar caso" : "Iniciar ejecución");
