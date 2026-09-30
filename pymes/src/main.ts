@@ -89,7 +89,7 @@ async function checkRemoteWorkspace(): Promise<void> {
     document.getElementById("workspace-retry")?.remove();
     const syncedAt = new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
     status.textContent = `● WORKSPACE CONECTADO · v${readiness.version} · ${inbox.length} casos · ${approvals.length} aprobaciones · sync ${syncedAt}`;
-    status.title = `Workspace ${readiness.service} versión ${readiness.version}. Los casos y aprobaciones se leen del workspace remoto; los fixtures locales no se mezclan automáticamente.`;
+    status.title = `Workspace ${readiness.service} versión ${readiness.version}. Última sincronización: ${status.dataset.lastSync}. Los casos y aprobaciones se leen del workspace remoto; los fixtures locales no se mezclan automáticamente.`;
     let logout = document.getElementById("workspace-logout") as HTMLButtonElement | null;
     if (!logout) {
       logout = document.createElement("button");
