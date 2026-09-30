@@ -264,3 +264,5 @@ Para un `CronJob`, configura `maxCycles` en el código de arranque para que el
 proceso termine después de la ventana prevista. El valor debe estar entre 1 y
 10.000; omitirlo activa el modo residente. El `CronJob` debe conservar el mismo
 token dedicado y no ejecutar dos instancias simultáneas sobre el mismo tenant.
+Hasta que se incorpore leasing atómico en el contrato de efectos, mantén una sola
+instancia de worker por tenant; el API no asigna reservas entre workers.
