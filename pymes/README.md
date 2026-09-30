@@ -173,6 +173,12 @@ Las credenciales del worker deben usar el rol `worker`, que solo permite leer
 la bandeja y ejecutar efectos confirmados; no puede aprobar ofertas ni
 administrar conectores.
 
+`executeConfirmedEffects` acepta un `leaseStore` y `leaseOwnerId` opcionales para
+evitar duplicados entre workers del mismo proceso. Si una reserva no está
+disponible, el resultado es `skipped` con `EFFECT_LEASE_UNAVAILABLE`; la reserva
+propia se libera siempre al terminar. Para varios procesos o réplicas, sustituye
+esta implementación local por un lease persistente antes de escalar.
+
 Para un proceso periódico se puede usar `executeConfirmedEffects`, que limita
 el lote a 100 efectos, procesa en orden y continúa cuando un proveedor falla.
 El resultado de cada elemento debe enviarse a métricas o logs operativos sin

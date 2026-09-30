@@ -269,3 +269,5 @@ proceso termine después de la ventana prevista. El valor debe estar entre 1 y
 token dedicado y no ejecutar dos instancias simultáneas sobre el mismo tenant.
 Hasta que se incorpore leasing atómico en el contrato de efectos, mantén una sola
 instancia de worker por tenant; el API no asigna reservas entre workers.
+El `leaseStore` actual es una protección local del proceso y no sustituye esa
+restricción de despliegue.
