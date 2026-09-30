@@ -259,6 +259,12 @@ test("workspace client rejects oversized remote collections", async () => {
   await assert.rejects(() => client.inbox(), /INVALID_WORKSPACE_INBOX/);
 });
 
+test("workspace client rejects oversized inbox summaries", async () => {
+  const fetcher: typeof fetch = async () => new Response(JSON.stringify({ items: [{ id: "case-1", tenantId: "agency-1", state: "pending_review", summary: "x".repeat(4_001) }] }), { status: 200, headers: { "content-type": "application/json" } });
+  const client = new WorkspaceClient({ baseUrl: "http://127.0.0.1:8799", tenantId: "agency-1", token: "token-1234567890" }, fetcher);
+  await assert.rejects(() => client.inbox(), /INVALID_WORKSPACE_INBOX/);
+});
+
 test("workspace client reads an individual effect", async () => {
   const api = new WorkspaceApi();
   api.addSession("owner-token-123456", { userId: "owner", tenantId: "agency-1", role: "owner" });

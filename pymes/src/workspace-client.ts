@@ -35,10 +35,10 @@ function isRemoteEffect(value: unknown): value is RemoteEffect {
   if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
   const effect = value as Record<string, unknown>;
   return typeof effect.id === "string" && effect.id.length > 0 &&
-    typeof effect.caseId === "string" && effect.caseId.length > 0 &&
-    typeof effect.kind === "string" && effect.kind.length > 0 &&
-    typeof effect.status === "string" && effect.status.length > 0 &&
-    typeof effect.requestedBy === "string" && effect.requestedBy.length > 0 &&
+    typeof effect.caseId === "string" && validResourceId(effect.caseId) &&
+    typeof effect.kind === "string" && validInputText(effect.kind, 200) &&
+    typeof effect.status === "string" && validInputText(effect.status, 100) &&
+    typeof effect.requestedBy === "string" && validInputText(effect.requestedBy, 200) &&
     typeof effect.requestedAt === "string" && validTimestamp(effect.requestedAt);
 }
 function isRemoteApproval(value: unknown, tenantId: string): value is RemoteApproval {
@@ -143,7 +143,8 @@ export class WorkspaceClient {
       if (item === null || typeof item !== "object" || Array.isArray(item)) return true;
       const record = item as Record<string, unknown>;
       return record.tenantId !== this.config.tenantId || typeof record.id !== "string" || !record.id ||
-        typeof record.state !== "string" || typeof record.summary !== "string";
+        typeof record.state !== "string" || !validInputText(record.state, 100) ||
+        typeof record.summary !== "string" || !validInputText(record.summary, 4_000);
     }) || new Set(body.items.map(item => (item as Record<string, unknown>).id)).size !== body.items.length) throw new Error("INVALID_WORKSPACE_INBOX");
     return body.items as RemoteInboxRecord[];
   }
