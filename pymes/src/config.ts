@@ -5,6 +5,9 @@ export type SupportedChannel = Channel;
 export const connectorStatuses = ["lectura preparada", "conectado", "no configurado"] as const;
 export type ConnectorStatus = typeof connectorStatuses[number];
 export type ConnectorConfig = { id: string; name: string; status: ConnectorStatus };
+export function isConnectorStatus(value: unknown): value is ConnectorStatus {
+  return typeof value === "string" && connectorStatuses.includes(value as ConnectorStatus);
+}
 
 export function normalizeBootstrapToken(value: string | undefined): string {
   const token = value?.trim() ?? "";
