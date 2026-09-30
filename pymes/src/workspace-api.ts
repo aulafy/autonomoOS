@@ -23,7 +23,7 @@ export interface WorkspaceInboxRecord {
 }
 export interface CaseAuditRecord {
   id: string; tenantId: string; caseId: string; from: CaseState; to: CaseState;
-  operation: string; actorId: string; at: string; version: number;
+  operation: string; actorId: string; at: string; version: number; requestId?: string;
 }
 
 export interface WorkspaceApiRequest {
@@ -31,6 +31,7 @@ export interface WorkspaceApiRequest {
   path: string;
   authorization?: string;
   ingressToken?: string;
+  requestId?: string;
   body?: unknown;
 }
 
@@ -179,7 +180,7 @@ export class WorkspaceApi {
       if (result.accepted) {
         this.repository.appendCaseAudit({ id: `audit-${tenantId}-${result.record.id}-0`, tenantId,
           caseId: result.record.id, from: "received", to: "received", operation: "openclaw_ingress",
-          actorId: "openclaw-gateway", at: request.body && typeof request.body === "object" && !Array.isArray(request.body) &&
+          actorId: "openclaw-gateway", requestId: request.requestId, at: request.body && typeof request.body === "object" && !Array.isArray(request.body) &&
             typeof (request.body as Record<string, unknown>).inbound === "object" && (request.body as Record<string, unknown>).inbound !== null &&
             typeof ((request.body as Record<string, unknown>).inbound as Record<string, unknown>).receivedAt === "string"
             ? ((request.body as Record<string, unknown>).inbound as Record<string, unknown>).receivedAt as string

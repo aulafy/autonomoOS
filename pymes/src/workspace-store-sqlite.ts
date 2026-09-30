@@ -32,7 +32,7 @@ export class SqliteWorkspaceRepository implements WorkspaceRepository {
       CREATE TABLE IF NOT EXISTS workspace_case_audit (
         id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL, case_id TEXT NOT NULL,
         from_state TEXT NOT NULL, to_state TEXT NOT NULL, operation TEXT NOT NULL,
-        actor_id TEXT NOT NULL, at TEXT NOT NULL, version INTEGER NOT NULL
+        actor_id TEXT NOT NULL, at TEXT NOT NULL, version INTEGER NOT NULL, request_id TEXT
       );
       CREATE TABLE IF NOT EXISTS workspace_effects (
         id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL, case_id TEXT NOT NULL, kind TEXT NOT NULL,
@@ -45,6 +45,7 @@ export class SqliteWorkspaceRepository implements WorkspaceRepository {
     try { this.db.exec("ALTER TABLE workspace_inbox ADD COLUMN source_event_id TEXT"); } catch {}
     try { this.db.exec("ALTER TABLE workspace_inbox ADD COLUMN source_external_message_id TEXT"); } catch {}
     try { this.db.exec("ALTER TABLE workspace_inbox ADD COLUMN source_channel TEXT"); } catch {}
+    try { this.db.exec("ALTER TABLE workspace_case_audit ADD COLUMN request_id TEXT"); } catch {}
     this.db.exec("CREATE UNIQUE INDEX IF NOT EXISTS workspace_inbox_external_message ON workspace_inbox(tenant_id, source_external_message_id, source_channel) WHERE source_external_message_id IS NOT NULL AND source_channel IS NOT NULL");
     try { this.db.exec("ALTER TABLE workspace_effects ADD COLUMN confirmed_by TEXT"); } catch {}
     try { this.db.exec("ALTER TABLE workspace_effects ADD COLUMN confirmed_at TEXT"); } catch {}
@@ -96,17 +97,17 @@ export class SqliteWorkspaceRepository implements WorkspaceRepository {
   }
   appendCaseAudit(record: CaseAuditRecord): void {
     this.db.prepare(`INSERT INTO workspace_case_audit
-      (id, tenant_id, case_id, from_state, to_state, operation, actor_id, at, version)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(record.id, record.tenantId, record.caseId,
-      record.from, record.to, record.operation, record.actorId, record.at, record.version);
+      (id, tenant_id, case_id, from_state, to_state, operation, actor_id, at, version, request_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(record.id, record.tenantId, record.caseId,
+      record.from, record.to, record.operation, record.actorId, record.at, record.version, record.requestId ?? null);
   }
   listCaseAudit(tenantId: string, caseId: string): CaseAuditRecord[] {
     const rows = this.db.prepare(`SELECT id, tenant_id, case_id, from_state, to_state,
-      operation, actor_id, at, version FROM workspace_case_audit
+      operation, actor_id, at, version, request_id FROM workspace_case_audit
       WHERE tenant_id = ? AND case_id = ? ORDER BY version`).all(tenantId, caseId) as Array<any>;
     return rows.map(row => ({ id: row.id, tenantId: row.tenant_id, caseId: row.case_id,
       from: row.from_state, to: row.to_state, operation: row.operation,
-      actorId: row.actor_id, at: row.at, version: row.version }));
+      actorId: row.actor_id, at: row.at, version: row.version, ...(row.request_id ? { requestId: row.request_id } : {}) }));
   }
   appendEffect(effect: PendingEffect): void { this.db.prepare(`INSERT INTO workspace_effects
     (id, tenant_id, case_id, kind, payload, status, requested_by, requested_at, retry_count, confirmed_by, confirmed_at, draft_hash)

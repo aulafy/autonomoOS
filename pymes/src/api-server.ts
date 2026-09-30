@@ -64,7 +64,7 @@ export async function handlePymesRequest(api: WorkspaceApi, request: Request, op
   }
   const input: WorkspaceApiRequest = { method: request.method, path: pathname,
     authorization: request.headers.get("authorization") ?? undefined,
-    ingressToken: request.headers.get("x-pymes-ingress-token") ?? undefined, body };
+    ingressToken: request.headers.get("x-pymes-ingress-token") ?? undefined, requestId, body };
   try {
     const result = api.handle(input);
     return response(result.status, result.body, requestId, origin, allowedOrigins);
