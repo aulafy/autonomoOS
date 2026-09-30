@@ -8,6 +8,8 @@
 - Métricas tenant-scoped con alertas de fallos, backlog, casos inciertos y SLA.
 - Dashboard conectado al workspace remoto con estado de sincronización y fallback
   compatible con servidores anteriores.
+- Fallback de la cola `attention` limitado a respuestas `404` de workspaces
+  antiguos; los errores de autenticación o disponibilidad se mantienen visibles.
 
 ### Operaciones gobernadas
 
