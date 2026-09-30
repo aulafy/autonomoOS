@@ -50,6 +50,23 @@ async function checkRemoteWorkspace(): Promise<void> {
     const syncedAt = new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
     status.textContent = `● WORKSPACE CONECTADO · ${inbox.length} casos · ${approvals.length} aprobaciones · sync ${syncedAt}`;
     status.title = "Los casos y aprobaciones se leen del workspace remoto; los fixtures locales no se mezclan automáticamente.";
+    let logout = document.getElementById("workspace-logout") as HTMLButtonElement | null;
+    if (!logout) {
+      logout = document.createElement("button");
+      logout.id = "workspace-logout";
+      logout.type = "button";
+      logout.className = "workspace-logout";
+      logout.textContent = "Cerrar sesión";
+      logout.addEventListener("click", async () => {
+        if (!remoteWorkspaceClient) return;
+        logout!.disabled = true;
+        try { await remoteWorkspaceClient.revokeSession(); } finally {
+          sessionStorage.removeItem("pymes.workspace.token");
+          window.location.reload();
+        }
+      });
+      status.parentElement?.appendChild(logout);
+    }
     try { const effects = await client.effects(); $("effect-count").textContent = String(effects.filter(effect => effect.status === "pending" || effect.status === "confirmed" || effect.status === "failed").length); } catch { $("effect-count").textContent = "—"; }
     const selected = brief.items.find(item => item.id === selectedId);
     if (selected) renderDetail(selected);
@@ -57,6 +74,7 @@ async function checkRemoteWorkspace(): Promise<void> {
     status.className = "workspace-pill error";
     status.textContent = "● WORKSPACE NO DISPONIBLE";
     remoteWorkspaceClient = null;
+    document.getElementById("workspace-logout")?.remove();
   } finally {
     status.setAttribute("aria-busy", "false");
   }
