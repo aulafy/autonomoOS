@@ -183,6 +183,12 @@ test("workspace client rejects unsafe resource identifiers", async () => {
   await assert.rejects(() => value.effect("e".repeat(201)), /INVALID_WORKSPACE_EFFECT_INPUT/);
 });
 
+test("workspace client rejects unsafe mutation text before network access", async () => {
+  const value = new WorkspaceClient({ baseUrl: "http://127.0.0.1:8799", tenantId: "agency-1", token: "token-1234567890" }, async () => new Response("{}"));
+  await assert.rejects(() => value.approve({ resourceId: "offer-1", reason: "bad\nreason", draftHash: "sha256:v1", approvedAt: "2026-09-30T10:00:00Z" }), /INVALID_WORKSPACE_APPROVAL_INPUT/);
+  await assert.rejects(() => value.reportEffectResult("effect-1", "failed", "n".repeat(2_001)), /INVALID_WORKSPACE_EFFECT_INPUT/);
+});
+
 test("workspace client reads an individual effect", async () => {
   const api = new WorkspaceApi();
   api.addSession("owner-token-123456", { userId: "owner", tenantId: "agency-1", role: "owner" });

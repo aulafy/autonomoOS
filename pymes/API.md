@@ -60,6 +60,9 @@ vacíos con `INVALID_WORKSPACE_CASE_INPUT` o `INVALID_WORKSPACE_EFFECT_INPUT`
 antes de construir la URL.
 Los identificadores también están limitados a 200 caracteres y no admiten
 caracteres de control.
+Los textos de motivos, notas, hashes y fechas enviados por mutaciones tienen
+límites de tamaño y no admiten caracteres de control; los valores inválidos se
+rechazan localmente antes del transporte.
 Las colecciones de efectos también deben devolver el `tenantId` del workspace;
 `effectsForCase()` verifica además que el `caseId` de la envolvente coincida
 con el caso solicitado y rechaza cualquier desalineación.
