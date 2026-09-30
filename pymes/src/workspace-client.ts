@@ -112,7 +112,8 @@ export class WorkspaceClient {
   }
   async connectors(): Promise<RemoteConnector[]> {
     const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/connectors`);
-    if (body.tenantId !== this.config.tenantId || !Array.isArray(body.connectors) || !body.connectors.every(isConnectorConfig)) {
+    if (body.tenantId !== this.config.tenantId || !Array.isArray(body.connectors) || !body.connectors.every(isConnectorConfig) ||
+      new Set(body.connectors.map(connector => connector.id)).size !== body.connectors.length) {
       throw new Error("INVALID_WORKSPACE_CONNECTORS");
     }
     return body.connectors as RemoteConnector[];
