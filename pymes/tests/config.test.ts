@@ -28,4 +28,5 @@ test("CORS origins use safe defaults and reject wildcard", () => {
   assert.throws(() => parseCorsOrigins("*"), /INVALID_PYMES_API_CORS_ORIGINS/);
   assert.throws(() => parseCorsOrigins("ftp://agency.example"), /INVALID_PYMES_API_CORS_ORIGINS/);
   assert.throws(() => parseCorsOrigins("https://user:pass@agency.example"), /INVALID_PYMES_API_CORS_ORIGINS/);
+  assert.throws(() => parseCorsOrigins(`https://${"a".repeat(2_050)}.example`), /INVALID_PYMES_API_CORS_ORIGINS/);
 });

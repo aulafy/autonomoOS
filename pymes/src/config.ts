@@ -8,6 +8,7 @@ export function parseCorsOrigins(value: string | undefined): string[] {
   const configured = value?.trim() ? value : "http://127.0.0.1:5174,http://localhost:5174";
   const rawOrigins = configured.split(",").map(item => item.trim()).filter(Boolean);
   const origins = rawOrigins.map(origin => {
+    if (origin.length > 2_048) throw new Error("INVALID_PYMES_API_CORS_ORIGINS");
     let parsed: URL;
     try { parsed = new URL(origin); } catch { throw new Error("INVALID_PYMES_API_CORS_ORIGINS"); }
     if (parsed.protocol !== "http:" && parsed.protocol !== "https:" || parsed.username || parsed.password || parsed.pathname !== "/" || parsed.search || parsed.hash) {
