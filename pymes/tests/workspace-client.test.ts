@@ -426,6 +426,15 @@ test("workspace client rejects unknown remote effect states", async () => {
   await assert.rejects(() => value.effects(), /INVALID_WORKSPACE_EFFECTS/);
 });
 
+test("workspace client rejects oversized remote effect payloads", async () => {
+  const effect = { tenantId: "agency-1", id: "effect-large", caseId: "case-1", kind: "call", status: "pending",
+    requestedBy: "owner", requestedAt: "2026-09-29T14:00:00Z", retryCount: 0, draftHash: "sha256:x", payload: { text: "x".repeat(66_000) } };
+  const fetcher: typeof fetch = async () => new Response(JSON.stringify({ tenantId: "agency-1", effects: [effect] }), {
+    status: 200, headers: { "content-type": "application/json" } });
+  const value = new WorkspaceClient({ baseUrl: "http://workspace.local", tenantId: "agency-1", token: "owner-token-123456" }, fetcher);
+  await assert.rejects(() => value.effects(), /INVALID_WORKSPACE_EFFECTS/);
+});
+
 test("workspace client rejects a valid effect belonging to another tenant", async () => {
   const effect = { tenantId: "agency-2", id: "effect-1", caseId: "case-1", kind: "call", status: "pending",
     requestedBy: "owner", requestedAt: "2026-09-29T14:00:00Z", retryCount: 0, draftHash: "sha256:x", payload: { phone: "+34600000000" } };

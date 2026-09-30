@@ -54,7 +54,7 @@ function isRemoteEffect(value: unknown, tenantId: string): value is RemoteEffect
     typeof effect.requestedBy === "string" && validInputText(effect.requestedBy, 200) &&
     typeof effect.requestedAt === "string" && validTimestamp(effect.requestedAt) &&
     (effect.draftHash === undefined || (typeof effect.draftHash === "string" && validInputText(effect.draftHash, 512))) &&
-    effect.payload !== null && typeof effect.payload === "object" && !Array.isArray(effect.payload) &&
+    validEffectPayload(effect.payload) &&
     (effect.retryCount === undefined || (Number.isInteger(effect.retryCount) && (effect.retryCount as number) >= 0 && (effect.retryCount as number) <= 1_000)) &&
     (effect.executionNote === undefined || (typeof effect.executionNote === "string" && validMultilineText(effect.executionNote, 2_000))) &&
     (effect.executedBy === undefined || (typeof effect.executedBy === "string" && validInputText(effect.executedBy, 200))) &&
@@ -84,6 +84,11 @@ function validMultilineText(value: string, maxLength: number): boolean {
 }
 function validTimestamp(value: string): boolean {
   return validInputText(value, 100) && Number.isFinite(Date.parse(value));
+}
+function validEffectPayload(value: unknown): value is Record<string, unknown> {
+  if (value === null || typeof value !== "object" || Array.isArray(value) || Object.keys(value).length === 0) return false;
+  try { return new TextEncoder().encode(JSON.stringify(value)).byteLength <= 65536; }
+  catch { return false; }
 }
 function safeHeaderValue(value: string | null, maxLength = 200): string | null {
   const normalized = value?.trim() ?? "";
