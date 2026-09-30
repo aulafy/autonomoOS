@@ -71,6 +71,13 @@ gobernados. El contrato completo está en [API.md](API.md). El servidor persiste
 el estado multiusuario en SQLite y no arranca sin un token de arranque de al
 menos 16 caracteres.
 
+La interfaz conectada muestra un panel operativo con casos pendientes,
+operaciones activas, fallos y aprobaciones, junto con la hora de sincronización.
+El endpoint `GET /v1/workspaces/:tenant/metrics` devuelve solo esos contadores,
+sin contenido de mensajes ni payloads. Para supervisores existe
+`npm run check:operations`; para Kubernetes, `npm run check:k8s` valida el
+overlay antes de aplicarlo.
+
 Variables principales:
 
 ```bash
