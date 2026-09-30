@@ -25,6 +25,12 @@ const api = new WorkspaceApi(repository, ingressToken ? { token: ingressToken, p
   pairedSenderIds: parseConfiguredIdSet(process.env.PYMES_OPENCLAW_PAIRED_SENDERS),
   consentedConversationIds: parseConfiguredIdSet(process.env.PYMES_OPENCLAW_CONSENTED_CONVERSATIONS)
 } } : undefined);
+let repositoryClosed = false;
+function closeRepository(): void {
+  if (repositoryClosed) return;
+  repositoryClosed = true;
+  repository.close();
+}
 function safeError(error: unknown): { name: string; message: string } {
   const value = error instanceof Error ? error : new Error(String(error));
   return { name: value.name.slice(0, 80), message: value.message.slice(0, 500) };
@@ -101,7 +107,7 @@ server.maxHeadersCount = 100;
 server.maxRequestsPerSocket = 1_000;
 server.on("error", error => {
   console.error("PYMES API listen failed", { error: safeError(error) });
-  repository.close();
+  closeRepository();
   process.exitCode = 1;
 });
 server.listen(port, host, () => console.log(`PYMES API listening on http://${host}:${port}`));
@@ -113,13 +119,13 @@ function shutdown(signal: string): void {
   console.log(`PYMES API received ${signal}; shutting down`);
   const forceExit = setTimeout(() => {
     console.error("PYMES API shutdown timed out");
-    repository.close();
+    closeRepository();
     process.exit(1);
   }, 25_000);
   forceExit.unref();
   server.close(error => {
     clearTimeout(forceExit);
-    repository.close();
+    closeRepository();
     if (error) { console.error(error); process.exitCode = 1; }
   });
 }
