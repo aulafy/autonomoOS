@@ -60,7 +60,7 @@ const server = createServer(async (request, nodeResponse) => {
       nodeResponse.end(JSON.stringify({ error: "BODY_TOO_LARGE" }));
       return;
     }
-    const url = `http://${request.headers.host ?? `${host}:${port}`}${request.url ?? "/"}`;
+    const url = `http://${host}:${port}${request.url ?? "/"}`;
     const body = Buffer.concat(chunks);
     try {
       const webRequest = new Request(url, { method: request.method ?? "GET",
