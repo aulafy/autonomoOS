@@ -11,6 +11,7 @@ import { acceptClassification, parseClassificationProposal,
   type ClassificationProposal } from "./classification.js";
 import "./logout.css";
 import "./retry.css";
+import "./refresh.css";
 import { retryDelayMs } from "./retry-delay.js";
 
 const demoMorning = new Date();
@@ -83,6 +84,24 @@ async function checkRemoteWorkspace(): Promise<void> {
       });
       status.parentElement?.appendChild(logout);
     }
+    let refresh = document.getElementById("workspace-refresh") as HTMLButtonElement | null;
+    if (!refresh) {
+      refresh = document.createElement("button");
+      refresh.id = "workspace-refresh";
+      refresh.type = "button";
+      refresh.className = "workspace-refresh";
+      refresh.textContent = "Actualizar";
+      refresh.setAttribute("aria-label", "Actualizar casos y aprobaciones del workspace");
+      refresh.addEventListener("click", () => {
+        refresh!.disabled = true;
+        refresh!.setAttribute("aria-busy", "true");
+        void checkRemoteWorkspace().finally(() => {
+          const current = document.getElementById("workspace-refresh") as HTMLButtonElement | null;
+          if (current) { current.disabled = false; current.removeAttribute("aria-busy"); }
+        });
+      });
+      status.parentElement?.appendChild(refresh);
+    }
     try { const effects = await client.effects(); $("effect-count").textContent = String(effects.filter(effect => effect.status === "pending" || effect.status === "confirmed" || effect.status === "failed").length); } catch { $("effect-count").textContent = "—"; }
     const selected = brief.items.find(item => item.id === selectedId);
     if (selected) renderDetail(selected);
@@ -111,6 +130,7 @@ async function checkRemoteWorkspace(): Promise<void> {
     retry.removeAttribute("aria-busy");
     remoteWorkspaceClient = null;
     document.getElementById("workspace-logout")?.remove();
+    document.getElementById("workspace-refresh")?.remove();
     if (workspaceRetryTimer === null) {
       const retryAfter = error instanceof Error && "retryAfter" in error ? String((error as { retryAfter?: unknown }).retryAfter ?? "") : "";
       workspaceRetryTimer = window.setTimeout(() => {
