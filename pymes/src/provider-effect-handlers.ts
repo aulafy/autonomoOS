@@ -17,6 +17,22 @@ export function messageEffectHandler(input: {
   };
 }
 
+export function crmTaskEffectHandler(input: {
+  create: (task: { title: string; contactId: string; dueAt?: string; notes?: string }) => Promise<{ externalId: string }>;
+}): EffectHandler {
+  return {
+    async execute(effect) {
+      const payload = effect.payload;
+      if (typeof payload.title !== "string" || !payload.title.trim() || payload.title.length > 500 || typeof payload.contactId !== "string" || !payload.contactId.trim() || payload.contactId.length > 200 || (payload.dueAt !== undefined && (typeof payload.dueAt !== "string" || Number.isNaN(Date.parse(payload.dueAt))))) {
+        throw new Error("INVALID_CRM_TASK_EFFECT_PAYLOAD");
+      }
+      const result = await input.create({ title: payload.title.trim(), contactId: payload.contactId.trim(), dueAt: typeof payload.dueAt === "string" ? payload.dueAt : undefined, notes: typeof payload.notes === "string" ? payload.notes.slice(0, 4_000) : undefined });
+      if (!result || typeof result.externalId !== "string" || !result.externalId.trim() || result.externalId.length > 200) throw new Error("INVALID_CRM_PROVIDER_RESPONSE");
+      return `CRM task created: ${result.externalId}`;
+    },
+  };
+}
+
 export function googleCalendarEffectHandler(input: {
   accessToken: string;
   calendarId: string;
