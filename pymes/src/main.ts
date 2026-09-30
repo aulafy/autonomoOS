@@ -784,7 +784,7 @@ function renderAppointments() {
 
 $("today").textContent = new Date(brief.generatedAt).toLocaleDateString("es-ES", {
   weekday: "long", day: "numeric", month: "long", timeZone: pilotConfig.timeZone });
-$("pilot-context").textContent = `${pilotConfig.country} · ${pilotConfig.crm.name} por conectar · ${pilotConfig.calendar.name} por conectar`;
+$("pilot-context").textContent = `${pilotConfig.country} · ${pilotConfig.crm.name}: ${pilotConfig.crm.status} · ${pilotConfig.calendar.name}: ${pilotConfig.calendar.status}`;
 $<HTMLInputElement>("search").addEventListener("input", renderInbox);
 renderCounts();
 renderTabs();

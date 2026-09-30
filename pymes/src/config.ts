@@ -55,8 +55,8 @@ export function parseConfiguredChannels(value: string | undefined): Set<Supporte
 export const pilotConfig = {
   country: "España",
   timeZone: "Europe/Madrid",
-  crm: { name: "Holded", status: "por conectar" },
-  calendar: { name: "Google Calendar", status: "por conectar" },
+  crm: { name: "Holded", status: "lectura preparada" },
+  calendar: { name: "Google Calendar", status: "lectura preparada" },
   channels: supportedChannels
 } as const;
 
