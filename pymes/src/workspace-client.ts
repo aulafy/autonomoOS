@@ -247,6 +247,10 @@ export class WorkspaceClient {
       const record = item as Record<string, unknown>;
       return record.tenantId !== this.config.tenantId || typeof record.id !== "string" || !validResourceId(record.id) ||
         (record.state !== "pending_review" && record.state !== "uncertain") || typeof record.summary !== "string" || !validInputText(record.summary, 4_000) ||
+        (record.sourceEventId !== undefined && (typeof record.sourceEventId !== "string" || !validResourceId(record.sourceEventId))) ||
+        (record.sourceExternalMessageId !== undefined && (typeof record.sourceExternalMessageId !== "string" || !validResourceId(record.sourceExternalMessageId))) ||
+        (record.sourceChannel !== undefined && (typeof record.sourceChannel !== "string" || !supportedChannels.includes(record.sourceChannel as typeof supportedChannels[number]))) ||
+        (record.version !== undefined && (!Number.isInteger(record.version) || (record.version as number) < 0)) ||
         (record.updatedAt !== undefined && (typeof record.updatedAt !== "string" || !validTimestamp(record.updatedAt)));
     }) || new Set(body.items.map(item => (item as Record<string, unknown>).id)).size !== body.items.length) {
       throw new Error("INVALID_WORKSPACE_ATTENTION");

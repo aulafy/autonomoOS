@@ -44,6 +44,12 @@ test("workspace client consumes the tenant attention queue", async () => {
   assert.equal(items[0]?.state, "pending_review");
 });
 
+test("workspace client rejects malformed attention provenance", async () => {
+  const fetcher: typeof fetch = async () => new Response(JSON.stringify({ tenantId: "agency-1", items: [{ id: "case-1", tenantId: "agency-1", state: "uncertain", summary: "Caso", sourceChannel: "unknown" }] }), { status: 200, headers: { "content-type": "application/json" } });
+  const value = new WorkspaceClient({ baseUrl: "http://workspace.local", tenantId: "agency-1", token: "owner-token-123456" }, fetcher);
+  await assert.rejects(() => value.attention(), /INVALID_WORKSPACE_ATTENTION/);
+});
+
 test("HTTP metrics route authenticates and preserves tenant isolation", async () => {
   const api = new WorkspaceApi();
   api.addSession("owner-token-123456", { userId: "owner", tenantId: "agency-1", role: "owner" });
