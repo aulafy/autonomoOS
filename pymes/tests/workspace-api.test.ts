@@ -111,7 +111,7 @@ test("case transition is authenticated and leaves an audit trail", () => {
     authorization: "Bearer agent-token-12345", body: { to: "approved", at: "2026-09-29T12:00:00Z" } });
   assert.equal(response.status, 403);
   const allowed = value.handle({ method: "POST", path: "/v1/workspaces/agency-1/cases/msg-1/transition",
-    authorization: "Bearer reviewer-token-1234", body: { to: "approved", at: "2026-09-29T12:00:00Z" } });
+    authorization: "Bearer reviewer-token-1234", requestId: "req-transition-1", body: { to: "approved", at: "2026-09-29T12:00:00Z" } });
   assert.equal(allowed.status, 200);
   const stale = value.handle({ method: "POST", path: "/v1/workspaces/agency-1/cases/msg-1/transition",
     authorization: "Bearer reviewer-token-1234", body: { to: "executing", at: "2026-09-29T12:01:00Z", expectedVersion: 0 } });
@@ -120,6 +120,7 @@ test("case transition is authenticated and leaves an audit trail", () => {
   const audit = value.handle({ method: "GET", path: "/v1/workspaces/agency-1/cases/msg-1/audit",
     authorization: "Bearer reviewer-token-1234" });
   assert.equal((audit.body.audit as Array<unknown>).length, 1);
+  assert.equal((audit.body.audit as Array<{ requestId?: string }>)[0]?.requestId, "req-transition-1");
 });
 
 test("effects require execute permission and explicit confirmation", () => {

@@ -285,7 +285,7 @@ export class WorkspaceApi {
         const priorAudit = this.repository.listCaseAudit(tenantId, item.id);
         this.repository.appendCaseAudit({ id: `audit-${tenantId}-${item.id}-${next.version}`, tenantId,
           caseId: item.id, from: item.state, to: next.state, operation: "transition", actorId: principal.userId,
-          at: next.updatedAt, version: priorAudit.length ? priorAudit[priorAudit.length - 1]!.version + 1 : next.version });
+          at: next.updatedAt, requestId: safeRequestId(request.requestId), version: priorAudit.length ? priorAudit[priorAudit.length - 1]!.version + 1 : next.version });
         return { status: 200, body: next as unknown as Record<string, unknown> };
       } catch (error) {
         const message = error instanceof Error ? error.message : "INVALID_CASE_TRANSITION";
