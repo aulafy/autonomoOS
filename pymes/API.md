@@ -63,6 +63,8 @@ caracteres de control.
 Los textos de motivos, notas, hashes y fechas enviados por mutaciones tienen
 límites de tamaño y no admiten caracteres de control; los valores inválidos se
 rechazan localmente antes del transporte.
+Los timestamps de aprobación, transición, confirmación y reintento deben ser
+parseables como fechas; los valores no válidos se rechazan antes de la llamada.
 Las colecciones de efectos también deben devolver el `tenantId` del workspace;
 `effectsForCase()` verifica además que el `caseId` de la envolvente coincida
 con el caso solicitado y rechaza cualquier desalineación.

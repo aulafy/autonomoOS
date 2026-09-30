@@ -57,6 +57,9 @@ function validResourceId(value: string): boolean {
 function validInputText(value: string, maxLength: number): boolean {
   return value.trim().length > 0 && value.length <= maxLength && !/[\u0000-\u001f\u007f]/.test(value);
 }
+function validTimestamp(value: string): boolean {
+  return validInputText(value, 100) && Number.isFinite(Date.parse(value));
+}
 export class WorkspaceConflictError extends Error {
   constructor(readonly currentVersion: number) { super(`CASE_VERSION_CONFLICT_CURRENT_${currentVersion}`); }
 }
@@ -155,7 +158,7 @@ export class WorkspaceClient {
     if (!input || typeof input.resourceId !== "string" || !input.resourceId.trim() || input.resourceId.length > 200 ||
       typeof input.reason !== "string" || !validInputText(input.reason, 2_000) ||
       typeof input.draftHash !== "string" || !validInputText(input.draftHash, 512) ||
-      typeof input.approvedAt !== "string" || !validInputText(input.approvedAt, 100)) throw new Error("INVALID_WORKSPACE_APPROVAL_INPUT");
+      typeof input.approvedAt !== "string" || !validTimestamp(input.approvedAt)) throw new Error("INVALID_WORKSPACE_APPROVAL_INPUT");
     const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/approvals`, {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input)
     });
@@ -169,7 +172,7 @@ export class WorkspaceClient {
     return body.audit as RemoteCaseAudit[];
   }
   async transition(caseId: string, to: string, at = new Date().toISOString(), expectedVersion?: number): Promise<void> {
-    if (!validResourceId(caseId) || !to.trim() || !at.trim() || (expectedVersion !== undefined && (!Number.isInteger(expectedVersion) || expectedVersion < 0))) {
+    if (!validResourceId(caseId) || !to.trim() || !validTimestamp(at) || (expectedVersion !== undefined && (!Number.isInteger(expectedVersion) || expectedVersion < 0))) {
       throw new Error("INVALID_WORKSPACE_TRANSITION_INPUT");
     }
     await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/cases/${encodeURIComponent(caseId)}/transition`, {
@@ -194,7 +197,7 @@ export class WorkspaceClient {
     return body as unknown as RemoteEffect;
   }
   async confirmEffect(effectId: string, confirmedAt = new Date().toISOString()): Promise<RemoteEffect> {
-    if (!validResourceId(effectId) || !validInputText(confirmedAt, 100)) throw new Error("INVALID_WORKSPACE_EFFECT_INPUT");
+    if (!validResourceId(effectId) || !validTimestamp(confirmedAt)) throw new Error("INVALID_WORKSPACE_EFFECT_INPUT");
     const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/effects/${encodeURIComponent(effectId)}/confirm`, {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ confirm: true, confirmedAt })
     });
@@ -210,7 +213,7 @@ export class WorkspaceClient {
     return body;
   }
   async retryEffect(effectId: string, reason: string, requestedAt = new Date().toISOString()): Promise<RemoteEffect> {
-    if (!validResourceId(effectId) || !validInputText(reason, 2_000) || !validInputText(requestedAt, 100)) throw new Error("INVALID_WORKSPACE_EFFECT_INPUT");
+    if (!validResourceId(effectId) || !validInputText(reason, 2_000) || !validTimestamp(requestedAt)) throw new Error("INVALID_WORKSPACE_EFFECT_INPUT");
     const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/effects/${encodeURIComponent(effectId)}/retry`, {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reason, requestedAt })
     });

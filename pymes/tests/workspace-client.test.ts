@@ -189,6 +189,13 @@ test("workspace client rejects unsafe mutation text before network access", asyn
   await assert.rejects(() => value.reportEffectResult("effect-1", "failed", "n".repeat(2_001)), /INVALID_WORKSPACE_EFFECT_INPUT/);
 });
 
+test("workspace client rejects invalid timestamps before network access", async () => {
+  const value = new WorkspaceClient({ baseUrl: "http://127.0.0.1:8799", tenantId: "agency-1", token: "token-1234567890" }, async () => new Response("{}"));
+  await assert.rejects(() => value.transition("case-1", "accepted", "tomorrow"), /INVALID_WORKSPACE_TRANSITION_INPUT/);
+  await assert.rejects(() => value.confirmEffect("effect-1", "tomorrow"), /INVALID_WORKSPACE_EFFECT_INPUT/);
+  await assert.rejects(() => value.retryEffect("effect-1", "Reintento", "tomorrow"), /INVALID_WORKSPACE_EFFECT_INPUT/);
+});
+
 test("workspace client reads an individual effect", async () => {
   const api = new WorkspaceApi();
   api.addSession("owner-token-123456", { userId: "owner", tenantId: "agency-1", role: "owner" });
