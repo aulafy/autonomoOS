@@ -40,6 +40,8 @@
   tamaño máximo y ausencia de `effectId` duplicados.
 - Leasing local opcional integrado en el procesamiento por lotes, con exclusión
   entre propietarios, liberación garantizada y validación de identificadores.
+- Fábrica `effectLeaseStore(tenantId, ttlMs)` en el repositorio SQLite para
+  obtener reservas durables tenant-scoped sin acceso SQL desde el worker.
 
 ### Seguridad y operación
 
