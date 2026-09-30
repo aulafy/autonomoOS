@@ -9,6 +9,7 @@ import { MAX_EFFECT_RETRIES } from "./effects.js";
 import { buildCallPlan } from "./call-plan.js";
 import { acceptClassification, parseClassificationProposal,
   type ClassificationProposal } from "./classification.js";
+import "./logout.css";
 
 const demoMorning = new Date();
 demoMorning.setHours(9, 0, 0, 0);

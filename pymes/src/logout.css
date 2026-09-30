@@ -1,0 +1,12 @@
+.workspace-logout {
+  border: 1px solid #d7e5dc;
+  border-radius: 999px;
+  background: #fff;
+  color: #4d7560;
+  padding: 7px 10px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.workspace-logout:hover { background: #eef7ef; }
+.workspace-logout:disabled { opacity: .55; cursor: wait; }
