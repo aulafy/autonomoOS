@@ -1,3 +1,5 @@
+import { isConnectorConfig, type ConnectorStatus } from "./config.js";
+
 export interface WorkspaceClientConfig {
   baseUrl: string;
   tenantId: string;
@@ -24,7 +26,7 @@ export interface RemoteInboxRecord {
   version?: number;
   updatedAt?: string;
 }
-export interface RemoteConnector { id: string; name: string; status: string; }
+export interface RemoteConnector { id: string; name: string; status: ConnectorStatus; }
 export interface RemoteCaseAudit { id: string; caseId: string; from: string; to: string; actorId: string; at: string; version: number; }
 export interface RemoteEffect { id: string; caseId: string; kind: string; status: string; requestedBy: string; requestedAt: string; retryCount?: number; payload: Record<string, unknown>; executionNote?: string; executedBy?: string; executedAt?: string; }
 export interface WorkspaceHealth { status: "ok" | "not_ready"; service: string; version: string; retryAfter?: string; }
@@ -169,4 +171,3 @@ export class WorkspaceClient {
     });
   }
 }
-import { isConnectorConfig } from "./config.js";
