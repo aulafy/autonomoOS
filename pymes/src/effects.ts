@@ -9,7 +9,9 @@ function safeResourceText(value: string, maxLength: number): boolean {
 export interface PendingEffect { id: string; tenantId: string; caseId: string; kind: EffectKind; payload: Record<string, unknown>; status: "pending" | "confirmed" | "succeeded" | "failed"; requestedBy: string; requestedAt: string; retryCount: number; confirmedBy?: string; confirmedAt?: string; executedBy?: string; executedAt?: string; executionNote?: string; draftHash: string; }
 export function createPendingEffect(input: { id: string; tenantId: string; caseId: string; kind: EffectKind; payload: Record<string, unknown>; principal: WorkspacePrincipal; requestedAt: string; draftHash: string }): PendingEffect {
   requirePermission(input.principal, "executeEffect", { tenantId: input.tenantId, id: input.caseId });
-  const payloadBytes = new TextEncoder().encode(JSON.stringify(input.payload)).byteLength;
-  if (!effectKinds.includes(input.kind) || !safeResourceText(input.id, 200) || !safeResourceText(input.caseId, 200) || !safeResourceText(input.tenantId, 200) || !safeResourceText(input.draftHash, 500) || Number.isNaN(Date.parse(input.requestedAt)) || !input.payload || typeof input.payload !== "object" || Array.isArray(input.payload) || Object.keys(input.payload).length === 0 || payloadBytes > 65536) throw new Error("INVALID_PENDING_EFFECT");
+  let payloadBytes = -1;
+  try { payloadBytes = new TextEncoder().encode(JSON.stringify(input.payload)).byteLength; }
+  catch { payloadBytes = -1; }
+  if (!effectKinds.includes(input.kind) || !safeResourceText(input.id, 200) || !safeResourceText(input.caseId, 200) || !safeResourceText(input.tenantId, 200) || !safeResourceText(input.draftHash, 500) || Number.isNaN(Date.parse(input.requestedAt)) || !input.payload || typeof input.payload !== "object" || Array.isArray(input.payload) || Object.keys(input.payload).length === 0 || payloadBytes < 0 || payloadBytes > 65536) throw new Error("INVALID_PENDING_EFFECT");
   return { id: input.id, tenantId: input.tenantId, caseId: input.caseId, kind: input.kind, payload: structuredClone(input.payload), status: "pending", requestedBy: input.principal.userId, requestedAt: input.requestedAt, retryCount: 0, draftHash: input.draftHash };
 }

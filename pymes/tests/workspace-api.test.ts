@@ -55,6 +55,17 @@ test("malformed approval is rejected without creating state", () => {
   assert.equal(value.approvalsForTenant("agency-1").length, 0);
 });
 
+test("non-serializable effect payloads fail as a client error", () => {
+  const value = api();
+  const payload: Record<string, unknown> = {};
+  payload.self = payload;
+  const response = value.handle({ method: "POST", path: "/v1/workspaces/agency-1/effects",
+    authorization: "Bearer owner-token-12345", body: { id: "circular-effect", caseId: "msg-1", kind: "call", payload,
+      requestedAt: "2026-09-30T10:00:00Z", draftHash: "sha256:circular" } });
+  assert.equal(response.status, 400);
+  assert.equal(response.body.error, "INVALID_PENDING_EFFECT");
+});
+
 test("reviewer can read approvals but tenant remains isolated", () => {
   const value = api();
   const response = value.handle({ method: "GET", path: "/v1/workspaces/agency-1/approvals",
