@@ -50,6 +50,18 @@ test("workspace client rejects malformed attention provenance", async () => {
   await assert.rejects(() => value.attention(), /INVALID_WORKSPACE_ATTENTION/);
 });
 
+test("workspace client falls back to inbox on legacy attention route", async () => {
+  let calls = 0;
+  const fetcher: typeof fetch = async (input) => {
+    calls++;
+    if (String(input).endsWith("/attention")) return new Response(JSON.stringify({ error: "NOT_FOUND" }), { status: 404, headers: { "content-type": "application/json" } });
+    return new Response(JSON.stringify({ tenantId: "agency-1", items: [{ id: "case-legacy", tenantId: "agency-1", state: "uncertain", summary: "Revisar" }] }), { status: 200, headers: { "content-type": "application/json" } });
+  };
+  const value = new WorkspaceClient({ baseUrl: "http://workspace.local", tenantId: "agency-1", token: "owner-token-123456" }, fetcher);
+  assert.deepEqual((await value.attention()).map(item => item.id), ["case-legacy"]);
+  assert.equal(calls, 2);
+});
+
 test("HTTP metrics route authenticates and preserves tenant isolation", async () => {
   const api = new WorkspaceApi();
   api.addSession("owner-token-123456", { userId: "owner", tenantId: "agency-1", role: "owner" });

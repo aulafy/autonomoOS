@@ -241,7 +241,12 @@ export class WorkspaceClient {
     return body.items as RemoteInboxRecord[];
   }
   async attention(): Promise<RemoteInboxRecord[]> {
-    const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/attention`);
+    let body: Record<string, unknown>;
+    try { body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/attention`); }
+    catch (error) {
+      if (!(error instanceof WorkspaceHttpError) || error.status !== 404) throw error;
+      return (await this.inbox()).filter(item => item.state === "pending_review" || item.state === "uncertain");
+    }
     if (body.tenantId !== this.config.tenantId || !Array.isArray(body.items) || body.items.length > 100 || body.items.some(item => {
       if (item === null || typeof item !== "object" || Array.isArray(item)) return true;
       const record = item as Record<string, unknown>;
