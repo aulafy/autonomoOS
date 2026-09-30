@@ -13,6 +13,8 @@ minutos de desfase futuro para limitar reenvíos y relojes incorrectos.
 La política puede ajustar ambas ventanas por despliegue; el máximo permitido es
 30 días de antigüedad y 24 horas de desfase futuro, y valores inválidos bloquean
 la ingesta completa.
+El servidor las expone como `PYMES_OPENCLAW_MAX_EVENT_AGE_MS` y
+`PYMES_OPENCLAW_MAX_FUTURE_SKEW_MS`.
 
 La interfaz local puede llamar al API desde `http://127.0.0.1:5174` o
 `http://localhost:5174`; el adaptador responde al preflight `OPTIONS` y limita

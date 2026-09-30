@@ -17,13 +17,22 @@ if (!host || host.length > 255 || /[\u0000-\u001f\u007f]/.test(host)) throw new 
 const repository = new SqliteWorkspaceRepository(process.env.PYMES_API_DB_PATH ?? "./data/pymes-workspace.db");
 repository.provisionSession(token, { userId, tenantId, role: "owner" });
 const ingressToken = normalizeOptionalToken(process.env.PYMES_OPENCLAW_INGRESS_TOKEN, "INVALID_PYMES_OPENCLAW_INGRESS_TOKEN");
+function ingressWindow(name: string, maximum: number, errorCode: string): number | undefined {
+  const raw = process.env[name];
+  if (raw === undefined || raw.trim() === "") return undefined;
+  const value = Number(raw);
+  if (!Number.isFinite(value) || value < 0 || value > maximum) throw new Error(errorCode);
+  return value;
+}
 const api = new WorkspaceApi(repository, ingressToken ? { token: ingressToken, policy: {
   tenantId,
   allowedAgentIds: parseConfiguredIdSet(process.env.PYMES_OPENCLAW_AGENT_IDS),
   allowedResourceIds: parseConfiguredIdSet(process.env.PYMES_OPENCLAW_RESOURCE_IDS),
   allowedChannels: parseConfiguredChannels(process.env.PYMES_OPENCLAW_CHANNELS),
   pairedSenderIds: parseConfiguredIdSet(process.env.PYMES_OPENCLAW_PAIRED_SENDERS),
-  consentedConversationIds: parseConfiguredIdSet(process.env.PYMES_OPENCLAW_CONSENTED_CONVERSATIONS)
+  consentedConversationIds: parseConfiguredIdSet(process.env.PYMES_OPENCLAW_CONSENTED_CONVERSATIONS),
+  maxEventAgeMs: ingressWindow("PYMES_OPENCLAW_MAX_EVENT_AGE_MS", 30 * 24 * 60 * 60 * 1000, "INVALID_PYMES_OPENCLAW_MAX_EVENT_AGE_MS"),
+  maxFutureSkewMs: ingressWindow("PYMES_OPENCLAW_MAX_FUTURE_SKEW_MS", 24 * 60 * 60 * 1000, "INVALID_PYMES_OPENCLAW_MAX_FUTURE_SKEW_MS")
 } } : undefined);
 let repositoryClosed = false;
 function closeRepository(): void {
