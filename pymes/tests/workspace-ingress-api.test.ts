@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { createHmac } from "node:crypto";
 import { handlePymesRequest } from "../src/api-server.js";
 import { WorkspaceApi } from "../src/workspace-api.js";
 
@@ -34,6 +35,18 @@ test("internal ingress token and policy are not caller-controlled", async () => 
     body: JSON.stringify({ ...envelope, tenantId: "agency-2", agentId: "untrusted" })
   }));
   assert.equal(response.status, 401);
+});
+
+test("signed ingress requires a valid HMAC when configured", async () => {
+  const secret = "enterprise-signing-secret";
+  const signedPolicy = { ...policy, signingSecret: secret };
+  const api = new WorkspaceApi(undefined, { token: "ingress-token-123456", policy: signedPolicy });
+  const body = JSON.stringify({ ...envelope, inbound: { ...envelope.inbound, eventId: "evt-signed" } });
+  const signature = createHmac("sha256", secret).update(body).digest("hex");
+  const valid = await handlePymesRequest(api, new Request("http://localhost/v1/workspaces/agency-1/ingress/openclaw", { method: "POST", headers: { "x-pymes-ingress-token": "ingress-token-123456", "x-pymes-ingress-signature": signature, "content-type": "application/json" }, body }));
+  assert.equal(valid.status, 201);
+  const invalid = await handlePymesRequest(api, new Request("http://localhost/v1/workspaces/agency-1/ingress/openclaw", { method: "POST", headers: { "x-pymes-ingress-token": "ingress-token-123456", "x-pymes-ingress-signature": "0".repeat(64), "content-type": "application/json" }, body: JSON.stringify({ ...envelope, inbound: { ...envelope.inbound, eventId: "evt-invalid" } }) }));
+  assert.equal(invalid.status, 401);
 });
 
 test("ingress stays disabled when the server has no configured gateway", async () => {

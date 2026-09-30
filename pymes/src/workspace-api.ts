@@ -1,4 +1,4 @@
-import { timingSafeEqual } from "node:crypto";
+import { createHmac, timingSafeEqual } from "node:crypto";
 import { hashSessionToken } from "./auth.js";
 import { createApproval, requirePermission, type ApprovalRecord,
   type WorkspacePrincipal, type WorkspaceRole } from "./workspace-policy.js";
@@ -31,6 +31,7 @@ export interface WorkspaceApiRequest {
   path: string;
   authorization?: string;
   ingressToken?: string;
+  ingressSignature?: string;
   requestId?: string;
   body?: unknown;
 }
@@ -138,6 +139,12 @@ function safeRequestId(value: string | undefined): string | undefined {
   return value !== undefined && value.length > 0 && value.length <= 200 && !/[\u0000-\u001f\u007f]/.test(value)
     ? value : undefined;
 }
+function validIngressSignature(body: unknown, signature: string | undefined, secret: string | undefined): boolean {
+  if (!secret) return true;
+  if (!signature || !/^[a-f0-9]{64}$/.test(signature)) return false;
+  const expected = createHmac("sha256", secret).update(JSON.stringify(body ?? null)).digest("hex");
+  return tokensEqual(signature, expected);
+}
 
 /**
  * Small HTTP contract for the first PYMES server. It owns authorization and
@@ -173,7 +180,9 @@ export class WorkspaceApi {
       ingressParts[1] === "workspaces" && ingressParts[3] === "ingress" &&
       ingressParts[4] === "openclaw" && ingressParts.length === 5) {
       const tenantId = ingressParts[2];
-      if (!this.ingress || !tokensEqual(request.ingressToken, this.ingress.token) || tenantId !== this.ingress.policy.tenantId) {
+      if (!this.ingress || !tokensEqual(request.ingressToken, this.ingress.token) ||
+        !validIngressSignature(request.body, request.ingressSignature, this.ingress.policy.signingSecret) ||
+        tenantId !== this.ingress.policy.tenantId) {
         return { status: 401, body: { error: "INGRESS_UNAUTHORIZED" } };
       }
       const result = ingestOpenClawIntoWorkspace({

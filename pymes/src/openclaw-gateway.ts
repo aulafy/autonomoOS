@@ -33,6 +33,7 @@ export interface OpenClawEnterprisePolicy extends OpenClawIngressPolicy {
   tenantId: string;
   allowedAgentIds: ReadonlySet<string>;
   allowedResourceIds: ReadonlySet<string>;
+  signingSecret?: string;
 }
 
 export type OpenClawIngressResult =

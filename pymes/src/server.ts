@@ -17,6 +17,7 @@ if (!host || host.length > 255 || /[\u0000-\u001f\u007f]/.test(host)) throw new 
 const repository = new SqliteWorkspaceRepository(process.env.PYMES_API_DB_PATH ?? "./data/pymes-workspace.db");
 repository.provisionSession(token, { userId, tenantId, role: "owner" });
 const ingressToken = normalizeOptionalToken(process.env.PYMES_OPENCLAW_INGRESS_TOKEN, "INVALID_PYMES_OPENCLAW_INGRESS_TOKEN");
+const ingressSigningSecret = normalizeOptionalToken(process.env.PYMES_OPENCLAW_SIGNING_SECRET, "INVALID_PYMES_OPENCLAW_SIGNING_SECRET");
 const api = new WorkspaceApi(repository, ingressToken ? { token: ingressToken, policy: {
   tenantId,
   allowedAgentIds: parseConfiguredIdSet(process.env.PYMES_OPENCLAW_AGENT_IDS),
@@ -25,7 +26,8 @@ const api = new WorkspaceApi(repository, ingressToken ? { token: ingressToken, p
   pairedSenderIds: parseConfiguredIdSet(process.env.PYMES_OPENCLAW_PAIRED_SENDERS),
   consentedConversationIds: parseConfiguredIdSet(process.env.PYMES_OPENCLAW_CONSENTED_CONVERSATIONS),
   maxEventAgeMs: parseBoundedOptionalNumber(process.env.PYMES_OPENCLAW_MAX_EVENT_AGE_MS, 30 * 24 * 60 * 60 * 1000, "INVALID_PYMES_OPENCLAW_MAX_EVENT_AGE_MS"),
-  maxFutureSkewMs: parseBoundedOptionalNumber(process.env.PYMES_OPENCLAW_MAX_FUTURE_SKEW_MS, 24 * 60 * 60 * 1000, "INVALID_PYMES_OPENCLAW_MAX_FUTURE_SKEW_MS")
+  maxFutureSkewMs: parseBoundedOptionalNumber(process.env.PYMES_OPENCLAW_MAX_FUTURE_SKEW_MS, 24 * 60 * 60 * 1000, "INVALID_PYMES_OPENCLAW_MAX_FUTURE_SKEW_MS"),
+  signingSecret: ingressSigningSecret
 } } : undefined);
 let repositoryClosed = false;
 function closeRepository(): void {

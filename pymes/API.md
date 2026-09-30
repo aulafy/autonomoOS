@@ -17,6 +17,8 @@ El servidor las expone como `PYMES_OPENCLAW_MAX_EVENT_AGE_MS` y
 `PYMES_OPENCLAW_MAX_FUTURE_SKEW_MS`.
 El adaptador HTTP limita cualquier cuerpo de ingress a 1 MiB antes de pasar el
 payload al gateway y devuelve `BODY_TOO_LARGE` si se supera.
+Si se configura `PYMES_OPENCLAW_SIGNING_SECRET`, el ingress exige además
+`X-PYMES-Ingress-Signature` con el HMAC-SHA256 hexadecimal del JSON recibido.
 
 La interfaz local puede llamar al API desde `http://127.0.0.1:5174` o
 `http://localhost:5174`; el adaptador responde al preflight `OPTIONS` y limita
