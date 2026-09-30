@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { ingestOpenClawEnterpriseEvent, ingestOpenClawEvent,
-  type OpenClawInboundEvent } from "../src/openclaw-gateway.js";
+  type OpenClawInboundEvent, type OpenClawEnterpriseEnvelope } from "../src/openclaw-gateway.js";
 
 const event: OpenClawInboundEvent = {
   eventId: "evt-1", externalMessageId: "wa-1", channel: "whatsapp",
@@ -41,6 +41,11 @@ test("consentimiento y canal son controles independientes", () => {
 test("evento malformado no produce una tarea parcial", () => {
   const result = ingestOpenClawEvent({ ...event, text: "", receivedAt: "not-a-date" }, policy);
   assert.deepEqual(result, { accepted: false, reason: "INVALID_EVENT" });
+});
+
+test("payloads no objeto se rechazan limpiamente", () => {
+  assert.deepEqual(ingestOpenClawEvent(null as unknown as OpenClawInboundEvent, policy), { accepted: false, reason: "INVALID_EVENT" });
+  assert.deepEqual(ingestOpenClawEnterpriseEvent(null as unknown as OpenClawEnterpriseEnvelope, { ...policy, tenantId: "agency-1", allowedAgentIds: new Set(["agent-1"]), allowedResourceIds: new Set(["inbox-1"]) }), { accepted: false, reason: "INVALID_EVENT" });
 });
 
 test("evento OpenClaw rechaza texto y metadatos fuera de límites", () => {

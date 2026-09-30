@@ -64,6 +64,7 @@ const MAX_FUTURE_SKEW_MS = 10 * 60 * 1000;
  */
 export function ingestOpenClawEvent(event: OpenClawInboundEvent,
   policy: OpenClawIngressPolicy): OpenClawIngressResult {
+  if (event === null || typeof event !== "object" || Array.isArray(event)) return { accepted: false, reason: "INVALID_EVENT" };
   const maxAge = policy.maxEventAgeMs ?? MAX_EVENT_AGE_MS;
   const maxFuture = policy.maxFutureSkewMs ?? MAX_FUTURE_SKEW_MS;
   if (!Number.isFinite(maxAge) || maxAge < 0 || maxAge > 30 * 24 * 60 * 60 * 1000 ||
@@ -101,6 +102,10 @@ export function ingestOpenClawEnterpriseEvent(
   envelope: OpenClawEnterpriseEnvelope,
   policy: OpenClawEnterprisePolicy
 ): OpenClawIngressResult {
+  if (envelope === null || typeof envelope !== "object" || Array.isArray(envelope) ||
+    envelope.inbound === null || typeof envelope.inbound !== "object" || Array.isArray(envelope.inbound)) {
+    return { accepted: false, reason: "INVALID_EVENT" };
+  }
   if (!safeMetadata(envelope.tenantId, 200) || !safeMetadata(envelope.agentId, 200) ||
     !safeMetadata(envelope.resourceId, 200)) return { accepted: false, reason: "INVALID_EVENT" };
   if (envelope.tenantId !== policy.tenantId ||
