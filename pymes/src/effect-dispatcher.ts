@@ -6,6 +6,7 @@ export interface EffectExecutionContext {
   confirmedBy: string;
   requestId?: string;
   timeoutMs?: number;
+  idempotencyKey?: string;
 }
 
 export interface EffectHandler {
@@ -43,7 +44,7 @@ export async function dispatchConfirmedEffect(
   const timeout = new Promise<never>((_, reject) => {
     timer = setTimeout(() => reject(new Error("EFFECT_EXECUTION_TIMEOUT")), timeoutMs);
   });
-  const execution = handler.execute(structuredClone(effect), { ...context });
+  const execution = handler.execute(structuredClone(effect), { ...context, idempotencyKey: context.idempotencyKey ?? effect.id });
   const note = await Promise.race([execution, timeout]).finally(() => {
     if (timer !== undefined) clearTimeout(timer);
   });

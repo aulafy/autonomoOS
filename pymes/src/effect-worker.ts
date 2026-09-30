@@ -23,6 +23,7 @@ export async function executeRemoteEffect(input: {
       confirmedBy: remote.confirmedBy ?? "",
       requestId: input.requestId,
       timeoutMs: input.timeoutMs,
+      idempotencyKey: remote.id,
     });
     return await input.client.reportEffectResult(remote.id, "succeeded", note);
   } catch (error) {

@@ -186,6 +186,7 @@ export async function createGoogleCalendarEvent(input: {
   endsAt: string;
   timeoutMs?: number;
   fetcher?: Fetcher;
+  idempotencyKey?: string;
 }): Promise<ExternalCalendarEvent> {
   requireCredential(input.accessToken);
   if (!input.calendarId.trim() || !nonempty(input.title)) throw new Error("INVALID_CALENDAR_EVENT_INPUT");
@@ -196,7 +197,7 @@ export async function createGoogleCalendarEvent(input: {
     `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(input.calendarId)}/events`, {
       method: "POST",
       headers: { Authorization: `Bearer ${input.accessToken}`, Accept: "application/json", "Content-Type": "application/json" },
-      body: JSON.stringify({ summary: input.title.trim(), start: { dateTime: startsAt }, end: { dateTime: endsAt } }),
+      body: JSON.stringify({ summary: input.title.trim(), start: { dateTime: startsAt }, end: { dateTime: endsAt }, ...(input.idempotencyKey ? { extendedProperties: { private: { pymesEffectId: input.idempotencyKey } } } : {}) }),
     }, input.timeoutMs);
   if (!response.ok) throw new Error(`GOOGLE_CALENDAR_WRITE_FAILED:${response.status}`);
   const item = record(await response.json());
