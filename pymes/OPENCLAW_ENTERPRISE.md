@@ -5,6 +5,9 @@ workspace PYMES. OpenClaw transporta eventos; el workspace decide la política
 del tenant, persiste el caso y mantiene la trazabilidad. El ingress no envía
 respuestas a clientes ni ejecuta efectos automáticamente.
 
+La especificación para generar clientes y validadores está en
+[openclaw-ingress.openapi.yaml](openclaw-ingress.openapi.yaml).
+
 ## Configuración del workspace
 
 Configura en el servidor PYMES:
@@ -84,4 +87,3 @@ curl -i -X POST "http://127.0.0.1:8790/v1/workspaces/demo-agency/ingress/opencla
 Después, consulta la bandeja autenticada. La interfaz PYMES mostrará el caso
 en la cola de atención si requiere revisión humana; ninguna propuesta,
 llamada, mensaje o cita se ejecuta sin confirmación explícita.
-

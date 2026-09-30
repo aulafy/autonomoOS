@@ -1,0 +1,104 @@
+openapi: 3.1.0
+info:
+  title: PYMES OpenClaw Enterprise Ingress
+  version: 0.1.0
+  description: >-
+    Boundary for receiving authenticated OpenClaw Enterprise events. The
+    workspace persists a neutral case and never executes an effect on ingress.
+servers:
+  - url: http://127.0.0.1:8790
+    description: Local development
+paths:
+  /v1/workspaces/{tenant}/ingress/openclaw:
+    post:
+      operationId: ingestOpenClawEvent
+      summary: Receive an OpenClaw Enterprise event
+      parameters:
+        - $ref: '#/components/parameters/Tenant'
+        - $ref: '#/components/parameters/IngressToken'
+        - $ref: '#/components/parameters/IngressSignature'
+        - $ref: '#/components/parameters/RequestId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OpenClawEnvelope'
+      responses:
+        '201':
+          description: Event accepted and persisted as a neutral case.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcceptedCase'
+        '401': { description: Invalid ingress token or signature. }
+        '403': { description: Tenant or policy scope rejected. }
+        '409':
+          description: Event was already processed.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '413': { description: Request body exceeds the ingress limit. }
+        '422': { description: Invalid envelope or inbound event. }
+        '500': { description: Unexpected server error. }
+components:
+  parameters:
+    Tenant:
+      name: tenant
+      in: path
+      required: true
+      schema: { type: string, minLength: 1, maxLength: 200 }
+    IngressToken:
+      name: X-PYMES-Ingress-Token
+      in: header
+      required: true
+      schema: { type: string, minLength: 16, maxLength: 4096 }
+    IngressSignature:
+      name: X-PYMES-Ingress-Signature
+      in: header
+      required: false
+      description: Hexadecimal HMAC-SHA256 of the exact JSON request body.
+      schema: { type: string, pattern: '^[0-9a-fA-F]{64}$' }
+    RequestId:
+      name: X-Request-Id
+      in: header
+      required: false
+      schema: { type: string, maxLength: 200 }
+  schemas:
+    OpenClawEnvelope:
+      type: object
+      additionalProperties: false
+      required: [agentId, resourceId, inbound]
+      properties:
+        agentId: { type: string, minLength: 1, maxLength: 200 }
+        resourceId: { type: string, minLength: 1, maxLength: 200 }
+        inbound: { $ref: '#/components/schemas/OpenClawInboundEvent' }
+    OpenClawInboundEvent:
+      type: object
+      additionalProperties: false
+      required: [eventId, tenantId, channel, conversationId, senderId, occurredAt, text]
+      properties:
+        eventId: { type: string, minLength: 1, maxLength: 200 }
+        tenantId: { type: string, minLength: 1, maxLength: 200 }
+        channel:
+          type: string
+          enum: [whatsapp, telegram, imessage, email]
+        conversationId: { type: string, minLength: 1, maxLength: 200 }
+        senderId: { type: string, minLength: 1, maxLength: 200 }
+        occurredAt: { type: string, format: date-time }
+        text: { type: string, minLength: 1, maxLength: 10000 }
+    AcceptedCase:
+      type: object
+      additionalProperties: false
+      required: [id, tenantId, status]
+      properties:
+        id: { type: string }
+        tenantId: { type: string }
+        status: { type: string, enum: [received] }
+    Error:
+      type: object
+      additionalProperties: false
+      required: [error]
+      properties:
+        error: { type: string }
+        requestId: { type: string }
