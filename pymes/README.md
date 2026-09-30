@@ -89,6 +89,9 @@ efectivos. Los identificadores bootstrap se limitan a 200 caracteres.
 
 Comprueba la instalación con `GET /healthz` antes de conectar la interfaz.
 
+Cuando la interfaz está conectada a un workspace remoto muestra `Cerrar
+sesión`; ese control revoca el token en el API y elimina la credencial local.
+
 El ingress interno de OpenClaw Enterprise se activa por separado con
 `PYMES_OPENCLAW_INGRESS_TOKEN` y listas de agente, recurso, canales, remitentes
 emparejados y conversaciones consentidas. Publica en
