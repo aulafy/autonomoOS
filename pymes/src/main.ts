@@ -51,6 +51,7 @@ async function checkRemoteWorkspace(): Promise<void> {
   const status = $("workspace-status");
   status.setAttribute("role", "status");
   status.setAttribute("aria-live", "polite");
+  status.setAttribute("aria-atomic", "true");
   status.setAttribute("aria-busy", "true");
   const params = new URLSearchParams(window.location.search);
   const baseUrl = params.get("workspaceApi");
