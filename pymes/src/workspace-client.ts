@@ -103,14 +103,19 @@ export class WorkspaceClient {
     } catch (error) {
       if (controller.signal.aborted) throw new Error("WORKSPACE_REQUEST_TIMEOUT");
       throw error;
-    } finally { clearTimeout(timeout); }
+    }
     const contentLength = response.headers.get("content-length");
     if (contentLength && (/^\d+$/.test(contentLength) === false || Number(contentLength) > MAX_REMOTE_RESPONSE_BYTES)) {
       throw new Error("WORKSPACE_RESPONSE_TOO_LARGE");
     }
     let body: unknown;
     try { body = await response.json(); }
-    catch { throw new Error("INVALID_WORKSPACE_RESPONSE"); }
+    catch (error) {
+      clearTimeout(timeout);
+      if (controller.signal.aborted) throw new Error("WORKSPACE_REQUEST_TIMEOUT");
+      throw new Error("INVALID_WORKSPACE_RESPONSE");
+    }
+    clearTimeout(timeout);
     if (!body || typeof body !== "object" || Array.isArray(body)) throw new Error("INVALID_WORKSPACE_RESPONSE");
     if (!response.ok && !acceptedStatuses.includes(response.status)) {
       const record = body as Record<string, unknown>;
