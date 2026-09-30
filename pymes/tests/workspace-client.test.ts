@@ -111,3 +111,11 @@ test("workspace client trims endpoint and credential configuration", async () =>
   const value = new WorkspaceClient({ baseUrl: " http://workspace.local/ ", tenantId: " agency-1 ", token: " owner-token-123456 " }, fetcher);
   assert.equal((await value.inbox()).length, 0);
 });
+
+test("workspace client aborts a request after its configured timeout", async () => {
+  const fetcher: typeof fetch = async (_input, init) => await new Promise<Response>((_resolve, reject) => {
+    init?.signal?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")), { once: true });
+  });
+  const value = new WorkspaceClient({ baseUrl: "http://workspace.local", tenantId: "agency-1", token: "owner-token-123456", requestTimeoutMs: 100 }, fetcher);
+  await assert.rejects(() => value.inbox(), (error: unknown) => error instanceof DOMException && error.name === "AbortError");
+});
