@@ -18,5 +18,8 @@
     "demo:h4:lost-response": "tsx apps/agent-runtime/src/h4-lost-response-demo.ts",
     "test": "npm run test --workspaces --if-present",
     "build": "npm run build --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }
