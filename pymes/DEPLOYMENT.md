@@ -162,6 +162,19 @@ Realiza la restauración primero en un entorno de staging y conserva el
 backup anterior hasta validar la recuperación.
 - Configurar un supervisor que envíe `SIGTERM` para el apagado ordenado.
 - Monitorizar `/healthz` y revisar los efectos `failed` antes de reintentar.
+- Para una alarma operativa autenticada, consultar las métricas del tenant (la
+  respuesta no contiene contenido de mensajes):
+
+  ```bash
+  curl --fail --silent \
+    -H "Authorization: Bearer $PYMES_API_BOOTSTRAP_TOKEN" \
+    "http://127.0.0.1:8790/v1/workspaces/$PYMES_API_BOOTSTRAP_TENANT/metrics"
+  ```
+
+  La monitorización debe alertar cuando `effects.byStatus.failed` sea mayor que
+  cero o cuando `inbox.byState.pending_review` supere el umbral acordado con la
+  agencia. Las respuestas `401` y `403` deben tratarse como fallo de la
+  configuración de monitorización, no como ausencia de actividad.
 - El volumen Docker usa `/data/pymes-workspace.db`; conservarlo junto con sus
   ficheros WAL durante los respaldos.
 - Las listas `PYMES_OPENCLAW_*` deben configurarse con valores explícitos en
