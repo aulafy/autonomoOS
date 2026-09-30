@@ -446,6 +446,9 @@ test("workspace client creates a governed effect draft", async () => {
   assert.equal(effect.status, "pending");
   assert.equal(effect.kind, "call");
   await assert.rejects(() => value.createEffect({ id: "bad", caseId: "case-client", kind: "call", payload: {}, draftHash: "sha256:x" }), /INVALID_WORKSPACE_EFFECT_INPUT/);
+  const circular: Record<string, unknown> = {};
+  circular.self = circular;
+  await assert.rejects(() => value.createEffect({ id: "circular", caseId: "case-client", kind: "call", payload: circular, draftHash: "sha256:x" }), /INVALID_WORKSPACE_EFFECT_INPUT/);
 });
 
 test("workspace client exposes current version on transition conflict", async () => {

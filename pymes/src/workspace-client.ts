@@ -304,10 +304,13 @@ export class WorkspaceClient {
     return body.effects as RemoteEffect[];
   }
   async createEffect(input: { id: string; caseId: string; kind: WorkspaceEffectKind; payload: Record<string, unknown>; requestedAt?: string; draftHash: string }): Promise<RemoteEffect> {
+    let payloadBytes = -1;
+    try { payloadBytes = input?.payload ? new TextEncoder().encode(JSON.stringify(input.payload)).byteLength : -1; }
+    catch { payloadBytes = -1; }
     if (!input || !validResourceId(input.id) || !validResourceId(input.caseId) ||
       !["call", "calendar", "message", "crm_task"].includes(input.kind) ||
       !input.payload || typeof input.payload !== "object" || Array.isArray(input.payload) || Object.keys(input.payload).length === 0 ||
-      new TextEncoder().encode(JSON.stringify(input.payload)).byteLength > 65536 ||
+      payloadBytes < 0 || payloadBytes > 65536 ||
       !validInputText(input.draftHash, 512) ||
       (input.requestedAt !== undefined && !validTimestamp(input.requestedAt))) {
       throw new Error("INVALID_WORKSPACE_EFFECT_INPUT");
