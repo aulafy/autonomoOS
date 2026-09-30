@@ -68,7 +68,8 @@ La respuesta debe incluir `Access-Control-Allow-Origin` con ese origen exacto.
 
 El ingress se activa con `PYMES_OPENCLAW_INGRESS_TOKEN`, que se recorta al
 arrancar y debe tener al menos 16 caracteres efectivos, además de las listas
-de control:
+de control. Cada lista admite hasta 100 identificadores y cada identificador
+puede tener como máximo 200 caracteres; los duplicados se eliminan al arrancar:
 
 ```bash
 PYMES_OPENCLAW_AGENT_IDS='agent-1' \
