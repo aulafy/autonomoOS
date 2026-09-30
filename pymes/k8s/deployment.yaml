@@ -1,0 +1,103 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pymes-workspace
+  labels:
+    app.kubernetes.io/name: pymes-workspace
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: pymes-workspace
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: pymes-workspace
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: workspace
+          image: your-registry/pymes-workspace:0.1.0
+          ports:
+            - name: http
+              containerPort: 8790
+          env:
+            - name: PYMES_API_HOST
+              value: "0.0.0.0"
+            - name: PYMES_API_PORT
+              value: "8790"
+            - name: PYMES_API_DB_PATH
+              value: /data/pymes-workspace.db
+            - name: PYMES_API_BOOTSTRAP_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: pymes-workspace-secrets
+                  key: bootstrap-token
+            - name: PYMES_API_BOOTSTRAP_TENANT
+              valueFrom:
+                secretKeyRef:
+                  name: pymes-workspace-secrets
+                  key: tenant
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: tmp
+              mountPath: /tmp
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: pymes-workspace-data
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pymes-workspace
+spec:
+  selector:
+    app.kubernetes.io/name: pymes-workspace
+  ports:
+    - name: http
+      port: 8790
+      targetPort: http
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pymes-workspace-data
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 10Gi
