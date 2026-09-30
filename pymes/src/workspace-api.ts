@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import { createApproval, requirePermission, type ApprovalRecord,
   type WorkspacePrincipal, type WorkspaceRole } from "./workspace-policy.js";
 import { ingestOpenClawIntoWorkspace } from "./workspace-ingress.js";
@@ -113,6 +114,13 @@ function tokenFrom(request: WorkspaceApiRequest): string | null {
   return value?.startsWith("Bearer ") ? value.slice(7).trim() || null : null;
 }
 
+function tokensEqual(left: string | undefined, right: string | undefined): boolean {
+  if (left === undefined || right === undefined) return false;
+  const a = Buffer.from(left, "utf8");
+  const b = Buffer.from(right, "utf8");
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
 /**
  * Small HTTP contract for the first PYMES server. It owns authorization and
  * response shaping; persistence can be replaced without changing callers.
@@ -147,7 +155,7 @@ export class WorkspaceApi {
       ingressParts[1] === "workspaces" && ingressParts[3] === "ingress" &&
       ingressParts[4] === "openclaw" && ingressParts.length === 5) {
       const tenantId = ingressParts[2];
-      if (!this.ingress || request.ingressToken !== this.ingress.token || tenantId !== this.ingress.policy.tenantId) {
+      if (!this.ingress || !tokensEqual(request.ingressToken, this.ingress.token) || tenantId !== this.ingress.policy.tenantId) {
         return { status: 401, body: { error: "INGRESS_UNAUTHORIZED" } };
       }
       const result = ingestOpenClawIntoWorkspace({
