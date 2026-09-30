@@ -12,6 +12,9 @@ export function ingestOpenClawIntoWorkspace(input: {
   policy: OpenClawEnterprisePolicy;
   repository: WorkspaceRepository;
 }): WorkspaceIngressResult {
+  if (input.envelope === null || typeof input.envelope !== "object" || Array.isArray(input.envelope)) {
+    return { accepted: false, reason: "INVALID_EVENT" };
+  }
   if (input.envelope.tenantId !== input.policy.tenantId) {
     return { accepted: false, reason: "TENANT_SCOPE_DENIED" };
   }

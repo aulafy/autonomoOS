@@ -45,6 +45,15 @@ test("ingress stays disabled when the server has no configured gateway", async (
   assert.deepEqual(await response.json(), { error: "INGRESS_UNAUTHORIZED" });
 });
 
+test("HTTP ingress rejects a null envelope without an internal error", async () => {
+  const api = new WorkspaceApi(undefined, { token: "ingress-token-123456", policy });
+  const response = await handlePymesRequest(api, new Request("http://localhost/v1/workspaces/agency-1/ingress/openclaw", {
+    method: "POST", headers: { "x-pymes-ingress-token": "ingress-token-123456", "content-type": "application/json" }, body: "null"
+  }));
+  assert.equal(response.status, 400);
+  assert.deepEqual(await response.json(), { error: "INVALID_EVENT" });
+});
+
 test("internal ingress reports duplicate events as a conflict", async () => {
   const api = new WorkspaceApi(undefined, { token: "ingress-token-123456", policy });
   const init = { method: "POST", headers: { "x-pymes-ingress-token": "ingress-token-123456", "content-type": "application/json" }, body: JSON.stringify(envelope) } as const;
