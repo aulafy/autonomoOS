@@ -7,7 +7,7 @@ const effect: PendingEffect = { id: "message-1", tenantId: "agency-1", caseId: "
 
 test("message handler delegates a confirmed message and returns provider id", async () => {
   let channel = "";
-  const note = await messageEffectHandler({ send: async input => { channel = input.channel; assert.equal(input.text, "Hola"); return { externalId: "wamid-1" }; } }).execute(effect, { tenantId: "agency-1", requestedBy: "owner-1", confirmedBy: "reviewer-1" });
+  const note = await messageEffectHandler({ send: async input => { channel = input.channel; assert.equal(input.text, "Hola"); assert.equal(input.idempotencyKey, "message-1"); return { externalId: "wamid-1" }; } }).execute(effect, { tenantId: "agency-1", requestedBy: "owner-1", confirmedBy: "reviewer-1", idempotencyKey: "message-1" });
   assert.equal(channel, "whatsapp"); assert.equal(note, "Message sent via whatsapp: wamid-1");
 });
 
