@@ -26,6 +26,8 @@ El cliente remoto exige una URL base HTTP/HTTPS sin credenciales, query ni
 fragmento y con un máximo de 2.048 caracteres. Sus peticiones usan un timeout
 de 10.000 ms por defecto; `requestTimeoutMs` permite ajustar entre 100 y 60.000
 ms. Cuando se agota, el cliente expone `WORKSPACE_REQUEST_TIMEOUT`.
+Cada petición del cliente genera un `X-Request-Id` para correlacionar logs y
+diagnósticos.
 Las rutas `POST` requieren `Content-Type: application/json`; otros tipos
 devuelven `415 UNSUPPORTED_MEDIA_TYPE`.
 Un método no permitido devuelve `405` con la cabecera `Allow` correspondiente.
