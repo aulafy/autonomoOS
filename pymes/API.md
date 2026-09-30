@@ -108,6 +108,8 @@ envolvente de otro workspace o de otro caso se rechaza con
 Cada entrada debe incluir transición, actor, fecha y una versión entera no
 negativa; las entradas incoherentes se rechazan antes de mostrarse.
 Las entradas de auditoría también deben tener IDs únicos dentro del historial.
+Las versiones deben crecer estrictamente dentro del historial; regresiones o
+repeticiones invalidan la respuesta completa.
 Los identificadores de auditoría, estados y actores también se validan como
 texto acotado y sin controles antes de mostrarse.
 La fecha de cada entrada debe ser parseable; los timestamps inválidos también

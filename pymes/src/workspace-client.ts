@@ -239,8 +239,13 @@ export class WorkspaceClient {
         typeof audit.operation !== "string" || !validInputText(audit.operation, 100) ||
         typeof audit.actorId !== "string" || !validInputText(audit.actorId, 200) || typeof audit.at !== "string" || !validTimestamp(audit.at) ||
         !Number.isInteger(audit.version) || (audit.version as number) < 0;
-    }) || new Set(body.audit.map(item => (item as Record<string, unknown>).id)).size !== body.audit.length) throw new Error("INVALID_WORKSPACE_AUDIT");
-    return body.audit as RemoteCaseAudit[];
+    })) throw new Error("INVALID_WORKSPACE_AUDIT");
+    const auditEntries = body.audit as unknown[];
+    if (new Set(auditEntries.map(item => (item as Record<string, unknown>).id)).size !== auditEntries.length ||
+      auditEntries.some((item, index) => index > 0 && (item as Record<string, unknown>).version as number <= ((auditEntries[index - 1] as Record<string, unknown>).version as number))) {
+      throw new Error("INVALID_WORKSPACE_AUDIT");
+    }
+    return auditEntries as RemoteCaseAudit[];
   }
   async transition(caseId: string, to: string, at = new Date().toISOString(), expectedVersion?: number): Promise<void> {
     if (!validResourceId(caseId) || !validInputText(to, 100) || !validTimestamp(at) || (expectedVersion !== undefined && (!Number.isInteger(expectedVersion) || expectedVersion < 0))) {

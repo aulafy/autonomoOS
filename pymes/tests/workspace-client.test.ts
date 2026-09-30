@@ -301,6 +301,13 @@ test("workspace client rejects duplicate audit identifiers", async () => {
   await assert.rejects(() => client.audit("case-1"), /INVALID_WORKSPACE_AUDIT/);
 });
 
+test("workspace client rejects non-monotonic audit versions", async () => {
+  const entry = { id: "audit-1", caseId: "case-1", from: "received", to: "accepted", operation: "transition", actorId: "owner", at: "2026-09-30T10:00:00Z", version: 2 };
+  const fetcher: typeof fetch = async () => new Response(JSON.stringify({ tenantId: "agency-1", caseId: "case-1", audit: [entry, { ...entry, id: "audit-2", version: 1 }] }), { status: 200, headers: { "content-type": "application/json" } });
+  const client = new WorkspaceClient({ baseUrl: "http://127.0.0.1:8799", tenantId: "agency-1", token: "token-1234567890" }, fetcher);
+  await assert.rejects(() => client.audit("case-1"), /INVALID_WORKSPACE_AUDIT/);
+});
+
 test("workspace client rejects oversized remote collections", async () => {
   const items = Array.from({ length: 10_001 }, (_, index) => ({ id: `case-${index}`, tenantId: "agency-1", state: "pending_review", summary: "Caso" }));
   const fetcher: typeof fetch = async () => new Response(JSON.stringify({ items }), { status: 200, headers: { "content-type": "application/json" } });
