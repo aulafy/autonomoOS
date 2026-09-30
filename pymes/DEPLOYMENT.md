@@ -212,9 +212,9 @@ backup anterior hasta validar la recuperación.
 También se incluye `pymes/scripts/check-operations.sh` para supervisores que
 necesiten un código de salida: devuelve `0` si no hay fallos y la cola está bajo
 el límite, y `2` si hay operaciones fallidas, demasiados pendientes o una
-respuesta inválida. Requiere `curl`; si `jq` está instalado aplica las reglas,
-`jq` también es obligatorio para interpretar las métricas y, si falta, el script
-falla cerrado con código `2`. El script nunca muestra el token.
+respuesta inválida. Requiere `curl` y `jq` para interpretar las métricas; si
+`jq` falta, el script falla cerrado con código `2`. El script nunca muestra el
+token.
 
 Configuración mínima del script:
 
