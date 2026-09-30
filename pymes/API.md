@@ -275,6 +275,8 @@ pendientes de revisión, `UNCERTAIN_CASES` (`warning`) cuando hay resultados
 inciertos, y `STALE_CASES` (`warning`) cuando hay casos pendientes con una
 actualización de hace más de 24 horas. Nunca incluye contenido de mensajes.
 - `GET /v1/workspaces/:tenant/cases/:caseId/audit` — transiciones con actor, versión y fecha.
+- `GET /v1/workspaces/:tenant/effects?status=confirmed` — filtra efectos listos
+  para workers; el cliente vuelve a filtrar localmente para compatibilidad.
 - `GET /v1/workspaces/:tenant/effects/:effectId` — estado individual de una operación.
 - `GET /v1/workspaces/:tenant/cases/:caseId/effects` — operaciones de un caso.
 - `POST /v1/workspaces/:tenant/cases/:caseId/transition` — cuerpo `{ "to": "...", "at": "ISO-8601" }`.
