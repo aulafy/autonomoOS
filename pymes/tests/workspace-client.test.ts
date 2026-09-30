@@ -588,7 +588,7 @@ test("workspace client drops oversized response correlation ids", async () => {
 });
 
 test("workspace client rejects cross-tenant or malformed metrics", async () => {
-  const responses = [
+  const responses: Array<Record<string, unknown>> = [
     { tenantId: "agency-2", generatedAt: "2026-09-30T10:00:00Z", inbox: { total: 0, byState: {} }, effects: { total: 0, byStatus: {} }, approvals: { total: 0 } },
     { tenantId: "agency-1", generatedAt: "2026-09-30T10:00:00Z", inbox: { total: -1, byState: {} }, effects: { total: 0, byStatus: {} }, approvals: { total: 0 } }
   ];
