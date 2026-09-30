@@ -262,3 +262,33 @@ export async function createCrmTaskWebhook(input: {
   if (!externalId || externalId.length > 200) throw new Error("INVALID_CRM_PROVIDER_RESPONSE");
   return { externalId };
 }
+
+export async function startCallWebhook(input: {
+  endpoint: string;
+  token: string;
+  phone?: string;
+  objective?: string;
+  questions?: string[];
+  contactId?: string;
+  idempotencyKey?: string;
+  timeoutMs?: number;
+  fetcher?: Fetcher;
+}): Promise<{ externalId: string }> {
+  requireCredential(input.token);
+  if (!input.phone?.trim() && !input.objective?.trim()) throw new Error("INVALID_CALL_INPUT");
+  if (input.phone !== undefined && (!/^\+?[\d ()-]{6,24}$/.test(input.phone) || input.phone.length > 100)) throw new Error("INVALID_CALL_PHONE");
+  if (input.objective !== undefined && (!input.objective.trim() || input.objective.length > 2_000)) throw new Error("INVALID_CALL_OBJECTIVE");
+  if (input.questions !== undefined && (input.questions.length > 100 || input.questions.some(value => !value.trim() || value.length > 500))) throw new Error("INVALID_CALL_QUESTIONS");
+  let url: URL;
+  try { url = new URL(input.endpoint); } catch { throw new Error("INVALID_CALL_ENDPOINT"); }
+  if (url.protocol !== "https:" && !(url.protocol === "http:" && (url.hostname === "127.0.0.1" || url.hostname === "localhost"))) throw new Error("UNSAFE_CALL_ENDPOINT");
+  const response = await providerFetch(input.fetcher ?? fetch, url, {
+    method: "POST", headers: { Authorization: `Bearer ${input.token}`, Accept: "application/json", "Content-Type": "application/json", ...(input.idempotencyKey ? { "Idempotency-Key": input.idempotencyKey } : {}) },
+    body: JSON.stringify({ ...(input.phone ? { phone: input.phone.trim() } : {}), ...(input.objective ? { objective: input.objective.trim() } : {}), ...(input.questions ? { questions: input.questions } : {}), ...(input.contactId ? { contactId: input.contactId } : {}) }),
+  }, input.timeoutMs);
+  if (!response.ok) throw new Error(`CALL_PROVIDER_FAILED:${response.status}`);
+  const data = record(await response.json());
+  const externalId = nonempty(data?.externalId) ?? nonempty(data?.id);
+  if (!externalId || externalId.length > 200) throw new Error("INVALID_CALL_PROVIDER_RESPONSE");
+  return { externalId };
+}
