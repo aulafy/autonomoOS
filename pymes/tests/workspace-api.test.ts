@@ -140,6 +140,13 @@ test("effects require execute permission and explicit confirmation", () => {
   assert.equal(value.handle({ method: "POST", path: "/v1/workspaces/agency-1/effects",
     authorization: "Bearer owner-token-12345", body: { ...draft, id: "effect-large", payload: { data: "x".repeat(70000) } } }).status, 400);
 });
+
+test("effects reject control characters in resource identifiers", () => {
+  const value = new WorkspaceApi();
+  value.addSession("owner-token-123456", { userId: "owner", tenantId: "agency-1", role: "owner" });
+  assert.equal(value.handle({ method: "POST", path: "/v1/workspaces/agency-1/effects", authorization: "Bearer owner-token-123456",
+    body: { id: "effect-1\n", caseId: "case-1", kind: "call", payload: { phone: "+34600000000" }, requestedAt: "2026-09-29T14:00:00Z", draftHash: "sha256:test" } }).status, 400);
+});
 test("session provisioning rejects oversized tokens", () => {
   const api = new WorkspaceApi();
   assert.throws(() => api.addSession("x".repeat(4097), { userId: "owner", tenantId: "agency-1", role: "owner" }), /INVALID_SESSION_TOKEN/);
