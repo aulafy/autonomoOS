@@ -28,6 +28,9 @@ const quoteOffers = workspaceStore.loadOffers();
 let remoteWorkspaceClient: WorkspaceClient | null = null;
 let remoteInbox = new Map<string, { state: string; version?: number }>();
 let selectedChannel: Channel | "all" = "all";
+const channelLabels: Record<Channel, string> = {
+  whatsapp: "WhatsApp", telegram: "Telegram", imessage: "iMessage", email: "Correo"
+};
 let selectedId = brief.items[0]?.id ?? null;
 
 async function checkRemoteWorkspace(): Promise<void> {
@@ -95,9 +98,9 @@ function renderCounts() {
 
 function renderTabs() {
   tabs.replaceChildren();
-  for (const [channel, label] of [["all", "Todos"],
-    ["whatsapp", "WhatsApp"], ["telegram", "Telegram"],
-    ["imessage", "iMessage"], ["email", "Correo"]] as const) {
+  const channelTabs: Array<[Channel | "all", string]> = [["all", "Todos"],
+    ...pilotConfig.channels.map(channel => [channel, channelLabels[channel]] as [Channel, string])];
+  for (const [channel, label] of channelTabs) {
     const count = channel === "all" ? brief.counts.total : brief.counts.byChannel[channel];
     const button = el("button", selectedChannel === channel ? "active" : "",
       `${label}  ${count}`);
