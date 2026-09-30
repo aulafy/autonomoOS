@@ -83,6 +83,15 @@ test("metrics expose tenant-scoped operational counts without message content", 
   const withEffect = value.handle({ method: "GET", path: "/v1/workspaces/agency-1/metrics",
     authorization: "Bearer reviewer-token-1234" });
   assert.deepEqual(withEffect.body.effects, { total: 1, byStatus: { pending: 1 } });
+  const confirmed = value.handle({ method: "POST", path: "/v1/workspaces/agency-1/effects/metric-effect/confirm",
+    authorization: "Bearer owner-token-12345", body: { confirm: true, confirmedAt: "2026-09-30T10:04:00Z" } });
+  assert.equal(confirmed.status, 200);
+  const failed = value.handle({ method: "POST", path: "/v1/workspaces/agency-1/effects/metric-effect/result",
+    authorization: "Bearer owner-token-12345", body: { result: "failed", executedAt: "2026-09-30T10:05:00Z", note: "Proveedor no disponible" } });
+  assert.equal(failed.status, 200);
+  const withFailure = value.handle({ method: "GET", path: "/v1/workspaces/agency-1/metrics",
+    authorization: "Bearer reviewer-token-1234" });
+  assert.deepEqual(withFailure.body.effects, { total: 1, byStatus: { failed: 1 } });
 });
 
 test("case transition is authenticated and leaves an audit trail", () => {
