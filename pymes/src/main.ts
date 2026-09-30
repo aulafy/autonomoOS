@@ -4,7 +4,7 @@ import { insuranceLines, pilotConfig, type InsuranceLine } from "./config.js";
 import { evaluateQuoteIntake, quoteRequirements } from "./quote-intake.js";
 import { offersForCase, recordQuoteOffer, type OfferEntry, type QuoteOffer } from "./quote-offers.js";
 import { createWorkspaceStore } from "./workspace-store.js";
-import { WorkspaceClient, WorkspaceConflictError } from "./workspace-client.js";
+import { WorkspaceClient, WorkspaceConflictError, type RemoteInboxRecord } from "./workspace-client.js";
 import { MAX_EFFECT_RETRIES } from "./effects.js";
 import { buildCallPlan } from "./call-plan.js";
 import { acceptClassification, parseClassificationProposal,
@@ -33,7 +33,7 @@ const quoteChecks = new Map<string, { line: InsuranceLine; checked: Set<string>;
   externalStepConfirmed: boolean }>();
 const quoteOffers = workspaceStore.loadOffers();
 let remoteWorkspaceClient: WorkspaceClient | null = null;
-let remoteInbox = new Map<string, { state: string; version?: number }>();
+let remoteInbox = new Map<string, RemoteInboxRecord>();
 let workspaceRetryTimer: number | null = null;
 let workspaceSyncInFlight = false;
 let workspaceAutoRefreshTimer: number | null = null;
@@ -266,6 +266,11 @@ function renderInbox() {
       const remoteState = el("span", "remote-state", `· Workspace: ${remoteStateNames[remote.state] ?? remote.state} · v${remote.version ?? 0}`);
       remoteState.title = `Estado técnico: ${remote.state}; versión ${remote.version ?? 0}`;
       meta.append(remoteState);
+      if (remote.sourceChannel && remote.sourceExternalMessageId) {
+        const provenance = el("span", "remote-provenance", `· ${channelNames[remote.sourceChannel as Channel] ?? remote.sourceChannel}`);
+        provenance.title = `Mensaje externo: ${remote.sourceExternalMessageId}`;
+        meta.append(provenance);
+      }
     }
     button.append(head, meta, el("p", "", item.message.text));
     button.addEventListener("click", () => {
