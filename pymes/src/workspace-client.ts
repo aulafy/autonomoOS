@@ -162,6 +162,9 @@ export class WorkspaceClient {
     return body.audit as RemoteCaseAudit[];
   }
   async transition(caseId: string, to: string, at = new Date().toISOString(), expectedVersion?: number): Promise<void> {
+    if (!caseId.trim() || !to.trim() || !at.trim() || (expectedVersion !== undefined && (!Number.isInteger(expectedVersion) || expectedVersion < 0))) {
+      throw new Error("INVALID_WORKSPACE_TRANSITION_INPUT");
+    }
     await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/cases/${encodeURIComponent(caseId)}/transition`, {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to, at, ...(expectedVersion === undefined ? {} : { expectedVersion }) })
     });

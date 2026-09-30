@@ -53,6 +53,8 @@ el motivo, el hash o la fecha.
 Las mutaciones de efectos aplican la misma barrera y devuelven
 `INVALID_WORKSPACE_EFFECT_INPUT` sin transporte si falta el identificador, la
 confirmación, el resultado, la nota o el motivo requerido.
+`transition()` rechaza localmente casos o destinos vacíos y versiones esperadas
+no enteras o negativas con `INVALID_WORKSPACE_TRANSITION_INPUT`.
 Las colecciones de efectos también deben devolver el `tenantId` del workspace;
 `effectsForCase()` verifica además que el `caseId` de la envolvente coincida
 con el caso solicitado y rechaza cualquier desalineación.
