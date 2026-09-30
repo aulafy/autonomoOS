@@ -95,6 +95,42 @@ spec:
                   name: pymes-workspace-secrets
                   key: openclaw-signing-secret
                   optional: true
+            - name: PYMES_MESSAGE_GATEWAY_URL
+              valueFrom:
+                secretKeyRef:
+                  name: pymes-workspace-secrets
+                  key: message-gateway-url
+                  optional: true
+            - name: PYMES_MESSAGE_GATEWAY_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: pymes-workspace-secrets
+                  key: message-gateway-token
+                  optional: true
+            - name: PYMES_CRM_GATEWAY_URL
+              valueFrom:
+                secretKeyRef:
+                  name: pymes-workspace-secrets
+                  key: crm-gateway-url
+                  optional: true
+            - name: PYMES_CRM_GATEWAY_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: pymes-workspace-secrets
+                  key: crm-gateway-token
+                  optional: true
+            - name: PYMES_CALL_GATEWAY_URL
+              valueFrom:
+                secretKeyRef:
+                  name: pymes-workspace-secrets
+                  key: call-gateway-url
+                  optional: true
+            - name: PYMES_CALL_GATEWAY_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: pymes-workspace-secrets
+                  key: call-gateway-token
+                  optional: true
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
