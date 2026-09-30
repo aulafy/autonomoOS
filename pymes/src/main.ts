@@ -537,6 +537,15 @@ function renderDetail(item: WorkItem) {
       }
       for (const effect of own) {
         block.appendChild(el("p", "", `${effectKindNames[effect.kind] ?? effect.kind} · ${effectStatusNames[effect.status] ?? effect.status} · solicitada por ${effect.requestedBy}`));
+        const payload = effect.payload as Record<string, unknown>;
+        const summary = effect.kind === "message"
+          ? `${String(payload.channel ?? "canal desconocido")} · ${String(payload.text ?? "sin texto")}`
+          : effect.kind === "calendar"
+            ? `${String(payload.title ?? "cita sin título")} · ${String(payload.startsAt ?? "sin fecha")}`
+            : effect.kind === "crm_task"
+              ? `${String(payload.title ?? "tarea sin título")} · contacto ${String(payload.contactId ?? "pendiente")}`
+              : `${String(payload.objective ?? "llamada preparada")}${payload.phone ? ` · ${String(payload.phone)}` : ""}`;
+        block.appendChild(el("small", "workspace-effect-summary", summary));
         if (effect.retryCount) block.appendChild(el("small", "", `Intentos de reejecución: ${effect.retryCount}`));
         block.appendChild(el("small", "", `Requiere confirmación explícita antes de ejecutar · ${dayTime(effect.requestedAt)}`));
         if (effect.executionNote) block.appendChild(el("p", "classification-reason", `Nota de ejecución: ${effect.executionNote}`));
