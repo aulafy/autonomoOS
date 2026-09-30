@@ -276,3 +276,5 @@ la activación multiworker queda condicionada a exponer esa operación mediante 
 API con aislamiento explícito por tenant y auditoría de adquisición/liberación.
 El namespace del store debe ser exactamente el tenant autenticado del worker para
 impedir que dos agencias con el mismo `effectId` compartan una reserva.
+La ruta recomendada es `repository.effectLeaseStore(tenantId, ttlMs)`; evita crear
+un store global fuera del contexto autenticado.

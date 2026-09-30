@@ -184,6 +184,8 @@ La integración distribuida debe asociar el lease al tenant y usar un owner úni
 por instancia antes de habilitar réplicas.
 Al construir `SqliteEffectLeaseStore`, usa el identificador canónico del tenant
 como `namespace`; nunca uses un namespace global compartido por todas las agencias.
+Cuando uses `SqliteWorkspaceRepository`, llama a
+`repository.effectLeaseStore(tenantId, ttlMs)` para obtener esa vista ya aislada.
 
 Para un proceso periódico se puede usar `executeConfirmedEffects`, que limita
 el lote a 100 efectos, procesa en orden y continúa cuando un proveedor falla.
