@@ -325,4 +325,12 @@ Los resultados solo se aceptan después de confirmar el efecto. Cada ruta compru
 Los tipos de efecto permitidos son `call`, `calendar`, `message` y `crm_task`.
 El payload está limitado a 64 KiB; los identificadores y hashes también tienen
 límites de longitud. Las notas de ejecución deben tener entre 3 y 2.000
-caracteres.
+caracteres. La aplicación utiliza, como mínimo, estas formas de payload:
+
+- `call`: `{ "objective": "...", "questions": ["..."], "contactId": "..." }`.
+- `calendar`: `{ "title": "...", "startsAt": "ISO-8601", "contactId": "..." }`.
+- `message`: `{ "channel": "whatsapp|telegram|imessage|email", "text": "...", "contactId": "..." }`.
+- `crm_task`: `{ "title": "...", "contactId": "...", "sourceMessageId": "..." }`.
+
+Estas formas describen una propuesta de trabajo; no autorizan por sí mismas el
+envío, la llamada, la creación de una cita ni la modificación del CRM.
