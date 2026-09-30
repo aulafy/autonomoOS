@@ -5,14 +5,16 @@ export type SupportedChannel = Channel;
 export const connectorStatuses = ["lectura preparada", "conectado", "no configurado"] as const;
 export type ConnectorStatus = typeof connectorStatuses[number];
 export type ConnectorConfig = { id: string; name: string; status: ConnectorStatus };
+function isConnectorText(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0 && value.length <= 200 && !/[\u0000-\u001f\u007f]/.test(value);
+}
 export function isConnectorStatus(value: unknown): value is ConnectorStatus {
   return typeof value === "string" && connectorStatuses.includes(value as ConnectorStatus);
 }
 export function isConnectorConfig(value: unknown): value is ConnectorConfig {
   if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
   const config = value as Record<string, unknown>;
-  return typeof config.id === "string" && config.id.length > 0 &&
-    typeof config.name === "string" && config.name.length > 0 && isConnectorStatus(config.status);
+  return isConnectorText(config.id) && isConnectorText(config.name) && isConnectorStatus(config.status);
 }
 
 export function normalizeBootstrapToken(value: string | undefined): string {

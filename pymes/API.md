@@ -73,6 +73,8 @@ Para datos dinámicos pueden usar también `isConnectorStatus()` antes de
 aceptar un estado recibido desde una API o configuración externa.
 `isConnectorConfig()` valida el objeto completo antes de incorporarlo al
 registro de integraciones.
+Los campos `id` y `name` deben ser texto no vacío, sin caracteres de control y
+con un máximo de 200 caracteres.
 El cliente remoto también exige que el `tenantId` de la respuesta coincida con
 el workspace solicitado y que no haya IDs de conector duplicados; si falla
 cualquiera de esas invariantes rechaza el registro completo.

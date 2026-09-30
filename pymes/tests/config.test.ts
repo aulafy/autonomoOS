@@ -18,6 +18,12 @@ test("pilot configuration declares the supported communication channels", () => 
   assert.equal(isConnectorConfig({ id: "x", name: "X", status: "invalid" }), false);
 });
 
+test("connector configuration rejects unsafe or oversized text", () => {
+  assert.equal(isConnectorConfig({ id: "holded\n", name: "Holded", status: "lectura preparada" }), false);
+  assert.equal(isConnectorConfig({ id: " ", name: "Holded", status: "lectura preparada" }), false);
+  assert.equal(isConnectorConfig({ id: "h".repeat(201), name: "Holded", status: "lectura preparada" }), false);
+});
+
 test("configured channels discard unknown values and whitespace", () => {
   assert.deepEqual([...parseConfiguredChannels(" whatsapp,unknown, imessage ")], ["whatsapp", "imessage"]);
   assert.deepEqual([...parseConfiguredChannels("unknown")], []);
