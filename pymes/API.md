@@ -57,6 +57,8 @@ Cuando está conectado añade `data-last-sync` con una fecha ISO-8601; el
 atributo se elimina al entrar en error o perder la sesión.
 Cuando falla la conexión añade `data-failures` con el contador consecutivo
 acotado; se elimina al recuperar la conexión.
+Cuando conecta añade `data-connector-count` con el número devuelto por el
+registro remoto de conectores; se elimina al perder la conexión.
 El contador visible de fallos consecutivos se satura en `999` para mantener un
 valor acotado durante sesiones largas.
 El indicador usa `role="status"`, `aria-live="polite"` y `aria-atomic="true"`
