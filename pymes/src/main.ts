@@ -51,7 +51,11 @@ async function checkRemoteWorkspace(): Promise<void> {
   const baseUrl = params.get("workspaceApi");
   const tenantId = params.get("tenant");
   const token = sessionStorage.getItem("pymes.workspace.token");
-  if (!baseUrl || !tenantId || !token) { status.setAttribute("aria-busy", "false"); return; }
+  if (!baseUrl || !tenantId || !token) {
+    if (workspaceAutoRefreshTimer !== null) { window.clearInterval(workspaceAutoRefreshTimer); workspaceAutoRefreshTimer = null; }
+    status.setAttribute("aria-busy", "false");
+    return;
+  }
   workspaceSyncInFlight = true;
   try {
     const client = new WorkspaceClient({ baseUrl, tenantId, token });
