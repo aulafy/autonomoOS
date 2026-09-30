@@ -94,6 +94,8 @@ sesión`; ese control revoca el token en el API y elimina la credencial local.
 El contexto inicial marca Holded y Google Calendar como `lectura preparada`:
 los adaptadores read-only están disponibles, pero la conexión de una cuenta
 externa se confirma únicamente cuando el workspace remoto aparece conectado.
+Los estados de conector están tipados y solo admiten `lectura preparada`,
+`conectado` o `no configurado`.
 También muestra `Actualizar` para volver a leer casos, aprobaciones y efectos
 sin recargar la aplicación; el control se bloquea mientras la sincronización
 está en curso para evitar peticiones duplicadas. Mientras permanece abierta,
