@@ -35,6 +35,16 @@ test("internal ingress token and policy are not caller-controlled", async () => 
   assert.equal(response.status, 401);
 });
 
+test("ingress stays disabled when the server has no configured gateway", async () => {
+  const api = new WorkspaceApi();
+  const response = await handlePymesRequest(api, new Request("http://localhost/v1/workspaces/agency-1/ingress/openclaw", {
+    method: "POST", headers: { "x-pymes-ingress-token": "ingress-token-123456", "content-type": "application/json" },
+    body: JSON.stringify(envelope)
+  }));
+  assert.equal(response.status, 401);
+  assert.deepEqual(await response.json(), { error: "INGRESS_UNAUTHORIZED" });
+});
+
 test("internal ingress reports duplicate events as a conflict", async () => {
   const api = new WorkspaceApi(undefined, { token: "ingress-token-123456", policy });
   const init = { method: "POST", headers: { "x-pymes-ingress-token": "ingress-token-123456", "content-type": "application/json" }, body: JSON.stringify(envelope) } as const;
