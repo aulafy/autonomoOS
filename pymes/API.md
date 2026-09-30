@@ -119,6 +119,9 @@ negativa; las entradas incoherentes se rechazan antes de mostrarse.
 Las entradas de auditoría también deben tener IDs únicos dentro del historial.
 Las versiones deben crecer estrictamente dentro del historial; regresiones o
 repeticiones invalidan la respuesta completa.
+Las recepciones OpenClaw conservan también el `requestId` HTTP cuando existe,
+para correlacionar el caso con los logs del gateway; el cliente rechaza valores
+con controles o identificadores fuera de límite.
 Los identificadores de auditoría, estados y actores también se validan como
 texto acotado y sin controles antes de mostrarse.
 La fecha de cada entrada debe ser parseable; los timestamps inválidos también

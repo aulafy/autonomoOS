@@ -216,6 +216,12 @@ test("workspace client rejects unsafe audit metadata", async () => {
   await assert.rejects(() => client.audit("case-1"), /INVALID_WORKSPACE_AUDIT/);
 });
 
+test("workspace client rejects malformed audit request ids", async () => {
+  const fetcher: typeof fetch = async () => new Response(JSON.stringify({ tenantId: "agency-1", caseId: "case-1", audit: [{ id: "audit-1", caseId: "case-1", from: "received", to: "approved", operation: "transition", actorId: "owner", at: "2026-09-30T10:00:00Z", version: 1, requestId: "request\n1" }] }), { status: 200, headers: { "content-type": "application/json" } });
+  const client = new WorkspaceClient({ baseUrl: "http://127.0.0.1:8799", tenantId: "agency-1", token: "token-1234567890" }, fetcher);
+  await assert.rejects(() => client.audit("case-1"), /INVALID_WORKSPACE_AUDIT/);
+});
+
 test("workspace client rejects audit entries with invalid timestamps", async () => {
   const fetcher: typeof fetch = async () => new Response(JSON.stringify({ tenantId: "agency-1", caseId: "case-1", audit: [
     { id: "audit-1", caseId: "case-1", from: "received", to: "accepted", operation: "transition", actorId: "owner", at: "soon", version: 1 }
