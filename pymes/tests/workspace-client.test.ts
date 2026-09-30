@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { WorkspaceApi } from "../src/workspace-api.js";
 import { handlePymesRequest } from "../src/api-server.js";
-import { WorkspaceClient, WorkspaceConflictError } from "../src/workspace-client.js";
+import { WorkspaceClient, WorkspaceConflictError, WorkspaceHttpError } from "../src/workspace-client.js";
 
 function client() {
   const api = new WorkspaceApi();
@@ -38,6 +38,13 @@ test("workspace client exposes not-ready state without throwing", async () => {
   const fetcher: typeof fetch = (input, init) => handlePymesRequest(broken, new Request(String(input), init));
   const value = new WorkspaceClient({ baseUrl: "http://workspace.local", tenantId: "agency-1", token: "owner-token-123456" }, fetcher);
   assert.equal((await value.ready()).status, "not_ready");
+});
+
+test("workspace client preserves HTTP error status and request id", async () => {
+  const api = new WorkspaceApi();
+  const fetcher: typeof fetch = (input, init) => handlePymesRequest(api, new Request(String(input), init));
+  const value = new WorkspaceClient({ baseUrl: "http://workspace.local", tenantId: "agency-1", token: "owner-token-123456" }, fetcher);
+  await assert.rejects(() => value.inbox(), (error: unknown) => error instanceof WorkspaceHttpError && error.status === 401 && typeof error.requestId === "string");
 });
 
 test("workspace client reads an individual effect", async () => {

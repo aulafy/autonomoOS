@@ -30,6 +30,9 @@ export interface WorkspaceHealth { status: "ok" | "not_ready"; service: string; 
 export class WorkspaceConflictError extends Error {
   constructor(readonly currentVersion: number) { super(`CASE_VERSION_CONFLICT_CURRENT_${currentVersion}`); }
 }
+export class WorkspaceHttpError extends Error {
+  constructor(readonly status: number, message: string, readonly requestId: string | null) { super(message); }
+}
 
 function requestId(): string {
   return typeof globalThis.crypto?.randomUUID === "function" ? globalThis.crypto.randomUUID() : `pymes-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -72,7 +75,7 @@ export class WorkspaceClient {
       if (response.status === 409 && record.error === "CASE_VERSION_CONFLICT" && typeof record.currentVersion === "number") {
         throw new WorkspaceConflictError(record.currentVersion);
       }
-      throw new Error(typeof record.error === "string" ? record.error : "WORKSPACE_REQUEST_FAILED");
+      throw new WorkspaceHttpError(response.status, typeof record.error === "string" ? record.error : "WORKSPACE_REQUEST_FAILED", response.headers.get("x-request-id"));
     }
     return body as Record<string, unknown>;
   }
