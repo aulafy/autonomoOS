@@ -24,6 +24,10 @@ const api = new WorkspaceApi(repository, ingressToken ? { token: ingressToken, p
   pairedSenderIds: parseConfiguredIdSet(process.env.PYMES_OPENCLAW_PAIRED_SENDERS),
   consentedConversationIds: parseConfiguredIdSet(process.env.PYMES_OPENCLAW_CONSENTED_CONVERSATIONS)
 } } : undefined);
+function safeError(error: unknown): { name: string; message: string } {
+  const value = error instanceof Error ? error : new Error(String(error));
+  return { name: value.name.slice(0, 80), message: value.message.slice(0, 500) };
+}
 const server = createServer(async (request, nodeResponse) => {
   const chunks: Buffer[] = [];
   let bytes = 0;
@@ -78,7 +82,7 @@ const server = createServer(async (request, nodeResponse) => {
       nodeResponse.setHeader("cross-origin-opener-policy", "same-origin");
       nodeResponse.setHeader("x-request-id", requestId);
       nodeResponse.end(JSON.stringify({ error: "INTERNAL_SERVER_ERROR" }));
-      console.error("PYMES request failed", { requestId, error });
+      console.error("PYMES request failed", { requestId, error: safeError(error) });
     }
   });
 });
