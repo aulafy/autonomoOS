@@ -36,6 +36,7 @@ function navigateWorkspace(): void {
   const installation = location.hash === "#installation";
   document.body.classList.toggle("installation-view", installation);
   document.body.classList.toggle("clients-view", location.hash === "#clients-screen");
+  document.body.classList.toggle("tasks-view", location.hash === "#tasks-screen");
   document.querySelectorAll<HTMLAnchorElement>(".sidebar nav a").forEach(link => {
     const active = link.hash === (location.hash || "#morning");
     link.classList.toggle("active", active);
