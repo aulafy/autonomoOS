@@ -1,3 +1,4 @@
+import { normalizeSearch } from "./search.js";
 import { buildMorningBrief, type Channel, type Topic, type WorkItem } from "./domain.js";
 import { demoData } from "./demo-data.js";
 import { insuranceLines, pilotConfig, type InsuranceLine } from "./config.js";
@@ -107,8 +108,13 @@ async function checkRemoteWorkspace(): Promise<void> {
   const token = sessionStorage.getItem("pymes.workspace.token");
   if (!baseUrl || !tenantId || !token) {
     if (workspaceAutoRefreshTimer !== null) { window.clearInterval(workspaceAutoRefreshTimer); workspaceAutoRefreshTimer = null; }
-    status.className = "workspace-pill error";
-    status.dataset.state = "error";
+    const configured = Boolean(baseUrl || tenantId);
+    status.className = configured ? "workspace-pill error" : "workspace-pill";
+    status.dataset.state = configured ? "authentication-required" : "demo";
+    status.textContent = configured ? "● SESIÓN NECESARIA" : "● DEMOSTRACIÓN";
+    status.title = configured
+      ? "La conexión requiere una dirección de servicio, un espacio de trabajo y una sesión autorizada."
+      : "Datos ficticios. No hay conexión configurada con cuentas de clientes ni envío de mensajes.";
     delete status.dataset.lastSync;
     delete status.dataset.connectorCount;
     delete status.dataset.failures;
@@ -149,8 +155,8 @@ async function checkRemoteWorkspace(): Promise<void> {
     status.dataset.lastSync = new Date().toISOString();
     document.getElementById("workspace-retry")?.remove();
     const syncedAt = new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-    status.textContent = `● WORKSPACE CONECTADO · v${readiness.version} · ${inbox.length} casos · ${attention.length} atención · ${approvals.length} aprobaciones · ${connectors.length} conectores · sync ${syncedAt}`;
-    status.title = `Workspace ${readiness.service} versión ${readiness.version}. Última sincronización: ${status.dataset.lastSync}. Los casos y aprobaciones se leen del workspace remoto; los fixtures locales no se mezclan automáticamente.`;
+    status.textContent = `● CONECTADO · ${inbox.length} casos · ${syncedAt}`;
+    status.title = `Workspace ${readiness.service} versión ${readiness.version}. ${attention.length} casos requieren atención, ${approvals.length} aprobaciones y ${connectors.length} conectores registrados. Última sincronización: ${status.dataset.lastSync}. Los casos y aprobaciones se leen del workspace remoto; los fixtures locales no se mezclan automáticamente.`;
     let logout = document.getElementById("workspace-logout") as HTMLButtonElement | null;
     if (!logout) {
       logout = document.createElement("button");
@@ -298,11 +304,10 @@ function renderTabs() {
 }
 
 function visibleItems(): WorkItem[] {
-  const query = $<HTMLInputElement>("search").value.trim().toLocaleLowerCase("es");
+  const query = normalizeSearch($<HTMLInputElement>("search").value);
   return brief.items.filter(item =>
     (selectedChannel === "all" || item.message.channel === selectedChannel) &&
-    (!query || `${contactName(item)} ${item.message.text} ${topicNames[item.message.topic]} ${item.message.insuranceLine ? insuranceLines[item.message.insuranceLine] : ""}`
-      .toLocaleLowerCase("es").includes(query)));
+    (!query || normalizeSearch(`${contactName(item)} ${item.message.text} ${topicNames[item.message.topic]} ${item.message.insuranceLine ? insuranceLines[item.message.insuranceLine] : ""}`).includes(query)));
 }
 
 function renderInbox() {
@@ -315,6 +320,9 @@ function renderInbox() {
   for (const item of items) {
     const button = el("button", `message-card${selectedId === item.id ? " active" : ""}`);
     button.type = "button";
+    button.dataset.workItemId = item.id;
+    button.setAttribute("aria-pressed", String(selectedId === item.id));
+    button.setAttribute("aria-controls", "detail");
     const head = el("div", "message-head");
     head.append(el("strong", "", contactName(item)),
       el("span", `priority ${item.priority}`, priorityNames[item.priority]));
@@ -340,9 +348,18 @@ function renderInbox() {
       selectedId = item.id;
       renderInbox();
       renderDetail(item);
+      if (window.matchMedia("(max-width: 1100px)").matches) focusDetail();
     });
     list.appendChild(button);
   }
+}
+
+function focusDetail(): void {
+  requestAnimationFrame(() => {
+    const heading = detail.querySelector<HTMLElement>("h3");
+    if (heading) { heading.tabIndex = -1; heading.focus({ preventScroll: true }); }
+    detail.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth", block: "start" });
+  });
 }
 
 function showItem(item: WorkItem) {
@@ -353,15 +370,22 @@ function showItem(item: WorkItem) {
   renderInbox();
   renderDetail(item);
   location.hash = "#inbox";
-  requestAnimationFrame(() => detail.scrollIntoView({ behavior: "smooth", block: "start" }));
+  focusDetail();
 }
 
 function renderReviewQueue() {
   const queue = $("review-list");
   queue.replaceChildren();
   const items = brief.items.filter(item => review.has(item.id));
+  const unidentified = items.filter(item => item.identityStatus === "unidentified").length;
+  $("review-summary").textContent = items.length
+    ? `${items.length} ${items.length === 1 ? "solicitud pendiente" : "solicitudes pendientes"}${unidentified ? ` · ${unidentified} sin identidad verificada` : ""}. Abrir una solicitud no autoriza su envío.`
+    : "Tu lista de revisión está vacía.";
   if (!items.length) {
-    queue.appendChild(el("p", "queue-empty", "Selecciona una conversación para prepararla aquí."));
+    queue.appendChild(el("p", "queue-empty", "Abre una conversación y añádela a revisión para preparar la siguiente acción."));
+    const inboxLink = el("a", "queue-empty-link", "Ir a la bandeja →");
+    inboxLink.href = "#inbox";
+    queue.append(inboxLink);
     return;
   }
   for (const item of items) {
@@ -369,7 +393,10 @@ function renderReviewQueue() {
     const open = el("button", "queue-open", `${contactName(item)} · ${topicNames[item.message.topic]}`);
     open.type = "button";
     open.addEventListener("click", () => showItem(item));
-    row.appendChild(open);
+    const context = el("div", "queue-context");
+    context.append(open, el("p", "", item.nextAction),
+      el("small", "", `${channelNames[item.message.channel]} · ${priorityNames[item.priority]}`));
+    row.appendChild(context);
     row.appendChild(el("span", item.identityStatus === "unidentified" ? "queue-pending" : "queue-ready",
       item.identityStatus === "unidentified" ? "Identidad pendiente" : "Por revisar"));
     if (item.identityStatus === "linked") {
@@ -391,6 +418,16 @@ function renderReviewQueue() {
 
 function renderDetail(item: WorkItem) {
   detail.replaceChildren();
+  const back = el("button", "detail-back", "← Volver a las conversaciones");
+  back.type = "button";
+  back.addEventListener("click", () => {
+    const selected = Array.from(list.querySelectorAll<HTMLButtonElement>(".message-card"))
+      .find(button => button.dataset.workItemId === selectedId);
+    const target = selected ?? $<HTMLInputElement>("search");
+    target.focus({ preventScroll: true });
+    target.scrollIntoView({ behavior: "instant", block: "center" });
+  });
+  detail.appendChild(back);
   const top = el("div", "detail-top");
   const identity = el("div");
   identity.append(el("span", "detail-label", topicNames[item.message.topic].toUpperCase()),
@@ -953,8 +990,21 @@ function renderDetail(item: WorkItem) {
 function renderAppointments() {
   const container = $("appointments");
   container.replaceChildren();
-  for (const appointment of brief.appointments) {
+  const filter = $<HTMLSelectElement>("agenda-state").value;
+  const appointments = [...brief.appointments]
+    .filter(appointment => filter === "all" || (filter === "confirmed" ? appointment.state === "confirmed" : appointment.state !== "confirmed"))
+    .sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt));
+  $("agenda-summary").textContent = `${appointments.length} ${appointments.length === 1 ? "cita" : "citas"} · horario de España (Madrid)`;
+  if (!appointments.length) container.append(el("p", "empty", "No hay citas para este filtro."));
+  let lastDay = "";
+  for (const appointment of appointments) {
     const date = new Date(appointment.startsAt);
+    const day = date.toLocaleDateString("es-ES", {
+      weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: pilotConfig.timeZone });
+    if (day !== lastDay) {
+      container.append(el("h3", "agenda-day", day));
+      lastDay = day;
+    }
     const row = el("div", "appointment");
     const tile = el("div", "date-tile");
     tile.append(el("strong", "", date.toLocaleDateString("es-ES", {
@@ -995,6 +1045,11 @@ renderInbox();
 if (brief.items[0]) renderDetail(brief.items[0]);
 renderReviewQueue();
 renderAppointments();
+$("agenda-state").addEventListener("change", renderAppointments);
+$("agenda-print").addEventListener("click", () => {
+  location.hash = "#agenda";
+  requestAnimationFrame(() => window.print());
+});
 void checkRemoteWorkspace();
 
 // Client profiles identify the exact message by provider ID and channel.

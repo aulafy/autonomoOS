@@ -1,3 +1,4 @@
+import { normalizeSearch } from "./search.js";
 import { demoData as data } from "./demo-data.js";
 import { insuranceLines } from "./config.js";
 const list = document.querySelector<HTMLElement>("#clients-list")!;
@@ -12,10 +13,10 @@ function node(tag: string, text: string): HTMLElement {
   return element;
 }
 function renderClients(): void {
-  const query = search.value.trim().toLocaleLowerCase("es");
+  const query = normalizeSearch(search.value);
   const contacts = data.contacts.filter(contact =>
     (kind.value === "all" || contact.relationship === kind.value) &&
-    (contact.name + " " + (contact.product ? insuranceLines[contact.product] : "")).toLocaleLowerCase("es").includes(query));
+    normalizeSearch(contact.name + " " + (contact.product ? insuranceLines[contact.product] : "")).includes(query));
   if (!contacts.some(contact => contact.id === selected)) selected = contacts[0]?.id;
   list.replaceChildren();
   profile.replaceChildren();
