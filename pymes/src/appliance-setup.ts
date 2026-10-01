@@ -31,26 +31,3 @@ document.querySelector("#setup-reset")?.addEventListener("click", () => {
   updateSetup();
 });
 updateSetup();
-
-function navigateWorkspace(): void {
-  const installation = location.hash === "#installation";
-  document.body.classList.toggle("installation-view", installation);
-  document.body.classList.toggle("clients-view", location.hash === "#clients-screen");
-  document.body.classList.toggle("tasks-view", location.hash === "#tasks-screen");
-  document.querySelectorAll<HTMLAnchorElement>(".sidebar nav a").forEach(link => {
-    const active = link.hash === (location.hash || "#morning");
-    link.classList.toggle("active", active);
-    if (active) link.setAttribute("aria-current", "page");
-    else link.removeAttribute("aria-current");
-  });
-  if (installation) {
-    const heading = document.querySelector<HTMLElement>("#installation h2");
-    if (heading) {
-      heading.tabIndex = -1;
-      heading.focus({ preventScroll: true });
-    }
-    window.scrollTo({ top: 0 });
-  }
-}
-window.addEventListener("hashchange", navigateWorkspace);
-navigateWorkspace();
