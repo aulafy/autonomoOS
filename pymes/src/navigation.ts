@@ -1,5 +1,6 @@
 const screenTitles: Record<string, string> = {
   "#morning": "Mi jornada",
+  "#help-screen": "Ayuda",
   "#inbox": "Bandeja unificada",
   "#agenda": "Agenda",
   "#review-queue": "Cola de revisión",
@@ -17,6 +18,7 @@ function navigate(focus = false): void {
   document.body.classList.toggle("installation-view", hash === "#installation");
   document.body.classList.toggle("clients-view", hash === "#clients-screen");
   document.body.classList.toggle("tasks-view", hash === "#tasks-screen");
+  document.body.classList.toggle("help-view", hash === "#help-screen");
   const breadcrumb = document.querySelector("#current-screen-title");
   if (breadcrumb) breadcrumb.textContent = title;
   document.title = `${title} · PYMES / OS`;
@@ -29,7 +31,7 @@ function navigate(focus = false): void {
     const label = link.querySelector("span")?.textContent;
     if (label) { link.setAttribute("aria-label", label); link.title = label; }
   });
-  if (focus && ["#installation", "#clients-screen", "#tasks-screen"].includes(hash)) {
+  if (focus && ["#installation", "#clients-screen", "#tasks-screen", "#help-screen"].includes(hash)) {
     const heading = document.getElementById(hash.slice(1))?.querySelector<HTMLElement>("h2");
     if (heading) { heading.tabIndex = -1; heading.focus({ preventScroll: true }); }
     window.scrollTo({ top: 0 });
@@ -45,7 +47,7 @@ const destinations = [
   ["#morning", "Mi jornada"], ["#inbox", "Bandeja unificada"],
   ["#clients-screen", "Clientes y oportunidades"], ["#tasks-screen", "Trabajo pendiente"],
   ["#agenda", "Agenda"], ["#review-queue", "Cola de revisión"],
-  ["#installation", "Mi Mac mini"]
+  ["#installation", "Mi Mac mini"], ["#help-screen", "Ayuda"]
 ];
 function filterNavigation(): void {
   navigationResults.replaceChildren();
