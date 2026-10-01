@@ -8,7 +8,7 @@ const screenTitles: Record<string, string> = {
   "#clients-screen": "Clientes y oportunidades",
   "#tasks-screen": "Trabajo pendiente",
   "#installation": "Mi Mac mini",
-  "#module-polizas": "Cartera",
+  "#portfolio-screen": "Cartera de pólizas",
   "#automation-screen": "Reglas de preparación",
   "#module-configuracion": "Configuración"
 };
@@ -20,6 +20,7 @@ function navigate(focus = false): void {
   document.body.classList.toggle("tasks-view", hash === "#tasks-screen");
   document.body.classList.toggle("help-view", hash === "#help-screen");
   document.body.classList.toggle("automation-view", hash === "#automation-screen");
+  document.body.classList.toggle("portfolio-view", hash === "#portfolio-screen");
   const breadcrumb = document.querySelector("#current-screen-title");
   if (breadcrumb) breadcrumb.textContent = title;
   document.title = `${title} · PYMES / OS`;
@@ -32,7 +33,7 @@ function navigate(focus = false): void {
     const label = link.querySelector("span")?.textContent;
     if (label) { link.setAttribute("aria-label", label); link.title = label; }
   });
-  if (focus && ["#installation", "#clients-screen", "#tasks-screen", "#help-screen", "#automation-screen"].includes(hash)) {
+  if (focus && ["#installation", "#clients-screen", "#tasks-screen", "#help-screen", "#automation-screen", "#portfolio-screen"].includes(hash)) {
     const heading = document.getElementById(hash.slice(1))?.querySelector<HTMLElement>("h2");
     if (heading) { heading.tabIndex = -1; heading.focus({ preventScroll: true }); }
     window.scrollTo({ top: 0 });
@@ -48,7 +49,7 @@ const destinations = [
   ["#morning", "Mi jornada"], ["#inbox", "Bandeja unificada"],
   ["#clients-screen", "Clientes y oportunidades"], ["#tasks-screen", "Trabajo pendiente"],
   ["#agenda", "Agenda"], ["#review-queue", "Cola de revisión"],
-  ["#installation", "Mi Mac mini"], ["#help-screen", "Ayuda"], ["#automation-screen", "Reglas de preparación"]
+  ["#installation", "Mi Mac mini"], ["#help-screen", "Ayuda"], ["#automation-screen", "Reglas de preparación"], ["#portfolio-screen", "Cartera de pólizas"]
 ];
 function filterNavigation(): void {
   navigationResults.replaceChildren();
