@@ -1,5 +1,7 @@
 # PYMES · agente de trabajo para seguros
 
+Para preparar conexiones reales con WhatsApp, OpenClaw, Ollama, Holded y Google Calendar, consulta [PRODUCTION_CONNECTORS.md](PRODUCTION_CONNECTORS.md). La demo mantiene datos ficticios hasta que se configuren explícitamente las credenciales del servidor.
+
 El historial de cambios del producto está en [CHANGELOG.md](CHANGELOG.md).
 
 Esta carpeta inicia un producto vertical para una agencia o correduría de
