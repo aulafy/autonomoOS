@@ -23,6 +23,8 @@ function navigate(focus = false): void {
   document.body.classList.toggle("portfolio-view", hash === "#portfolio-screen");
   document.body.classList.toggle("settings-view", hash === "#settings-screen");
   document.body.classList.toggle("agenda-view", hash === "#agenda");
+  document.body.classList.toggle("inbox-view", hash === "#inbox" || hash === "#detail");
+  document.body.classList.toggle("review-view", hash === "#review-queue");
   const breadcrumb = document.querySelector("#current-screen-title");
   if (breadcrumb) breadcrumb.textContent = title;
   document.title = `${title} · PYMES / OS`;
@@ -35,7 +37,7 @@ function navigate(focus = false): void {
     const label = link.querySelector("span")?.textContent;
     if (label) { link.setAttribute("aria-label", label); link.title = label; }
   });
-  if (focus && ["#installation", "#clients-screen", "#tasks-screen", "#help-screen", "#automation-screen", "#portfolio-screen", "#settings-screen", "#agenda"].includes(hash)) {
+  if (focus && ["#installation", "#clients-screen", "#tasks-screen", "#help-screen", "#automation-screen", "#portfolio-screen", "#settings-screen", "#agenda", "#inbox", "#review-queue"].includes(hash)) {
     const heading = document.getElementById(hash.slice(1))?.querySelector<HTMLElement>("h2");
     if (heading) { heading.tabIndex = -1; heading.focus({ preventScroll: true }); }
     window.scrollTo({ top: 0 });

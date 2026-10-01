@@ -352,7 +352,8 @@ function showItem(item: WorkItem) {
   renderTabs();
   renderInbox();
   renderDetail(item);
-  detail.scrollIntoView({ behavior: "smooth", block: "start" });
+  location.hash = "#inbox";
+  requestAnimationFrame(() => detail.scrollIntoView({ behavior: "smooth", block: "start" }));
 }
 
 function renderReviewQueue() {
