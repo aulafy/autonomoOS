@@ -96,3 +96,9 @@ worker después de la confirmación humana.
 y telefonía: endpoint HTTPS, Bearer token, `Idempotency-Key`, timeout y
 respuesta `{ "externalId": "..." }`. Los gateways deben tratar esa clave como
 idempotencia por efecto y no exponer credenciales en sus respuestas.
+
+## WhatsApp Cloud API y LLM local
+
+El worker puede enviar mensajes aprobados directamente mediante Meta WhatsApp Cloud API usando `sendWhatsAppCloudMessage`. Configura `PYMES_WHATSAPP_CLOUD_ACCESS_TOKEN`, `PYMES_WHATSAPP_CLOUD_PHONE_NUMBER_ID` y `PYMES_WHATSAPP_CLOUD_API_VERSION`; las credenciales nunca llegan al navegador. La entrada continúa llegando por OpenClaw Enterprise con firma HMAC, lista de remitentes autorizados y deduplicación.
+
+El clasificador local usa Ollama (`PYMES_LOCAL_MODEL`, por defecto `llama3.2:3b`) y solo genera propuestas estructuradas. La aceptación humana sigue siendo necesaria antes de responder, cotizar, crear citas o modificar Holded.

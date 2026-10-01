@@ -263,6 +263,31 @@ export async function sendMessageWebhook(input: {
   return { externalId };
 }
 
+/** Sends a text message through Meta WhatsApp Cloud API after an approved effect. */
+export async function sendWhatsAppCloudMessage(input: {
+  accessToken: string; phoneNumberId: string; to: string; text: string;
+  apiVersion?: string; timeoutMs?: number; fetcher?: Fetcher; idempotencyKey?: string;
+}): Promise<{ externalId: string }> {
+  requireCredential(input.accessToken);
+  if (!/^\d{8,15}$/.test(input.phoneNumberId.trim())) throw new Error("INVALID_WHATSAPP_PHONE_NUMBER_ID");
+  if (!/^\+?[1-9]\d{7,14}$/.test(input.to.trim())) throw new Error("INVALID_WHATSAPP_RECIPIENT");
+  if (!input.text.trim() || input.text.length > 4_000 || /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(input.text)) throw new Error("INVALID_MESSAGE_TEXT");
+  const version = input.apiVersion?.trim() || "v23.0";
+  if (!/^v\d+\.\d+$/.test(version)) throw new Error("INVALID_WHATSAPP_API_VERSION");
+  const endpoint = `https://graph.facebook.com/${version}/${encodeURIComponent(input.phoneNumberId.trim())}/messages`;
+  const response = await providerFetch(input.fetcher ?? fetch, endpoint, {
+    method: "POST", headers: { Authorization: `Bearer ${input.accessToken}`, Accept: "application/json", "Content-Type": "application/json" },
+    body: JSON.stringify({ messaging_product: "whatsapp", recipient_type: "individual", to: input.to.trim().replace(/^\+/, ""), type: "text", text: { preview_url: false, body: input.text.trim() }, ...(input.idempotencyKey ? { client_msg_id: input.idempotencyKey } : {}) }),
+  }, input.timeoutMs);
+  if (!response.ok) throw new Error(`WHATSAPP_CLOUD_FAILED:${response.status}`);
+  const data = record(await response.json());
+  const messages = Array.isArray(data?.messages) ? data.messages : [];
+  const message = record(messages[0]);
+  const externalId = nonempty(message?.id);
+  if (!externalId || externalId.length > 200) throw new Error("INVALID_WHATSAPP_RESPONSE");
+  return { externalId };
+}
+
 export async function createCrmTaskWebhook(input: {
   endpoint: string;
   token: string;
