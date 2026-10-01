@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+### Conectores reales preparados
+
+- Adaptador de WhatsApp Cloud API para envíos aprobados, con destinatario
+  validado, `client_msg_id` e idempotencia.
+- Webhook de Meta con challenge, firma HMAC, límites de payload y traducción a
+  sobres OpenClaw Enterprise.
+- Ruta `/webhooks/whatsapp` montable en el adaptador HTTP y persistencia en el
+  workspace mediante políticas de tenant, emparejamiento y consentimiento.
+- Clasificación local Ollama con salida estructurada y sin permisos de efectos.
+- Guía de producción para Meta, OpenClaw, Ollama, Holded y Google Calendar.
+- Validación de credenciales incompletas de WhatsApp durante el arranque.
+
 ### Workspace operativo
 
 - Cola autenticada `attention` para casos `pending_review` y `uncertain`.
