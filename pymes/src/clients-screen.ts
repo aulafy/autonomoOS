@@ -6,6 +6,7 @@ const profile = document.querySelector<HTMLElement>("#clients-profile")!;
 const search = document.querySelector<HTMLInputElement>("#clients-search")!;
 const kind = document.querySelector<HTMLSelectElement>("#clients-kind")!;
 let selected = data.contacts[0]?.id;
+const unsavedNotes = new Map<string, string>();
 function node(tag: string, text: string): HTMLElement {
   const element = document.createElement(tag);
   element.textContent = text;
@@ -65,9 +66,13 @@ function renderClients(): void {
   status.setAttribute("role", "status");
   status.setAttribute("aria-live", "polite");
   try {
-    textarea.value = (localStorage.getItem(noteKey) ?? "").slice(0, 2000);
+    textarea.value = (unsavedNotes.get(contact.id) ?? localStorage.getItem(noteKey) ?? "").slice(0, 2000);
     if (textarea.value) status.textContent = "Nota guardada en este navegador.";
   } catch { status.textContent = "El almacenamiento no está disponible."; }
+  if (unsavedNotes.has(contact.id)) {
+    textarea.value = unsavedNotes.get(contact.id)!;
+    status.textContent = "Borrador recuperado de esta sesión. Pendiente de guardar.";
+  }
   const save = document.createElement("button");
   save.type = "submit";
   save.textContent = "Guardar nota";
@@ -76,7 +81,8 @@ function renderClients(): void {
   remove.textContent = "Borrar nota";
   remove.disabled = !textarea.value;
   textarea.addEventListener("input", () => {
-    status.textContent = "Cambios sin guardar. Guarda antes de cambiar de cliente.";
+    unsavedNotes.set(contact.id, textarea.value);
+    status.textContent = "Cambios sin guardar. El borrador se conserva durante esta sesión.";
     remove.disabled = !textarea.value;
   });
   notes.addEventListener("submit", event => {
@@ -84,12 +90,14 @@ function renderClients(): void {
     try {
       if (textarea.value.trim()) localStorage.setItem(noteKey, textarea.value.trim());
       else localStorage.removeItem(noteKey);
+      unsavedNotes.delete(contact.id);
       status.textContent = "Nota guardada en este navegador. No se sincroniza con el CRM.";
     } catch { status.textContent = "No se pudo guardar. Copia la nota antes de salir."; }
   });
   remove.addEventListener("click", () => {
     try {
       localStorage.removeItem(noteKey);
+      unsavedNotes.delete(contact.id);
       textarea.value = "";
       remove.disabled = true;
       status.textContent = "Nota borrada de este navegador.";
@@ -105,6 +113,11 @@ function renderClients(): void {
 search.addEventListener("input", renderClients);
 kind.addEventListener("change", renderClients);
 renderClients();
+window.addEventListener("beforeunload", event => {
+  if (!unsavedNotes.size) return;
+  event.preventDefault();
+  event.returnValue = "";
+});
 window.addEventListener("pymes:open-contact", event => {
   if (!(event instanceof CustomEvent) || typeof event.detail !== "string") return;
   if (!data.contacts.some(contact => contact.id === event.detail)) return;
