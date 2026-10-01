@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
+import type { OpenClawEnterpriseEnvelope } from "./openclaw-gateway.js";
 
 export interface WhatsAppInboundMessage {
   externalMessageId: string;
@@ -6,6 +7,32 @@ export interface WhatsAppInboundMessage {
   phoneNumberId: string;
   text: string;
   receivedAt: string;
+}
+
+/** Maps verified Meta messages to neutral OpenClaw envelopes. */
+export function toOpenClawWhatsAppEnvelopes(input: {
+  messages: readonly WhatsAppInboundMessage[];
+  tenantId: string;
+  agentId: string;
+  resourceId: string;
+  pairedSenderIds?: ReadonlySet<string>;
+  consentedConversationIds?: ReadonlySet<string>;
+}): OpenClawEnterpriseEnvelope[] {
+  if (!input.tenantId.trim() || !input.agentId.trim() || !input.resourceId.trim()) throw new Error("INVALID_OPENCLAW_SCOPE");
+  return input.messages.slice(0, 100).map(message => ({
+    tenantId: input.tenantId, agentId: input.agentId, resourceId: input.resourceId,
+    inbound: {
+      eventId: `whatsapp:${message.externalMessageId}`,
+      externalMessageId: message.externalMessageId,
+      channel: "whatsapp",
+      conversationId: `whatsapp:${message.senderId}`,
+      senderId: message.senderId,
+      receivedAt: message.receivedAt,
+      text: message.text,
+      senderPaired: input.pairedSenderIds?.has(message.senderId) ?? false,
+      consented: input.consentedConversationIds?.has(`whatsapp:${message.senderId}`) ?? false,
+    }
+  }));
 }
 
 /** Meta webhook challenge used during app configuration. */
