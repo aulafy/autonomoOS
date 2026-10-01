@@ -26,6 +26,7 @@
         <a href="#module-automatizaciones">⌁ <span>Automatizaciones</span></a>
       </nav>
       <nav class="module-nav secondary-nav" aria-label="Administración">
+        <a href="#installation">⌘ <span>Mi Mac mini</span></a>
         <a href="#module-configuracion">⚙ <span>Configuración</span></a>
       </nav>
       <div class="sidebar-note"><strong>Modo de demostración</strong><p>Mensajes y clientes ficticios. Ningún borrador se envía ni se modifica un sistema externo.</p></div>
@@ -50,10 +51,27 @@
             <article class="module-card" id="module-configuracion"><div class="module-icon slate">⚙</div><div class="module-card-body"><span class="module-kicker">ESPACIO DE TRABAJO</span><h3>Configuración</h3><p>Canales, usuarios, permisos y conexiones del workspace.</p><div class="module-status muted">Holded · lectura preparada</div></div><a href="#pilot-context">Abrir ajustes <span>→</span></a></article>
           </div>
         </section>
+        <section class="appliance panel" id="installation" aria-label="Puesta en marcha del Mac mini">
+          <div class="panel-heading"><div><span class="eyebrow">TU OFICINA LOCAL</span><h2>Todo preparado para empezar</h2><p>Tu Mac mini es el centro de trabajo. Revisa cada paso antes de conectar tus cuentas.</p></div><span class="appliance-label">Mac mini · perfil 16 GB</span></div>
+          <div class="appliance-grid">
+            <div class="appliance-summary"><div class="appliance-device" aria-hidden="true">⌘</div><h3>Una oficina que trabaja contigo</h3><p>Mensajes, agenda y clientes en un espacio. La IA local prepara el trabajo y tú apruebas las acciones.</p><div class="appliance-progress"><span id="setup-count">0 de 5 pasos revisados</span><progress id="setup-progress" max="5" value="0"></progress></div><small>Lista de preparación manual. No verifica conexiones ni permisos.</small></div>
+            <div class="appliance-checklist" id="setup-checklist">
+              <label><input type="checkbox" value="device"><span><strong>Equipo preparado</strong><small>Mac actualizado, sesión protegida y disco con espacio disponible.</small></span></label>
+              <label><input type="checkbox" value="model"><span><strong>Asistente local</strong><small>Modelo instalado y probado. Una petición a la vez para el perfil de 16 GB.</small></span></label>
+              <label><input type="checkbox" value="channels"><span><strong>Canales de clientes</strong><small>WhatsApp Business y correo configurados con sus permisos.</small></span></label>
+              <label><input type="checkbox" value="office"><span><strong>Agenda y CRM</strong><small>Cuenta de Google Calendar y acceso a Holded revisados.</small></span></label>
+              <label><input type="checkbox" value="backup"><span><strong>Copia de seguridad</strong><small>Copia cifrada del expediente y recuperación comprobada.</small></span></label>
+              <button type="button" id="setup-reset">Reiniciar lista de preparación</button>
+              <p id="setup-feedback" role="status" aria-live="polite"></p>
+            </div>
+          </div>
+          <div class="appliance-boundary"><strong>Local con conexiones externas</strong><span>La IA puede ejecutarse en tu Mac. WhatsApp, Holded y Google Calendar necesitan Internet y sus propias cuentas.</span></div>
+        </section>
         <footer>PYMES / AGENT WORLD OS <span>·</span> Prototipo de flujo de trabajo con datos ficticios</footer>
       </div>
     </main>
   </div>
   <script type="module" src="/src/main.ts"></script>
+  <script type="module" src="/src/appliance-setup.ts"></script>
 </body>
 </html>
