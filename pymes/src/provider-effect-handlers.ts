@@ -1,5 +1,20 @@
-import { createGoogleCalendarEvent } from "./connectors.js";
+import { createGoogleCalendarEvent, sendMessageWebhook, sendWhatsAppCloudMessage } from "./connectors.js";
 import type { EffectHandler } from "./effect-dispatcher.js";
+
+/** Builds the server-side message sender. Meta is selected only when fully configured. */
+export function createConfiguredMessageSender(input: {
+  gatewayEndpoint?: string; gatewayToken?: string;
+  whatsappAccessToken?: string; whatsappPhoneNumberId?: string; whatsappApiVersion?: string;
+  timeoutMs?: number; fetcher?: typeof fetch;
+}): Parameters<typeof messageEffectHandler>[0]["send"] {
+  return async message => {
+    if (message.channel === "whatsapp" && input.whatsappAccessToken?.trim() && input.whatsappPhoneNumberId?.trim()) {
+      return sendWhatsAppCloudMessage({ accessToken: input.whatsappAccessToken, phoneNumberId: input.whatsappPhoneNumberId, to: message.contactId ?? "", text: message.text, apiVersion: input.whatsappApiVersion, timeoutMs: input.timeoutMs, fetcher: input.fetcher, idempotencyKey: message.idempotencyKey });
+    }
+    if (!input.gatewayEndpoint || !input.gatewayToken) throw new Error("MESSAGE_PROVIDER_NOT_CONFIGURED");
+    return sendMessageWebhook({ endpoint: input.gatewayEndpoint, token: input.gatewayToken, channel: message.channel, text: message.text, contactId: message.contactId, timeoutMs: input.timeoutMs, fetcher: input.fetcher, idempotencyKey: message.idempotencyKey });
+  };
+}
 
 export function messageEffectHandler(input: {
   send: (message: { channel: "whatsapp" | "telegram" | "imessage" | "email"; text: string; contactId?: string; idempotencyKey?: string }) => Promise<{ externalId: string }>;
