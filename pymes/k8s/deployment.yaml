@@ -115,6 +115,42 @@ spec:
                   name: pymes-workspace-secrets
                   key: message-gateway-token
                   optional: true
+            - name: PYMES_WHATSAPP_CLOUD_ACCESS_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: pymes-workspace-secrets
+                  key: whatsapp-cloud-access-token
+                  optional: true
+            - name: PYMES_WHATSAPP_CLOUD_PHONE_NUMBER_ID
+              valueFrom:
+                secretKeyRef:
+                  name: pymes-workspace-secrets
+                  key: whatsapp-cloud-phone-number-id
+                  optional: true
+            - name: PYMES_WHATSAPP_WEBHOOK_VERIFY_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: pymes-workspace-secrets
+                  key: whatsapp-webhook-verify-token
+                  optional: true
+            - name: PYMES_WHATSAPP_APP_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: pymes-workspace-secrets
+                  key: whatsapp-app-secret
+                  optional: true
+            - name: PYMES_LOCAL_MODEL
+              valueFrom:
+                secretKeyRef:
+                  name: pymes-workspace-secrets
+                  key: local-model
+                  optional: true
+            - name: PYMES_LOCAL_LLM_URL
+              valueFrom:
+                secretKeyRef:
+                  name: pymes-workspace-secrets
+                  key: local-llm-url
+                  optional: true
             - name: PYMES_CRM_GATEWAY_URL
               valueFrom:
                 secretKeyRef:
