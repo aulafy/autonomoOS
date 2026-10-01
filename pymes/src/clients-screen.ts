@@ -1,6 +1,5 @@
-import { makeDemoData } from "./fixtures.js";
+import { demoData as data } from "./demo-data.js";
 import { insuranceLines } from "./config.js";
-const data = makeDemoData();
 const list = document.querySelector<HTMLElement>("#clients-list")!;
 const profile = document.querySelector<HTMLElement>("#clients-profile")!;
 const search = document.querySelector<HTMLInputElement>("#clients-search")!;
@@ -50,7 +49,7 @@ function renderClients(): void {
   }
   profile.append(node("h4", "Próxima cita"));
   const appointment = data.appointments.find(value => value.contactId === contact.id);
-  profile.append(node("p", appointment ? `${appointment.title} · ${new Date(appointment.startsAt).toLocaleString("es-ES")}` : "Sin cita en la agenda de ejemplo"));
+  profile.append(node("p", appointment ? `${appointment.title} · ${new Date(appointment.startsAt).toLocaleString("es-ES", { timeZone: "Europe/Madrid" })}` : "Sin cita en la agenda de ejemplo"));
   const noteKey = `pymes:demo:contact-note:v1:${contact.id}`;
   const notes = document.createElement("form");
   notes.className = "client-notes";

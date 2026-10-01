@@ -1,5 +1,5 @@
 import { buildMorningBrief, type Channel, type Topic, type WorkItem } from "./domain.js";
-import { makeDemoData } from "./fixtures.js";
+import { demoData } from "./demo-data.js";
 import { insuranceLines, pilotConfig, type InsuranceLine } from "./config.js";
 import { evaluateQuoteIntake, quoteRequirements } from "./quote-intake.js";
 import { offersForCase, recordQuoteOffer, type OfferEntry, type QuoteOffer } from "./quote-offers.js";
@@ -17,9 +17,6 @@ import "./remote-state.css";
 import "./accessibility.css";
 import { retryDelayMs } from "./retry-delay.js";
 
-const demoMorning = new Date();
-demoMorning.setHours(9, 0, 0, 0);
-const demoData = makeDemoData(demoMorning);
 let brief = buildMorningBrief(demoData);
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const tabs = $<HTMLDivElement>("channel-tabs");

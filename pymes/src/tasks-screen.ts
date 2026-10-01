@@ -1,6 +1,5 @@
-import { makeDemoData } from "./fixtures.js";
+import { demoData as data } from "./demo-data.js";
 import { buildMorningBrief, type Priority } from "./domain.js";
-const data = makeDemoData();
 const brief = buildMorningBrief(data);
 const list = document.querySelector<HTMLElement>("#tasks-list")!;
 const filters = Array.from(document.querySelectorAll<HTMLButtonElement>("[data-task-filter]"));
