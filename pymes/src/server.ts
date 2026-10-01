@@ -4,6 +4,7 @@ import { handlePymesRequest } from "./api-server.js";
 import { SqliteWorkspaceRepository } from "./workspace-store-sqlite.js";
 import { normalizeRequestId } from "./request-id.js";
 import { normalizeBootstrapIdentity, normalizeBootstrapToken, normalizeOptionalToken, parseBoundedOptionalNumber, parseConfiguredChannels, parseConfiguredIdSet, parseCorsOrigins, parseOptionalProviderGateway } from "./config.js";
+import { ingestOpenClawIntoWorkspace } from "./workspace-ingress.js";
 
 const port = Number(process.env.PYMES_API_PORT ?? 8790);
 const host = (process.env.PYMES_API_HOST ?? "127.0.0.1").trim();
@@ -25,7 +26,7 @@ repository.provisionSession(token, { userId, tenantId, role: "owner" });
 if (workerToken) repository.provisionSession(workerToken, { userId: workerId, tenantId, role: "worker" });
 const ingressToken = normalizeOptionalToken(process.env.PYMES_OPENCLAW_INGRESS_TOKEN, "INVALID_PYMES_OPENCLAW_INGRESS_TOKEN");
 const ingressSigningSecret = normalizeOptionalToken(process.env.PYMES_OPENCLAW_SIGNING_SECRET, "INVALID_PYMES_OPENCLAW_SIGNING_SECRET");
-const api = new WorkspaceApi(repository, ingressToken ? { token: ingressToken, policy: {
+const enterprisePolicy = {
   tenantId,
   allowedAgentIds: parseConfiguredIdSet(process.env.PYMES_OPENCLAW_AGENT_IDS),
   allowedResourceIds: parseConfiguredIdSet(process.env.PYMES_OPENCLAW_RESOURCE_IDS),
@@ -35,7 +36,17 @@ const api = new WorkspaceApi(repository, ingressToken ? { token: ingressToken, p
   maxEventAgeMs: parseBoundedOptionalNumber(process.env.PYMES_OPENCLAW_MAX_EVENT_AGE_MS, 30 * 24 * 60 * 60 * 1000, "INVALID_PYMES_OPENCLAW_MAX_EVENT_AGE_MS"),
   maxFutureSkewMs: parseBoundedOptionalNumber(process.env.PYMES_OPENCLAW_MAX_FUTURE_SKEW_MS, 24 * 60 * 60 * 1000, "INVALID_PYMES_OPENCLAW_MAX_FUTURE_SKEW_MS"),
   signingSecret: ingressSigningSecret
-} } : undefined);
+};
+const api = new WorkspaceApi(repository, ingressToken ? { token: ingressToken, policy: enterprisePolicy } : undefined);
+const whatsappWebhook = process.env.PYMES_WHATSAPP_WEBHOOK_VERIFY_TOKEN && process.env.PYMES_WHATSAPP_APP_SECRET
+  ? { verifyToken: process.env.PYMES_WHATSAPP_WEBHOOK_VERIFY_TOKEN, appSecret: process.env.PYMES_WHATSAPP_APP_SECRET,
+      tenantId, agentId: process.env.PYMES_OPENCLAW_AGENT_ID ?? "whatsapp-agent", resourceId: process.env.PYMES_OPENCLAW_RESOURCE_ID ?? "whatsapp-business",
+      pairedSenderIds: enterprisePolicy.pairedSenderIds, consentedConversationIds: enterprisePolicy.consentedConversationIds,
+      ingest: (envelope: import("./openclaw-gateway.js").OpenClawEnterpriseEnvelope) => {
+        if (!ingressToken) throw new Error("WHATSAPP_INGRESS_DISABLED");
+        const result = ingestOpenClawIntoWorkspace({ envelope, policy: enterprisePolicy, repository });
+        if (!result.accepted && result.reason !== "DUPLICATE_EVENT") throw new Error(result.reason);
+      } } : undefined;
 let repositoryClosed = false;
 function closeRepository(): void {
   if (repositoryClosed) return;
@@ -87,7 +98,7 @@ const server = createServer(async (request, nodeResponse) => {
         headers: Object.entries(request.headers).flatMap(([key, value]) =>
           value === undefined ? [] : [[key, Array.isArray(value) ? value.join(",") : value] as [string, string]]),
         body: request.method === "POST" ? body : undefined });
-      const webResponse = await handlePymesRequest(api, webRequest, { allowedOrigins: corsOrigins });
+      const webResponse = await handlePymesRequest(api, webRequest, { allowedOrigins: corsOrigins, whatsappWebhook });
       nodeResponse.statusCode = webResponse.status;
       webResponse.headers.forEach((value, key) => nodeResponse.setHeader(key, value));
       nodeResponse.end(Buffer.from(await webResponse.arrayBuffer()));
