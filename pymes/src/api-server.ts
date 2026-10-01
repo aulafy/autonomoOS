@@ -1,9 +1,15 @@
 import { WorkspaceApi, type WorkspaceApiRequest } from "./workspace-api.js";
 import { normalizeRequestId } from "./request-id.js";
+import { handleWhatsAppWebhook } from "./whatsapp-http.js";
+import type { OpenClawEnterpriseEnvelope } from "./openclaw-gateway.js";
 
 const MAX_BODY_BYTES = 1_048_576;
 const defaultCorsOrigins = ["http://127.0.0.1:5174", "http://localhost:5174"];
-export interface PymesHttpOptions { allowedOrigins?: readonly string[]; serviceVersion?: string; }
+export interface PymesHttpOptions { allowedOrigins?: readonly string[]; serviceVersion?: string; whatsappWebhook?: {
+  verifyToken: string; appSecret: string; tenantId: string; agentId: string; resourceId: string;
+  pairedSenderIds?: ReadonlySet<string>; consentedConversationIds?: ReadonlySet<string>;
+  ingest: (envelope: OpenClawEnterpriseEnvelope) => Promise<void> | void;
+}; }
 const defaultServiceVersion = process.env.PYMES_API_VERSION?.trim() || "0.1.0";
 
 function response(status: number, body: Record<string, unknown>, requestId = normalizeRequestId(undefined), origin?: string, allowedOrigins: readonly string[] = defaultCorsOrigins): Response {
@@ -46,6 +52,9 @@ export async function handlePymesRequest(api: WorkspaceApi, request: Request, op
     const result = response(405, { error: "METHOD_NOT_ALLOWED" }, requestId, origin, allowedOrigins);
     result.headers.set("allow", "GET, POST, OPTIONS");
     return result;
+  }
+  if (pathname === "/webhooks/whatsapp" && options.whatsappWebhook) {
+    return handleWhatsAppWebhook({ request, ...options.whatsappWebhook });
   }
   const contentLength = request.headers.get("content-length");
   if (contentLength && (!/^\d+$/.test(contentLength) || Number(contentLength) > MAX_BODY_BYTES)) {
