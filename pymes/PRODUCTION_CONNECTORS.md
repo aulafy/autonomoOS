@@ -49,6 +49,7 @@ Si un canal no usa Meta, configura `PYMES_MESSAGE_GATEWAY_URL` y `PYMES_MESSAGE_
 
 ## Comprobaciones antes de producción
 
+- `npm run validate:production-env --workspace=@agent-world/pymes`
 - `npm run check --workspace=@agent-world/pymes`
 - `npm run check:operations --workspace=@agent-world/pymes`
 - Backup verificable de `PYMES_API_DB_PATH`.
