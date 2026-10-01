@@ -10,6 +10,7 @@
     "pilot:classify": "tsx src/pilot-classify.ts",
     "pilot:evaluate": "tsx src/evaluate-classifier.ts",
     "check:operations": "bash scripts/check-operations.sh",
+    "validate:production-env": "bash scripts/validate-production-env.sh",
     "build": "vite build",
     "check": "npm run typecheck && npm test && npm run build",
     "typecheck": "tsc -p tsconfig.json --noEmit",
