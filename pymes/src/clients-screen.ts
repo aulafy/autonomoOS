@@ -58,3 +58,13 @@ function renderClients(): void {
 search.addEventListener("input", renderClients);
 kind.addEventListener("change", renderClients);
 renderClients();
+window.addEventListener("pymes:open-contact", event => {
+  if (!(event instanceof CustomEvent) || typeof event.detail !== "string") return;
+  if (!data.contacts.some(contact => contact.id === event.detail)) return;
+  selected = event.detail;
+  search.value = "";
+  kind.value = "all";
+  renderClients();
+  const heading = profile.querySelector<HTMLElement>("h3");
+  if (heading) { heading.tabIndex = -1; heading.focus(); }
+});

@@ -969,6 +969,14 @@ function renderAppointments() {
         hour: "2-digit", minute: "2-digit", timeZone: pilotConfig.timeZone })}`));
     row.append(tile, copy, el("span", "state", appointment.state === "confirmed"
       ? "Confirmada" : "Propuesta"));
+    const contactLink = el("a", "appointment-contact", "Ver ficha del cliente →");
+    contactLink.href = "#clients-screen";
+    contactLink.addEventListener("click", () => {
+      requestAnimationFrame(() => window.dispatchEvent(new CustomEvent("pymes:open-contact", {
+        detail: appointment.contactId
+      })));
+    });
+    copy.append(contactLink);
     container.appendChild(row);
   }
 }
