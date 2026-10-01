@@ -32,7 +32,7 @@
       <div class="sidebar-note"><strong>Modo de demostración</strong><p>Mensajes y clientes ficticios. Ningún borrador se envía ni se modifica un sistema externo.</p></div>
     </aside>
     <main>
-      <header class="topbar"><div>PYMES / OS <span>/</span> <span id="current-screen-title">Mi jornada</span></div><div class="topbar-right"><span id="workspace-status" class="demo-pill" aria-live="polite" role="status">● MODO LOCAL</span><span id="today"></span></div></header>
+      <header class="topbar"><div>PYMES / OS <span>/</span> <span id="current-screen-title">Mi jornada</span></div><div class="topbar-right"><button type="button" id="navigation-search-open" class="navigation-search-open" aria-haspopup="dialog">Ir a… <kbd>⌘K</kbd></button><span id="workspace-status" class="demo-pill" aria-live="polite" role="status">● MODO LOCAL</span><span id="today"></span></div></header>
       <div class="content">
         <div class="pilot-context" id="pilot-context"></div>
         <section class="welcome" id="morning"><div><span class="eyebrow">TU JORNADA, ORDENADA</span><h1>Buenos días.<br><em>Empecemos por lo importante.</em></h1><p>Una vista para decidir qué atender primero, preparar respuestas y llegar a cada llamada con contexto.</p></div><div class="welcome-mark" aria-hidden="true">P<span>↗</span></div></section>
@@ -82,6 +82,11 @@
       </div>
     </main>
   </div>
+  <dialog id="navigation-search" aria-labelledby="navigation-search-title">
+    <div class="navigation-search-heading"><h2 id="navigation-search-title">¿Dónde quieres ir?</h2><button type="button" id="navigation-search-close" aria-label="Cerrar buscador">×</button></div>
+    <label for="navigation-search-input">Buscar una sección</label><input id="navigation-search-input" type="search" placeholder="Clientes, agenda, tareas…" autocomplete="off">
+    <div id="navigation-search-results"></div><p>Usa Tab para elegir · Esc para cerrar</p>
+  </dialog>
   <script type="module" src="/src/main.ts"></script>
   <script type="module" src="/src/appliance-setup.ts"></script>
   <script type="module" src="/src/clients-screen.ts"></script>

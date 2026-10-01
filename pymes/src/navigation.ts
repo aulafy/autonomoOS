@@ -37,3 +37,50 @@ function navigate(focus = false): void {
 }
 window.addEventListener("hashchange", () => navigate(true));
 navigate();
+
+const navigationDialog = document.querySelector<HTMLDialogElement>("#navigation-search")!;
+const navigationInput = document.querySelector<HTMLInputElement>("#navigation-search-input")!;
+const navigationResults = document.querySelector<HTMLElement>("#navigation-search-results")!;
+const destinations = [
+  ["#morning", "Mi jornada"], ["#inbox", "Bandeja unificada"],
+  ["#clients-screen", "Clientes y oportunidades"], ["#tasks-screen", "Trabajo pendiente"],
+  ["#agenda", "Agenda"], ["#review-queue", "Cola de revisión"],
+  ["#installation", "Mi Mac mini"]
+];
+function filterNavigation(): void {
+  navigationResults.replaceChildren();
+  const query = navigationInput.value.trim().toLocaleLowerCase("es");
+  const matches = destinations.filter(([, label]) => label!.toLocaleLowerCase("es").includes(query));
+  for (const [hash, label] of matches) {
+    const link = document.createElement("a");
+    link.href = hash!;
+    link.textContent = label!;
+    link.addEventListener("click", () => navigationDialog.close());
+    navigationResults.append(link);
+  }
+  if (!matches.length) {
+    navigationResults.textContent = "No hay secciones que coincidan.";
+  }
+}
+function openNavigation(): void {
+  if (navigationDialog.open) return;
+  navigationInput.value = "";
+  filterNavigation();
+  navigationDialog.showModal();
+  navigationInput.focus();
+}
+document.querySelector("#navigation-search-open")?.addEventListener("click", openNavigation);
+document.querySelector("#navigation-search-close")?.addEventListener("click", () => navigationDialog.close());
+navigationInput.addEventListener("input", filterNavigation);
+navigationInput.addEventListener("keydown", event => {
+  if (event.key === "Enter") {
+    const first = navigationResults.querySelector<HTMLAnchorElement>("a");
+    if (first) { event.preventDefault(); first.click(); }
+  }
+});
+window.addEventListener("keydown", event => {
+  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+    event.preventDefault();
+    openNavigation();
+  }
+});
