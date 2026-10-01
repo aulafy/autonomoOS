@@ -20,7 +20,7 @@
       </nav>
       <div class="side-caption side-caption-modules">GESTIÓN</div>
       <nav class="module-nav" aria-label="Módulos de gestión">
-        <a href="#module-clientes">♙ <span>Clientes</span><b>24</b></a>
+        <a href="#clients-screen">♙ <span>Clientes</span><b>7</b></a>
         <a href="#module-polizas">▣ <span>Pólizas</span><b>38</b></a>
         <a href="#module-tareas">☷ <span>Tareas</span><b>7</b></a>
         <a href="#module-automatizaciones">⌁ <span>Automatizaciones</span></a>
@@ -44,7 +44,7 @@
         <section class="modules-section" aria-label="Centro de gestión">
           <div class="panel-heading modules-title"><div><span class="eyebrow">CENTRO DE GESTIÓN</span><h2>Todo el negocio, en un vistazo</h2></div><span class="subtle">Módulos preparados para conectar</span></div>
           <div class="module-cards">
-            <article class="module-card module-card-featured" id="module-clientes"><div class="module-icon">♙</div><div class="module-card-body"><span class="module-kicker">CRM · HOLDED</span><h3>Clientes</h3><p>Contactos, expedientes y próximas acciones en un solo lugar.</p><div class="module-stat"><strong>24</strong><span>contactos activos</span></div></div><a href="#detail">Abrir clientes <span>→</span></a></article>
+            <article class="module-card module-card-featured" id="module-clientes"><div class="module-icon">♙</div><div class="module-card-body"><span class="module-kicker">CRM · HOLDED</span><h3>Clientes</h3><p>Contactos, expedientes y próximas acciones en un solo lugar.</p><div class="module-stat"><strong>7</strong><span>contactos de ejemplo</span></div></div><a href="#clients-screen">Abrir clientes <span>→</span></a></article>
             <article class="module-card" id="module-polizas"><div class="module-icon blue">▣</div><div class="module-card-body"><span class="module-kicker">CARTERA</span><h3>Pólizas</h3><p>Renovaciones, incidencias y documentación por ramo.</p><div class="module-stat"><strong>38</strong><span>pólizas gestionadas</span></div></div><a href="#inbox">Ver cartera <span>→</span></a></article>
             <article class="module-card" id="module-tareas"><div class="module-icon amber">☷</div><div class="module-card-body"><span class="module-kicker">SEGUIMIENTO</span><h3>Tareas</h3><p>Lo que el equipo tiene que hacer hoy y esta semana.</p><div class="module-stat"><strong>7</strong><span>pendientes hoy</span></div></div><a href="#review-queue">Ver tareas <span>→</span></a></article>
             <article class="module-card" id="module-automatizaciones"><div class="module-icon purple">⌁</div><div class="module-card-body"><span class="module-kicker">AGENTE</span><h3>Automatizaciones</h3><p>Reglas para clasificar, preparar y recordar sin perder control.</p><div class="module-status"><i></i> 3 reglas activas</div></div><a href="#module-automatizaciones">Gestionar reglas <span>→</span></a></article>
@@ -68,11 +68,17 @@
           </div>
           <div class="appliance-boundary"><strong>Local con conexiones externas</strong><span>La IA puede ejecutarse en tu Mac. WhatsApp, Holded y Google Calendar necesitan Internet y sus propias cuentas.</span></div>
         </section>
+        <section id="clients-screen" class="panel clients-screen" aria-label="Directorio de clientes">
+          <div class="panel-heading"><div><span class="eyebrow">RELACIONES · DATOS DE EJEMPLO</span><h2>Clientes y oportunidades</h2><p>Encuentra un contacto y prepara su próxima conversación.</p></div><a href="#morning">← Mi jornada</a></div>
+          <div class="clients-toolbar"><label for="clients-search">Buscar contacto<input type="search" id="clients-search" placeholder="Nombre o ramo de seguro…"></label><label for="clients-kind">Relación<select id="clients-kind"><option value="all">Todos</option><option value="client">Clientes</option><option value="prospect">Oportunidades</option></select></label></div>
+          <p id="clients-results" role="status"></p><div class="clients-layout"><div id="clients-list" aria-label="Contactos"></div><article id="clients-profile" aria-live="polite"></article></div>
+        </section>
         <footer>PYMES / AGENT WORLD OS <span>·</span> Prototipo de flujo de trabajo con datos ficticios</footer>
       </div>
     </main>
   </div>
   <script type="module" src="/src/main.ts"></script>
   <script type="module" src="/src/appliance-setup.ts"></script>
+  <script type="module" src="/src/clients-screen.ts"></script>
 </body>
 </html>
