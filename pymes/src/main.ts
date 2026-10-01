@@ -990,3 +990,15 @@ if (brief.items[0]) renderDetail(brief.items[0]);
 renderReviewQueue();
 renderAppointments();
 void checkRemoteWorkspace();
+
+// Client profiles identify the exact message by provider ID and channel.
+window.addEventListener("pymes:open-message", event => {
+  if (!(event instanceof CustomEvent)) return;
+  const target: unknown = event.detail;
+  if (!target || typeof target !== "object") return;
+  const reference = target as { externalId?: unknown; channel?: unknown };
+  if (typeof reference.externalId !== "string" || typeof reference.channel !== "string") return;
+  const item = brief.items.find(value =>
+    value.message.externalId === reference.externalId && value.message.channel === reference.channel);
+  if (item) showItem(item);
+});

@@ -37,6 +37,15 @@ function renderClients(): void {
     if (seen.has(message.externalId)) continue;
     seen.add(message.externalId);
     profile.append(node("small", message.channel), node("p", message.text));
+    const conversation = document.createElement("a");
+    conversation.href = "#inbox";
+    conversation.textContent = "Abrir esta conversación →";
+    conversation.addEventListener("click", () => {
+      requestAnimationFrame(() => window.dispatchEvent(new CustomEvent("pymes:open-message", {
+        detail: { externalId: message.externalId, channel: message.channel }
+      })));
+    });
+    profile.append(conversation);
   }
   profile.append(node("h4", "Próxima cita"));
   const appointment = data.appointments.find(value => value.contactId === contact.id);
