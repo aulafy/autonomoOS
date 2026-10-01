@@ -31,3 +31,20 @@ document.querySelector("#setup-reset")?.addEventListener("click", () => {
   updateSetup();
 });
 updateSetup();
+
+const textSize = document.querySelector<HTMLSelectElement>("#display-text-size")!;
+const displayFeedback = document.querySelector<HTMLElement>("#display-feedback")!;
+try { textSize.value = localStorage.getItem("pymes:display:text-size") === "large" ? "large" : "standard"; }
+catch { textSize.value = "standard"; }
+function applyTextSize(save = false): void {
+  document.body.classList.toggle("large-text", textSize.value === "large");
+  if (!save) return;
+  try {
+    localStorage.setItem("pymes:display:text-size", textSize.value);
+    displayFeedback.textContent = "Preferencia guardada en este navegador.";
+  } catch {
+    displayFeedback.textContent = "Preferencia aplicada solo durante esta sesión.";
+  }
+}
+textSize.addEventListener("change", () => applyTextSize(true));
+applyTextSize();
