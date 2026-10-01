@@ -50,6 +50,53 @@ function renderClients(): void {
   profile.append(node("h4", "Próxima cita"));
   const appointment = data.appointments.find(value => value.contactId === contact.id);
   profile.append(node("p", appointment ? `${appointment.title} · ${new Date(appointment.startsAt).toLocaleString("es-ES")}` : "Sin cita en la agenda de ejemplo"));
+  const noteKey = `pymes:demo:contact-note:v1:${contact.id}`;
+  const notes = document.createElement("form");
+  notes.className = "client-notes";
+  const label = document.createElement("label");
+  label.htmlFor = "client-note";
+  label.textContent = "Preparación de la próxima llamada";
+  const textarea = document.createElement("textarea");
+  textarea.id = "client-note";
+  textarea.maxLength = 2000;
+  textarea.rows = 4;
+  textarea.placeholder = "Preguntas pendientes, documentos que pedir…";
+  const status = node("p", "");
+  status.setAttribute("role", "status");
+  status.setAttribute("aria-live", "polite");
+  try {
+    textarea.value = (localStorage.getItem(noteKey) ?? "").slice(0, 2000);
+    if (textarea.value) status.textContent = "Nota guardada en este navegador.";
+  } catch { status.textContent = "El almacenamiento no está disponible."; }
+  const save = document.createElement("button");
+  save.type = "submit";
+  save.textContent = "Guardar nota";
+  const remove = document.createElement("button");
+  remove.type = "button";
+  remove.textContent = "Borrar nota";
+  remove.disabled = !textarea.value;
+  textarea.addEventListener("input", () => {
+    status.textContent = "Cambios sin guardar. Guarda antes de cambiar de cliente.";
+    remove.disabled = !textarea.value;
+  });
+  notes.addEventListener("submit", event => {
+    event.preventDefault();
+    try {
+      if (textarea.value.trim()) localStorage.setItem(noteKey, textarea.value.trim());
+      else localStorage.removeItem(noteKey);
+      status.textContent = "Nota guardada en este navegador. No se sincroniza con el CRM.";
+    } catch { status.textContent = "No se pudo guardar. Copia la nota antes de salir."; }
+  });
+  remove.addEventListener("click", () => {
+    try {
+      localStorage.removeItem(noteKey);
+      textarea.value = "";
+      remove.disabled = true;
+      status.textContent = "Nota borrada de este navegador.";
+    } catch { status.textContent = "No se pudo borrar la nota guardada."; }
+  });
+  notes.append(label, node("small", "Notas locales de demostración · No introducir datos reales de clientes"), textarea, save, remove, status);
+  profile.append(notes);
   const link = document.createElement("a");
   link.href = "#inbox";
   link.textContent = "Ir a la bandeja unificada →";
