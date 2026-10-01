@@ -15,12 +15,15 @@ test("WhatsApp HTTP handler verifies challenge and signed payload", async () => 
 });
 
 test("Pymes HTTP adapter mounts the WhatsApp route before workspace auth", async () => {
-  const body = JSON.stringify({ object: "whatsapp_business_account", entry: [] });
+  const body = JSON.stringify({ object: "whatsapp_business_account", entry: [{ changes: [{ value: { metadata: { phone_number_id: "12345678" }, messages: [{ id: "wamid-live-1", from: "34600111222", type: "text", text: { body: "Necesito una propuesta de coche" } }] } }] }] });
   const signature = `sha256=${createHmac("sha256", "secret").update(body).digest("hex")}`;
-  let called = false;
+  let received: Record<string, unknown> | undefined;
   const response = await handlePymesRequest({} as never, new Request("http://localhost/webhooks/whatsapp", { method: "POST", body, headers: { "content-type": "application/json", "x-hub-signature-256": signature } }), {
-    whatsappWebhook: { verifyToken: "verify", appSecret: "secret", tenantId: "t", agentId: "a", resourceId: "r", ingest: () => { called = true; } }
+    whatsappWebhook: { verifyToken: "verify", appSecret: "secret", tenantId: "t", agentId: "a", resourceId: "r", ingest: envelope => { received = envelope.inbound as unknown as Record<string, unknown>; } }
   });
   assert.equal(response.status, 200);
-  assert.equal(called, false);
+  assert.equal((await response.json()).received, 1);
+  assert.equal(received?.channel, "whatsapp");
+  assert.equal(received?.senderId, "34600111222");
+  assert.equal(received?.conversationId, "whatsapp:34600111222");
 });
