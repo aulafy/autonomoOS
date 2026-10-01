@@ -26,6 +26,11 @@ repository.provisionSession(token, { userId, tenantId, role: "owner" });
 if (workerToken) repository.provisionSession(workerToken, { userId: workerId, tenantId, role: "worker" });
 const ingressToken = normalizeOptionalToken(process.env.PYMES_OPENCLAW_INGRESS_TOKEN, "INVALID_PYMES_OPENCLAW_INGRESS_TOKEN");
 const ingressSigningSecret = normalizeOptionalToken(process.env.PYMES_OPENCLAW_SIGNING_SECRET, "INVALID_PYMES_OPENCLAW_SIGNING_SECRET");
+const whatsappVerifyToken = process.env.PYMES_WHATSAPP_WEBHOOK_VERIFY_TOKEN?.trim() ?? "";
+const whatsappAppSecret = process.env.PYMES_WHATSAPP_APP_SECRET?.trim() ?? "";
+if ((whatsappVerifyToken && !whatsappAppSecret) || (!whatsappVerifyToken && whatsappAppSecret)) throw new Error("INCOMPLETE_WHATSAPP_WEBHOOK_CONFIG");
+if (whatsappVerifyToken && (whatsappVerifyToken.length < 16 || whatsappVerifyToken.length > 256 || /[\u0000-\u001f\u007f]/.test(whatsappVerifyToken))) throw new Error("INVALID_WHATSAPP_WEBHOOK_VERIFY_TOKEN");
+if (whatsappAppSecret && (whatsappAppSecret.length < 16 || whatsappAppSecret.length > 256 || /[\u0000-\u001f\u007f]/.test(whatsappAppSecret))) throw new Error("INVALID_WHATSAPP_APP_SECRET");
 const enterprisePolicy = {
   tenantId,
   allowedAgentIds: parseConfiguredIdSet(process.env.PYMES_OPENCLAW_AGENT_IDS),
@@ -38,8 +43,8 @@ const enterprisePolicy = {
   signingSecret: ingressSigningSecret
 };
 const api = new WorkspaceApi(repository, ingressToken ? { token: ingressToken, policy: enterprisePolicy } : undefined);
-const whatsappWebhook = process.env.PYMES_WHATSAPP_WEBHOOK_VERIFY_TOKEN && process.env.PYMES_WHATSAPP_APP_SECRET
-  ? { verifyToken: process.env.PYMES_WHATSAPP_WEBHOOK_VERIFY_TOKEN, appSecret: process.env.PYMES_WHATSAPP_APP_SECRET,
+const whatsappWebhook = whatsappVerifyToken && whatsappAppSecret
+  ? { verifyToken: whatsappVerifyToken, appSecret: whatsappAppSecret,
       tenantId, agentId: process.env.PYMES_OPENCLAW_AGENT_ID ?? "whatsapp-agent", resourceId: process.env.PYMES_OPENCLAW_RESOURCE_ID ?? "whatsapp-business",
       pairedSenderIds: enterprisePolicy.pairedSenderIds, consentedConversationIds: enterprisePolicy.consentedConversationIds,
       ingest: (envelope: import("./openclaw-gateway.js").OpenClawEnterpriseEnvelope) => {
