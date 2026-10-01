@@ -15,7 +15,10 @@
     "check": "npm run typecheck && npm test && npm run build",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --import tsx --test tests/*.test.ts",
-    "diagnose:mac": "bash scripts/mac-diagnostics.sh"
+    "diagnose:mac": "bash scripts/mac-diagnostics.sh",
+    "benchmark:local": "tsx src/benchmark-local.ts",
+    "start:ui": "tsx src/ui-server.ts",
+    "mac:launch-agent": "tsx src/mac-launch-agent.ts"
   },
   "devDependencies": {
     "tsx": "^4.20.0",

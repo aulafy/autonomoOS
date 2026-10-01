@@ -1,5 +1,6 @@
 import { normalizeSearch } from "./search.js";
 import { demoData as data } from "./demo-data.js";
+import { buildMorningBrief } from "./domain.js";
 import { insuranceLines } from "./config.js";
 const list = document.querySelector<HTMLElement>("#clients-list")!;
 const profile = document.querySelector<HTMLElement>("#clients-profile")!;
@@ -51,6 +52,21 @@ function renderClients(): void {
   profile.append(node("h4", "Próxima cita"));
   const appointment = data.appointments.find(value => value.contactId === contact.id);
   profile.append(node("p", appointment ? `${appointment.title} · ${new Date(appointment.startsAt).toLocaleString("es-ES", { timeZone: "Europe/Madrid" })}` : "Sin cita en la agenda de ejemplo"));
+  const preparation = document.createElement("details");
+  preparation.className = "client-call-brief";
+  const summary = document.createElement("summary");
+  summary.textContent = "Guion para preparar la llamada";
+  preparation.append(summary, node("p", "Preparación a partir de los mensajes de ejemplo. Confirma la información con el cliente."));
+  const requests = buildMorningBrief(data).items.filter(item => item.contact?.id === contact.id);
+  const actions = document.createElement("ul");
+  for (const action of new Set(requests.map(item => item.nextAction))) actions.append(node("li", action));
+  if (actions.childElementCount) preparation.append(node("h4", "Objetivo de la conversación"), actions);
+  const missing = document.createElement("ul");
+  for (const question of new Set(requests.flatMap(item => item.missingInformation))) missing.append(node("li", question));
+  if (missing.childElementCount) preparation.append(node("h4", "Información que confirmar"), missing);
+  if (!requests.length) preparation.append(node("p", "No hay solicitudes para preparar en esta demo."));
+  preparation.append(node("p", "Al terminar: anota lo acordado y revisa la siguiente acción. Este guion no realiza llamadas ni modifica el CRM."));
+  profile.append(preparation);
   const noteKey = `pymes:demo:contact-note:v1:${contact.id}`;
   const notes = document.createElement("form");
   notes.className = "client-notes";

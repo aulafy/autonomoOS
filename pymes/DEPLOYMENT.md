@@ -278,3 +278,80 @@ El namespace del store debe ser exactamente el tenant autenticado del worker par
 impedir que dos agencias con el mismo `effectId` compartan una reserva.
 La ruta recomendada es `repository.effectLeaseStore(tenantId, ttlMs)`; evita crear
 un store global fuera del contexto autenticado.
+
+
+## Medición del asistente en el Mac mini de 16 GB
+
+Desde la carpeta `pymes`, con Ollama y el modelo local instalados:
+
+```bash
+npm run diagnose:mac
+npm run benchmark:local
+```
+
+La prueba realiza cinco clasificaciones secuenciales de mensajes ficticios. Emite
+JSON con memoria física del equipo, arquitectura, modelo, latencia de la primera
+petición, media y máximo. Se detiene con código de error si falla una petición.
+Puede configurarse con `PYMES_LOCAL_MODEL` y `PYMES_LOCAL_LLM_URL`; el endpoint
+solo puede ser local. No lee expedientes ni credenciales de proveedores.
+
+Ejecutar en el equipo de entrega con la interfaz y las aplicaciones habituales
+abiertas. Registrar además la presión de memoria y el consumo de Ollama en el
+Monitor de Actividad. El script no mide esos valores. Conservar el resultado
+junto a la fecha, versión instalada y configuración del modelo. La primera
+petición puede incluir carga del modelo; repetir para comparar.
+
+Una ejecución en un Mac con más RAM no valida el perfil comercial de 16 GB.
+Esta prueba mide clasificación, no generación de propuestas ni operaciones de
+WhatsApp, CRM o calendario. El arranque automático y la recuperación tras reinicio
+deben validarse por separado antes de entregar el producto.
+
+
+## Interfaz compilada local
+
+```bash
+npm run build
+npm run start:ui
+```
+
+Abre `http://127.0.0.1:5175`. El servidor sirve únicamente los archivos compilados
+permitidos dentro de `dist`, escucha solo en loopback y no usa HMR de Vite.
+`PYMES_UI_PORT` permite cambiar el puerto. Deben instalarse también las
+herramientas de ejecución del proyecto (Node y tsx).
+
+Este servidor no inicia la API, Ollama ni los workers, y no incorpora el endpoint
+experimental `/api/demo-classify` de Vite. Las operaciones del workspace necesitan
+su servidor y sesión separados. Para conectar la API desde este origen, añadir
+`http://127.0.0.1:5175` a `PYMES_API_CORS_ORIGINS`. No constituye todavía un
+instalador ni configura arranque automático de macOS.
+
+
+## Arranque de la interfaz al iniciar sesión en macOS
+
+El generador crea un LaunchAgent con el ejecutable Node actual y la ruta absoluta
+actual del proyecto. Ejecutarlo después de situar el proyecto en su ubicación
+final. No contiene tokens ni inicia API, workers u Ollama.
+
+```bash
+mkdir -p "$HOME/Library/Logs/PymesOS" "$HOME/Library/LaunchAgents"
+npm run build
+npm run --silent mac:launch-agent -- "$HOME/Library/Logs/PymesOS" > "$HOME/Library/LaunchAgents/com.pymes.os.ui.plist"
+plutil -lint "$HOME/Library/LaunchAgents/com.pymes.os.ui.plist"
+launchctl bootstrap "gui/$(id -u)" "$HOME/Library/LaunchAgents/com.pymes.os.ui.plist"
+```
+
+Verificar `http://127.0.0.1:5175` y los registros `ui.log` y `ui-error.log`.
+El agente arranca después del inicio de sesión del usuario, no antes de desbloquear
+FileVault. Reinicia la interfaz si termina; limita los reintentos a intervalos de
+30 segundos. No abre el navegador automáticamente. Si cambian las rutas del
+proyecto o Node, regenerar la configuración.
+
+Para retirarlo:
+
+```bash
+launchctl bootout "gui/$(id -u)" "$HOME/Library/LaunchAgents/com.pymes.os.ui.plist"
+rm "$HOME/Library/LaunchAgents/com.pymes.os.ui.plist"
+```
+
+La generación y el formato pueden verificarse sin registrar el agente. La prueba
+real tras cerrar sesión o reiniciar el equipo sigue siendo un criterio de entrega.
