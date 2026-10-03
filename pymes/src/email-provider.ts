@@ -2,6 +2,9 @@ import { createHash } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
+export class EmailDispatchError extends Error {
+ constructor(code:string,readonly certainty:'not_started'|'unknown'){super(code);this.name='EmailDispatchError';}
+}
 export interface EmailPayload {
   from: string;
   to: string[];

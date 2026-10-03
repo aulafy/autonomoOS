@@ -13,6 +13,7 @@ export function createEmailWorkflow(
   store: EmailReviewStore,
   governance: ReturnType<typeof createEmailGovernance>,
   payloadFor: (taskId: string) => EmailPayload,
+  options:{context?:()=>string;simulated?:boolean;draftFrom?:()=>string;validatePayload?:(payload:unknown)=>EmailPayload}={},
 ) {
   const busy = new Set<string>(),
     bridge = createEmailTaskBridge(kernel, journal, store);
@@ -44,6 +45,7 @@ export function createEmailWorkflow(
     if (!send || !review || !send.dependencies.includes(review.id))
       throw new Error("EMAIL_PLAN_REVIEW_REQUIRED");
     const hash = emailHash({
+      ...(options.context?{providerContext:options.context()}:{}),
       taskId,
       goal: t.goal,
       owner: t.owner,
@@ -75,6 +77,11 @@ export function createEmailWorkflow(
       throw new Error("EMAIL_APPROVAL_STALE");
     return r;
   }
+  function saveDraft(taskId:string,owner:string,input:{to:string;subject:string;body:string;contactId:string}){
+   if(busy.has(taskId)||!options.draftFrom||!options.validatePayload)throw new Error('EMAIL_DRAFT_NOT_AVAILABLE');plan(taskId,owner);
+   const payload=options.validatePayload({from:options.draftFrom(),to:[input.to],cc:[],bcc:[],subject:input.subject,body:input.body,contactId:input.contactId});
+   store.saveDraft({taskId,owner,payload,at:Date.now()});return view(taskId,owner);
+  }
   async function propose(taskId: string, owner: string) {
     if (busy.has(taskId)) throw new Error("EMAIL_BUSY");
     busy.add(taskId);
@@ -89,7 +96,8 @@ export function createEmailWorkflow(
         previous = store.latest(taskId);
       if (previous && governance.view(previous).length)
         throw new Error("EMAIL_DISPATCH_ALREADY_CLAIMED");
-      const payload = payloadFor(taskId),
+      const draft=store.draft(taskId);if(options.simulated===false&&!draft)throw new Error('GMAIL_DRAFT_REQUIRED');
+      const payload = draft?.payload??payloadFor(taskId),
         payloadHash = emailHash(payload);
       bridge.prepare(taskId, payload);
       if (
@@ -106,6 +114,7 @@ export function createEmailWorkflow(
         planHash: p.hash,
         stepId: p.stepId,
         payload,
+        ...(options.simulated===false?{provider:"gmail-email" as const}:{}),
         at: Date.now(),
       });
       const evaluation = await governance.evaluate(r);
@@ -228,9 +237,10 @@ export function createEmailWorkflow(
     if (!r)
       return {
         taskId,
-        simulated: true,
+        simulated: options.simulated??true,
         status: "plan_ready",
         review: null,
+        draft:store.draft(taskId)?.payload??null,
         effects: [],
         audit: [],
       };
@@ -266,7 +276,7 @@ export function createEmailWorkflow(
             : "waiting_approval";
     return {
       taskId,
-      simulated: true,
+      simulated: r.provider!=="gmail-email",
       status: state,
       review: r,
       decision: d,
@@ -274,10 +284,10 @@ export function createEmailWorkflow(
       effects,
       audit: store.timeline(taskId),
       globalTaskStatus: t.status,
-      scope: "simulated-email-workflow",
+      scope: r.provider==="gmail-email"?"test-preparation-real-email":"simulated-email-workflow",
     };
   }
-  return { propose, decide, execute, reconcile, view };
+  return { propose, decide, execute, reconcile, view,saveDraft };
 }
 export type EmailWorkflowView = ReturnType<
   ReturnType<typeof createEmailWorkflow>["view"]

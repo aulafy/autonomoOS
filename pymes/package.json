@@ -18,7 +18,8 @@
     "diagnose:mac": "bash scripts/mac-diagnostics.sh",
     "benchmark:local": "tsx src/benchmark-local.ts",
     "start:ui": "tsx src/ui-server.ts",
-    "mac:launch-agent": "tsx src/mac-launch-agent.ts"
+    "mac:launch-agent": "tsx src/mac-launch-agent.ts",
+    "gmail:build-keychain": "bash scripts/build-gmail-keychain.sh"
   },
   "devDependencies": {
     "tsx": "^4.20.0",

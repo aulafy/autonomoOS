@@ -45,7 +45,7 @@ import type {
   JournalKernel,
   createDurableDomainStores,
 } from "@agent-world/runtime-store-sqlite";
-import { emailHash, type EmailProvider } from "./email-provider.js";
+import { emailHash, EmailDispatchError, type EmailProvider } from "./email-provider.js";
 import type { EmailReview, EmailReviewStore } from "./email-review-store.js";
 type Stores = ReturnType<typeof createDurableDomainStores>;
 
@@ -302,7 +302,7 @@ export function createEmailGovernance(
       } catch (error) {
         if (
           error instanceof Error &&
-          error.message === "FAKE_EMAIL_CERTIFIED_NOT_STARTED"
+          (error.message === "FAKE_EMAIL_CERTIFIED_NOT_STARTED" || error instanceof EmailDispatchError && error.certainty === "not_started")
         )
           return {
             kind: "reported_failure",

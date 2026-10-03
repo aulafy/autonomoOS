@@ -4,6 +4,7 @@ import {
   type EmailPayload,
 } from "./email-provider.js";
 export interface EmailReview {
+  provider?: "gmail-email";
   id: string;
   taskId: string;
   owner: string;
@@ -27,7 +28,7 @@ export interface EmailArtifact {
   id: string;
   taskId: string;
   attemptId: string | null;
-  simulated: true;
+  simulated: boolean;
   value: Record<string, unknown>;
   hash: string;
   at: number;
@@ -47,6 +48,7 @@ export interface EmailAudit {
 }
 /** Append-only journal projection; inputs to this store come only from trusted host services. */
 export class EmailReviewStore {
+  private drafts: Array<{taskId:string;owner:string;payload:EmailPayload;at:number}>=[];
   private artifacts: EmailArtifact[] = [];
   private policies: EmailPolicy[] = [];
   private reviews: EmailReview[] = [];
@@ -64,6 +66,7 @@ export class EmailReviewStore {
       planHash: input.planHash,
       stepId: input.stepId,
       payloadHash,
+      ...(input.provider?{provider:input.provider}:{}),
     });
     if (
       !input.id ||
@@ -86,6 +89,8 @@ export class EmailReviewStore {
     this.reviews.push(structuredClone(record));
     return structuredClone(record);
   }
+  saveDraft(input:{taskId:string;owner:string;payload:EmailPayload;at:number}){if(!input.taskId||!input.owner||!Number.isFinite(input.at)||this.latest(input.taskId))throw new Error('EMAIL_DRAFT_LOCKED');const draft={...input,payload:validateEmailPayload(input.payload)};this.drafts=this.drafts.filter(d=>d.taskId!==input.taskId);this.drafts.push(structuredClone(draft));return structuredClone(draft);}
+  draft(taskId:string){return structuredClone(this.drafts.find(d=>d.taskId===taskId)??null);}
   listReviews(): EmailReview[] {
     return structuredClone(this.reviews);
   }
@@ -93,7 +98,7 @@ export class EmailReviewStore {
     if (
       !input.id ||
       !input.taskId ||
-      input.simulated !== true ||
+      typeof input.simulated !== "boolean" ||
       emailHash(input.value) !== input.hash ||
       !Number.isFinite(input.at)
     )

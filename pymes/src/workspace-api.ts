@@ -162,6 +162,7 @@ function validIngressSignature(body: unknown, signature: string | undefined, sec
  * response shaping; persistence can be replaced without changing callers.
  */
 export interface WorkspaceRuntimeSource {
+  gmail?:import('./gmail-local-connector.js').GmailLocalConnector;
   email?:ReturnType<typeof import('./email-workflow.js').createEmailWorkflow>;
   /** Host selects a tenant-isolated runtime; never a global shared snapshot. */
   snapshotForTenant(tenantId: string): TaskRuntimeState | null;
@@ -203,6 +204,22 @@ export class WorkspaceApi {
       operation, actorId, at, requestId, version: priorAudit.length ? priorAudit[priorAudit.length - 1]!.version + 1 : currentCase?.version ?? 0 });
   }
 
+  private async handleGmail(request:WorkspaceApiRequest,parts:string[]):Promise<WorkspaceApiResponse>{
+   const token=tokenFrom(request),principal=token?this.repository.findSession(token):null;if(!principal)return {status:401,body:{error:'UNAUTHENTICATED'}};
+   const tenant=parts[2];if(tenant!==principal.tenantId||principal.role!=='owner')return {status:403,body:{error:'PERMISSION_DENIED'}};
+   const gmail=this.runtime?.gmail;if(!gmail)return {status:404,body:{error:'GMAIL_NOT_CONFIGURED'}};const owner=this.runtime!.principalIdForSession(principal);
+   const live=()=>{const p=token?this.repository.findSession(token):null;return !!p&&p.tenantId===tenant&&p.userId===owner&&p.role==='owner';};
+   try{let result;if(request.method==='GET'&&parts.length===4)result=await gmail.status(owner);
+   else if(request.method==='POST'&&parts.length===5){const body=jsonRecord(request.body);if(!body)return {status:400,body:{error:'INVALID_GMAIL_REQUEST'}};
+    if(parts[4]==='configure'&&Object.keys(body).sort().join(',')==='clientId,clientSecret')result=await gmail.configure(owner,body);
+    else if(parts[4]==='connect'&&Object.keys(body).join(',')==='verification'&&typeof body.verification==='boolean')result=await gmail.connect(owner,body.verification,live);
+    else if(parts[4]==='disconnect'&&Object.keys(body).length===0)result=await gmail.disconnect(owner);
+    else if(parts[4]==='check'&&Object.keys(body).length===0)result=await gmail.check(owner);
+    else return {status:400,body:{error:'INVALID_GMAIL_REQUEST'}};
+   }else return {status:405,body:{error:'METHOD_NOT_ALLOWED'}};
+   if(!live())return {status:401,body:{error:'UNAUTHENTICATED'}};return {status:200,body:{tenantId:tenant,...result}};
+   }catch{return {status:409,body:{error:'GMAIL_OPERATION_NOT_CONFIRMED'}};}
+  }
   private async handleEmail(request:WorkspaceApiRequest,parts:string[]):Promise<WorkspaceApiResponse>{
     const token=tokenFrom(request),principal=token?this.repository.findSession(token):null;
     if(!principal)return {status:401,body:{error:'UNAUTHENTICATED'}};
@@ -214,10 +231,12 @@ export class WorkspaceApi {
     const owner=this.runtime!.principalIdForSession(principal);
     const live=()=>{const p=token?this.repository.findSession(token):null;return Boolean(p&&p.tenantId===tenant&&p.userId===owner&&p.role===principal.role);};
     try{
+      if(this.runtime?.gmail)await this.runtime.gmail.status(owner);
       if(request.method==='GET'&&parts.length===6)return {status:200,body:{tenantId:tenant,...email.view(taskId,owner)}};
       const body=jsonRecord(request.body);if(!body)return {status:400,body:{error:'INVALID_EMAIL_REQUEST'}};
       let result;
-      if(parts[6]==='review'&&Object.keys(body).length===0)result=await email.propose(taskId,owner);
+      if(parts[6]==='draft'&&Object.keys(body).sort().join(',')==='body,contactId,subject,to'&&['to','subject','body','contactId'].every(k=>typeof body[k]==='string'))result=email.saveDraft(taskId,owner,body as {to:string;subject:string;body:string;contactId:string});
+      else if(parts[6]==='review'&&Object.keys(body).length===0)result=await email.propose(taskId,owner);
       else if(parts[6]==='decision'&&Object.keys(body).sort().join(',')==='bindingHash,decision'&&typeof body.bindingHash==='string'&&(body.decision==='approved'||body.decision==='rejected'))result=await email.decide(taskId,owner,{bindingHash:body.bindingHash,decision:body.decision},live);
       else if(parts[6]==='execute'&&Object.keys(body).length===0)result=await email.execute(taskId,owner,live);
       else if(parts[6]==='reconcile'&&Object.keys(body).length===0)result=await email.reconcile(taskId,owner);
@@ -230,6 +249,7 @@ export class WorkspaceApi {
   /** Async planning route; existing synchronous contracts remain unchanged. */
   async handleAsync(request:WorkspaceApiRequest):Promise<WorkspaceApiResponse> {
     const parts=pathParts(request.path);
+    if(parts?.[0]==='v1'&&parts[1]==='workspaces'&&parts[3]==='gmail'&&(parts.length===4||parts.length===5))return this.handleGmail(request,parts);
     if(parts?.[0]==='v1'&&parts[1]==='workspaces'&&parts[3]==='runtime'&&parts[5]==='email'&&(parts.length===6||parts.length===7))return this.handleEmail(request,parts);
     if(request.method!=='POST'||parts?.[0]!=='v1'||parts[1]!=='workspaces'||parts[3]!=='runtime'||parts[5]!=='plan'||parts.length!==6)return this.handle(request);
     const token=tokenFrom(request),principal=token?this.repository.findSession(token):null;

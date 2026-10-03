@@ -41,7 +41,7 @@ export function createEmailTaskBridge(
       .find((p) => p.taskId === taskId && p.version === t.planVersion)!
       .workUnitIds.map((id) => s.workUnits[id]!);
   };
-  function begin(unit: WorkUnit, fingerprint: string) {
+  function begin(unit: WorkUnit, fingerprint: string,providerId="m2-local-simulation") {
     const current = kernel.snapshot().workUnits[unit.id]!;
     if (current.activeAttemptId) return current.activeAttemptId;
     if (current.status === "succeeded") return current.attemptIds.at(-1)!;
@@ -50,7 +50,7 @@ export function createEmailTaskBridge(
       type: "AttemptCreated",
       workUnitId: unit.id,
       attemptId,
-      providerId: "m2-local-simulation",
+      providerId,
       actorId: kernel.snapshot().tasks[unit.taskId]!.owner,
       dispatchFingerprint: fingerprint,
     });
@@ -67,7 +67,7 @@ export function createEmailTaskBridge(
       id: randomUUID(),
       taskId,
       attemptId: attemptId ?? null,
-      simulated: true,
+      simulated: !(value.kind==="governed-email-proof"&&value.provider==="gmail-email"),
       value,
       hash: emailHash(value),
       at: Date.now(),
@@ -187,7 +187,7 @@ export function createEmailTaskBridge(
   }
   function start(r: EmailReview) {
     journal.transaction(() => {
-      begin(units(r.taskId)[6]!, r.bindingHash);
+      begin(units(r.taskId)[6]!, r.bindingHash,r.provider??"m2-local-simulation");
     });
   }
   function settle(
@@ -231,6 +231,7 @@ export function createEmailTaskBridge(
         a,
         {
           kind: "governed-email-proof",
+          ...(r.provider?{provider:r.provider}:{}),
           effectId: effect.id,
           effective: effect.effective,
           observationIds: obs,
@@ -265,7 +266,7 @@ export function createEmailTaskBridge(
       if (d?.decision !== "approved")
         throw new Error("M2_GLOBAL_REVIEW_REQUIRED");
       const ref = evidence(r.taskId, undefined, {
-        kind: "simulated-workflow-verified",
+        kind: r.provider?"test-preparation-real-email-verified":"simulated-workflow-verified",
         planHash: r.planHash,
         bindingHash: r.bindingHash,
         approvalId: d.id,
@@ -283,7 +284,7 @@ export function createEmailTaskBridge(
       store.audit({
         id: randomUUID(),
         taskId: r.taskId,
-        type: "job.completed.simulated",
+        type: r.provider?"job.completed.test-preparation-real-email":"job.completed.simulated",
         reference: ref,
         at: Date.now(),
       });

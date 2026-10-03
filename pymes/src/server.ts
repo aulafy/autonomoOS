@@ -1,3 +1,5 @@
+import {openLocalGmail} from "./gmail-local-connector.js";
+import {resolve} from "node:path";
 import { openWorkspaceRuntime } from "./runtime-source.js";
 import { createServer } from "node:http";
 import { WorkspaceApi } from "./workspace-api.js";
@@ -43,7 +45,11 @@ const enterprisePolicy = {
   maxFutureSkewMs: parseBoundedOptionalNumber(process.env.PYMES_OPENCLAW_MAX_FUTURE_SKEW_MS, 24 * 60 * 60 * 1000, "INVALID_PYMES_OPENCLAW_MAX_FUTURE_SKEW_MS"),
   signingSecret: ingressSigningSecret
 };
-const runtime = await openWorkspaceRuntime(process.env.PYMES_RUNTIME_DB_PATH ?? "./data/pymes-task-runtime.db", tenantId,{fakeEmail:process.env.PYMES_FAKE_EMAIL_ENABLED==='1'});
+const runtimePath=process.env.PYMES_RUNTIME_DB_PATH??"./data/pymes-task-runtime.db";
+const gmailEnabled=process.env.PYMES_GMAIL_ENABLED==='1';
+if(gmailEnabled&&(host!=='127.0.0.1'||process.env.PYMES_FAKE_EMAIL_ENABLED==='1'))throw new Error('GMAIL_LOCAL_EXCLUSIVE_PROVIDER_REQUIRED');
+const gmail=gmailEnabled?await openLocalGmail(userId,tenantId,runtimePath+'.gmail-attempts.db',resolve(process.env.PYMES_GMAIL_KEYCHAIN_HELPER??'./data/bin/gmail-keychain'),process.env.PYMES_GMAIL_DESKTOP_CLIENT_PATH):undefined;
+const runtime = await openWorkspaceRuntime(runtimePath, tenantId,{fakeEmail:process.env.PYMES_FAKE_EMAIL_ENABLED==='1',gmail});
 const api = new WorkspaceApi(repository, ingressToken ? { token: ingressToken, policy: enterprisePolicy } : undefined, runtime.source);
 const whatsappWebhook = whatsappVerifyToken && whatsappAppSecret
   ? { verifyToken: whatsappVerifyToken, appSecret: whatsappAppSecret,
@@ -59,6 +65,7 @@ function closeRepository(): void {
   if (repositoryClosed) return;
   repositoryClosed = true;
   runtime.close();
+  gmail?.close();
   repository.close();
 }
 function safeError(error: unknown): { name: string; message: string } {
