@@ -107,3 +107,55 @@ Tests cubren MIME UTF-8/saltos de línea/tampering, OAuth cancelado/éxito/estad
 SIGKILL: el servidor de prueba acepta MIME, retiene la respuesta; se mata el proceso; C12 restaura UNKNOWN; GET verifica el MIME; C7 proyecta committed sin reescribir el UNKNOWN histórico ni hacer otro POST.
 
 Pendiente para cerrar M3: ruta al JSON Desktop, cuenta de prueba, consentimiento para gmail.readonly si se quiere reconciliación automática comprobable, destinatario y entrega real. No se ha lanzado consentimiento real ni enviado correo real.
+
+
+## Protocolo de cierre A/B/C acordado
+
+No crear tag de cierre ni iniciar M4 hasta completar las validaciones reales pendientes.
+
+### Preparación de Google
+
+Usar proyecto con Gmail API habilitada y OAuth Desktop. Para una cuenta Gmail personal, configurar audiencia External/Testing y añadir explícitamente el remitente como usuario de prueba. Registrar en Data Access gmail.send y los permisos de identidad; si se autoriza la comprobación independiente implementada, añadir también gmail.readonly. El permiso solo envío no habilita messages.list/get ni permite cerrar la prueba C con este verificador.
+
+En External/Testing, los refresh tokens de una autorización que incluye Gmail caducan a los siete días. Una prueba B próxima demuestra persistencia entre reinicios, no autorización indefinida. La preparación para producción/verificación OAuth es trabajo posterior de distribución del producto.
+
+Fuentes oficiales: [estado OAuth](https://developers.google.com/identity/protocols/oauth2/production-readiness/overview), [caducidad en Testing](https://developers.google.com/identity/protocols/oauth2), [permisos de messages.list](https://developers.google.com/workspace/gmail/api/reference/rest/v1/users.messages/list).
+
+### A — Envío normal real
+
+1. Conectar desde Configuración usando el cliente importado al Keychain y completar el consentimiento con la cuenta remitente de prueba.
+2. Comprobar cuenta/scopes en UI. No imprimir ni exportar el contenido de los registros de Keychain para demostrar almacenamiento.
+3. Crear un trabajo con asunto único `M3-A-<fecha-hora>` y contenido inocuo dirigido a una segunda cuenta confirmada por el propietario.
+4. Guardar, evaluar, revisar el destinatario y el texto exactos, aprobar y ejecutar mediante Governed Runner.
+5. Registrar taskId, reviewId/bindingHash, effectId, observationIds, Gmail id si está disponible, Message-ID y hora. No incluir Authorization ni tokens en la evidencia.
+6. Comprobar en la segunda cuenta que ha llegado exactamente un mensaje con asunto/cuerpo esperados. Verificar separadamente efecto committed y progreso en la UI.
+
+### B — Reinicio real
+
+1. Cerrar de forma normal el proceso API del piloto y volver a arrancar con las mismas rutas DB, tenant y propietario. No borrar datos ni desconectar Gmail.
+2. Comprobar que la cuenta reaparece desde Keychain y que se conserva el historial A.
+3. Crear un trabajo nuevo con asunto único `M3-B-<fecha-hora>`, obtener una nueva aprobación y efectuar otro envío por el runner.
+4. Comprobar recepción única y evidencia independiente. El refresh se comprueba además por tests de expiración; no debe forzarse mostrando/editando tokens reales.
+
+### C — Respuesta perdida, SIGKILL y reconciliación
+
+La prueba equivalente automatizada ya existe en `pymes/tests/gmail-runtime.test.ts`: un servidor HTTP independiente acepta MIME, retiene la respuesta; se mata el proceso del runner con SIGKILL; se restaura el journal y la ledger; se observa UNKNOWN y se reconcilia mediante GET, con un único POST en todo el recorrido.
+
+Para una variante contra Google se debe usar exclusivamente un transporte de fault-injection del piloto, conectado al fetcher inyectable existente: consumir y descartar una respuesta exitosa de messages.send antes de entregarla al adaptador, sin volver a ejecutar el POST. No activar fallos globales en el servicio utilizado para A/B y no cambiar la semántica del core. Todavía no se ha ejecutado esta variante contra Google.
+
+Criterios: conservar aprobación exacta, comprobar UNKNOWN histórico después del fallo/reinicio, consultar el Message-ID ya implementado, verificar MIME exacto y SENT, conservar la decisión de reconciliación y confirmar un único mensaje en el destinatario. C7 puede proyectar resultado efectivo committed mientras C6 conserva UNKNOWN histórico. No es necesario reescribir el efecto original a committed para acreditar reconciliación.
+
+### Registro de aceptación
+
+| Comprobación | Estado actual | Evidencia pendiente |
+| --- | --- | --- |
+| OAuth Desktop con Google real desde UI | Pendiente | Cuenta/cliente de prueba y consentimiento |
+| Keychain nativo | Verificado con datos sintéticos | Credencial real guardada por OAuth, sin exponerla |
+| A: entrega real + efecto comprobado | Pendiente | Mensaje recibido y referencias del efecto |
+| B: conexión tras reinicio + segundo envío | Pendiente | Capturas/refs del segundo trabajo |
+| C: SIGKILL, UNKNOWN, reconciliación sin duplicado | Equivalente sintético verificado | Variante Google si se exige para la aceptación final |
+| Ausencia de secretos en auditoría/SQLite/logs reales | Pendiente de sesión real | Inspección que informe solo coincidencias, sin imprimir secretos |
+| Suite, tipos y build | Verificados en M3 | Repetir si cambia código durante el piloto |
+| Tag de cierre M3 | No creado | Aceptación de las evidencias reales |
+
+La aceptación sintética de C no sustituye OAuth real, llegada del correo real ni persistencia real de B. M4 sigue pendiente del cierre M3.
