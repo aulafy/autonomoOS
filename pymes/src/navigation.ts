@@ -1,4 +1,5 @@
 const screenTitles: Record<string, string> = {
+  "#runtime-screen": "Centro de agentes",
   "#morning": "Mi jornada",
   "#help-screen": "Ayuda",
   "#inbox": "Bandeja unificada",
@@ -15,6 +16,7 @@ const screenTitles: Record<string, string> = {
 function navigate(focus = false): void {
   const hash = location.hash || "#morning";
   const title = screenTitles[hash] ?? "Mi jornada";
+  document.body.classList.toggle("runtime-view", hash === "#runtime-screen");
   document.body.classList.toggle("installation-view", hash === "#installation");
   document.body.classList.toggle("clients-view", hash === "#clients-screen");
   document.body.classList.toggle("tasks-view", hash === "#tasks-screen");
@@ -37,7 +39,7 @@ function navigate(focus = false): void {
     const label = link.querySelector("span")?.textContent;
     if (label) { link.setAttribute("aria-label", label); link.title = label; }
   });
-  if (focus && ["#installation", "#clients-screen", "#tasks-screen", "#help-screen", "#automation-screen", "#portfolio-screen", "#settings-screen", "#agenda", "#inbox", "#review-queue"].includes(hash)) {
+  if (focus && ["#runtime-screen", "#installation", "#clients-screen", "#tasks-screen", "#help-screen", "#automation-screen", "#portfolio-screen", "#settings-screen", "#agenda", "#inbox", "#review-queue"].includes(hash)) {
     const heading = document.getElementById(hash.slice(1))?.querySelector<HTMLElement>("h2");
     if (heading) { heading.tabIndex = -1; heading.focus({ preventScroll: true }); }
     window.scrollTo({ top: 0 });
@@ -50,7 +52,7 @@ const navigationDialog = document.querySelector<HTMLDialogElement>("#navigation-
 const navigationInput = document.querySelector<HTMLInputElement>("#navigation-search-input")!;
 const navigationResults = document.querySelector<HTMLElement>("#navigation-search-results")!;
 const destinations = [
-  ["#morning", "Mi jornada"], ["#inbox", "Bandeja unificada"],
+  ["#runtime-screen", "Centro de agentes"], ["#morning", "Mi jornada"], ["#inbox", "Bandeja unificada"],
   ["#clients-screen", "Clientes y oportunidades"], ["#tasks-screen", "Trabajo pendiente"],
   ["#agenda", "Agenda"], ["#review-queue", "Cola de revisión"],
   ["#installation", "Mi Mac mini"], ["#help-screen", "Ayuda"], ["#automation-screen", "Reglas de preparación"], ["#portfolio-screen", "Cartera de pólizas"], ["#settings-screen", "Configuración"]

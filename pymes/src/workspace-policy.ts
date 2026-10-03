@@ -1,12 +1,12 @@
 export type WorkspaceRole = "owner" | "agent" | "reviewer" | "worker";
-export type WorkspaceOperation = "readInbox" | "prepareQuote" | "approveOffer" |
+export type WorkspaceOperation = "createRuntimeTask" | "readRuntime" | "readInbox" | "prepareQuote" | "approveOffer" |
   "executeEffect" | "manageConnectors" | "manageMembers" | "exportData";
 
 const permissions: Record<WorkspaceRole, ReadonlySet<WorkspaceOperation>> = {
-  owner: new Set(["readInbox", "prepareQuote", "approveOffer", "executeEffect",
+  owner: new Set(["createRuntimeTask", "readRuntime", "readInbox", "prepareQuote", "approveOffer", "executeEffect",
     "manageConnectors", "manageMembers", "exportData"]),
-  agent: new Set(["readInbox", "prepareQuote", "manageConnectors"]),
-  reviewer: new Set(["readInbox", "approveOffer", "exportData"]),
+  agent: new Set(["createRuntimeTask", "readRuntime", "readInbox", "prepareQuote", "manageConnectors"]),
+  reviewer: new Set(["readRuntime", "readInbox", "approveOffer", "exportData"]),
   worker: new Set(["readInbox", "executeEffect"])
 };
 

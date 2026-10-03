@@ -1,3 +1,5 @@
+import { totalmem, arch } from "node:os";
+import { createDemoClassifierHandler } from "./demo-classifier-http.js";
 import { createServer } from "node:http";
 import { readFile, realpath } from "node:fs/promises";
 import { resolve, sep, extname } from "node:path";
@@ -8,14 +10,23 @@ const contentTypes: Record<string, string> = {
   ".css": "text/css; charset=utf-8", ".svg": "image/svg+xml", ".png": "image/png",
   ".ico": "image/x-icon", ".woff2": "font/woff2"
 };
-export function createUiServer(directory: string) {
+export function createUiServer(directory: string, origin = "http://127.0.0.1:5175") {
+  const classify = createDemoClassifierHandler(origin);
   const root = resolve(directory);
   return createServer(async (request, response) => {
     response.setHeader("X-Content-Type-Options", "nosniff");
     response.setHeader("Referrer-Policy", "no-referrer");
     response.setHeader("Cache-Control", "no-store");
+    if (await classify(request, response)) return;
     if (request.method !== "GET" && request.method !== "HEAD") {
       response.writeHead(405, { Allow: "GET, HEAD" }); response.end(); return;
+    }
+    if (new URL(request.url ?? "/", origin).pathname === "/api/local-health") {
+      const body = JSON.stringify({ service: "pymes-ui", status: "ok", architecture: arch(),
+        memoryGiB: Math.round(totalmem() / 2 ** 30), classification: "fixture-only" });
+      response.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+      response.end(request.method === "HEAD" ? undefined : body);
+      return;
     }
     try {
       const pathname = decodeURIComponent(new URL(request.url ?? "/", "http://127.0.0.1").pathname);
@@ -35,7 +46,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
   if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error("INVALID_UI_PORT");
   const directory = resolve(import.meta.dirname, "../dist");
   await readFile(resolve(directory, "index.html")); // Fail at startup when the build is missing.
-  const server = createUiServer(directory);
+  const server = createUiServer(directory, `http://127.0.0.1:${port}`);
   server.listen(port, "127.0.0.1", () => console.log(`PYMES UI: http://127.0.0.1:${port}`));
   for (const signal of ["SIGINT", "SIGTERM"] as const) process.on(signal, () => server.close());
 }

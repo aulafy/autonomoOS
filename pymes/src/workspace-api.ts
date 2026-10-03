@@ -1,3 +1,4 @@
+import { readRuntimeWorkspace, type TaskRuntimeState } from "@agent-world/task-runtime";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { hashSessionToken } from "./auth.js";
 import { createApproval, requirePermission, type ApprovalRecord,
@@ -160,9 +161,17 @@ function validIngressSignature(body: unknown, signature: string | undefined, sec
  * Small HTTP contract for the first PYMES server. It owns authorization and
  * response shaping; persistence can be replaced without changing callers.
  */
+export interface WorkspaceRuntimeSource {
+  /** Host selects a tenant-isolated runtime; never a global shared snapshot. */
+  snapshotForTenant(tenantId: string): TaskRuntimeState | null;
+  principalIdForSession(principal: WorkspacePrincipal): string;
+  createTask?(tenantId: string, owner: string, input: { id: string; goal: string }): { created: boolean };
+}
+
 export class WorkspaceApi {
   constructor(readonly repository: WorkspaceRepository = new InMemoryWorkspaceRepository(),
-    private readonly ingress?: { token: string; policy: OpenClawEnterprisePolicy }) {}
+    private readonly ingress?: { token: string; policy: OpenClawEnterprisePolicy },
+    private readonly runtime?: WorkspaceRuntimeSource) {}
 
   /** Lightweight storage probe used by the process readiness endpoint. */
   isReady(): boolean {
@@ -236,6 +245,32 @@ export class WorkspaceApi {
       return { status: 200, body: { tenantId, status: "revoked" } };
     }
     const resource = { tenantId, id: tenantId };
+    if (request.method === "POST" && parts[3] === "runtime" && parts.length === 4) {
+      try { requirePermission(principal, "createRuntimeTask", resource); }
+      catch { return { status: 403, body: { error: "PERMISSION_DENIED" } }; }
+      if (!this.runtime?.createTask) return { status: 404, body: { error: "RUNTIME_NOT_CONFIGURED" } };
+      const body = request.body;
+      if (!body || typeof body !== "object" || Array.isArray(body)) return { status: 400, body: { error: "INVALID_RUNTIME_TASK" } };
+      const input = body as Record<string, unknown>;
+      if (Object.keys(input).some(key => !["id", "goal"].includes(key)) || typeof input.id !== "string" || !/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,99}$/.test(input.id) || typeof input.goal !== "string" || !input.goal.trim() || input.goal.length > 2000 || /[\u0000-\u001f\u007f]/.test(input.goal)) return { status: 400, body: { error: "INVALID_RUNTIME_TASK" } };
+      const owner = this.runtime.principalIdForSession(structuredClone(principal));
+      try {
+        const result = this.runtime.createTask(tenantId, owner, { id: input.id, goal: input.goal.trim() });
+        return { status: result.created ? 201 : 200, body: { tenantId, taskId: input.id, created: result.created } };
+      } catch (error) {
+        if (error instanceof Error && error.message === "RUNTIME_TASK_ID_CONFLICT") return { status: 409, body: { error: "RUNTIME_TASK_ID_CONFLICT" } };
+        throw error;
+      }
+    }
+    if (request.method === "GET" && parts[3] === "runtime" && (parts.length === 4 || parts.length === 5)) {
+      try { requirePermission(principal, "readRuntime", resource); }
+      catch { return { status: 403, body: { error: "PERMISSION_DENIED" } }; }
+      if (!this.runtime) return { status: 404, body: { error: "RUNTIME_NOT_CONFIGURED" } };
+      const snapshot = this.runtime.snapshotForTenant(tenantId);
+      if (!snapshot) return { status: 404, body: { error: "RUNTIME_NOT_CONFIGURED" } };
+      const view = readRuntimeWorkspace(snapshot, this.runtime.principalIdForSession(structuredClone(principal)), parts.length === 5 ? { taskId: parts[4] } : {});
+      return { status: 200, body: { tenantId, ...view } };
+    }
     if (request.method === "GET" && parts[3] === "inbox" && parts.length === 4) {
       try { requirePermission(principal, "readInbox", resource); }
       catch { return { status: 403, body: { error: "WORKSPACE_PERMISSION_DENIED" } }; }

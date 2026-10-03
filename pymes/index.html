@@ -23,6 +23,7 @@
         <a href="#clients-screen">♙ <span>Clientes</span><b>7</b></a>
         <a href="#portfolio-screen">▣ <span>Pólizas</span></a>
         <a href="#tasks-screen">☷ <span>Tareas</span><b>8</b></a>
+        <a href="#runtime-screen">◈ <span>Centro de agentes</span><b>V2</b></a>
         <a href="#automation-screen">⌁ <span>Automatizaciones</span></a>
       </nav>
       <nav class="module-nav secondary-nav" aria-label="Administración">
@@ -76,6 +77,7 @@
           <div class="display-settings"><div><h3>Lectura cómoda</h3><p>Elige el tamaño de texto para este navegador.</p></div><label for="display-text-size">Tamaño de texto<select id="display-text-size"><option value="standard">Estándar</option><option value="large">Grande</option></select></label><span id="display-feedback" role="status" aria-live="polite"></span></div>
           <div class="appliance-boundary"><strong>Local con conexiones externas</strong><span>La IA puede ejecutarse en tu Mac. WhatsApp, Holded y Google Calendar necesitan Internet y sus propias cuentas.</span></div>
         </section>
+        <section id="runtime-screen" class="runtime-screen" aria-label="Centro de agentes"></section>
         <section id="clients-screen" class="panel clients-screen" aria-label="Directorio de clientes">
           <div class="panel-heading"><div><span class="eyebrow">RELACIONES · DATOS DE EJEMPLO</span><h2>Clientes y oportunidades</h2><p>Encuentra un contacto y prepara su próxima conversación.</p></div><a href="#morning">← Mi jornada</a></div>
           <div class="clients-toolbar"><label for="clients-search">Buscar contacto<input type="search" id="clients-search" placeholder="Nombre o ramo de seguro…"></label><label for="clients-kind">Relación<select id="clients-kind"><option value="all">Todos</option><option value="client">Clientes</option><option value="prospect">Oportunidades</option></select></label></div>
@@ -105,8 +107,16 @@
           <div class="portfolio-requirements"><h3>Datos necesarios en cada expediente</h3><div><article><strong>Identificación</strong><p>Cliente, aseguradora y número de póliza para asociar el contrato correcto.</p></article><article><strong>Vigencia</strong><p>Fechas de inicio y vencimiento verificadas para preparar el seguimiento.</p></article><article><strong>Documentación</strong><p>Condiciones y coberturas de la póliza vigente antes de ofrecer una respuesta.</p></article></div><p class="portfolio-note">Una solicitud de renovación en un mensaje no demuestra la fecha ni las condiciones del contrato.</p></div>
         </section>
         <section id="settings-screen" class="panel settings-screen" aria-label="Configuración y conexiones">
-          <div class="panel-heading"><div><span class="eyebrow">CONFIGURACIÓN</span><h2>Tu espacio de trabajo</h2><p>Conexiones previstas en esta instalación. Esta vista no comprueba credenciales ni disponibilidad.</p></div><a href="#installation">Mi Mac mini →</a></div>
+          <div class="panel-heading"><div><span class="eyebrow">CONFIGURACIÓN</span><h2>Tu espacio de trabajo</h2><p>Conexiones previstas en esta instalación. Las tarjetas describen requisitos; la comprobación local verifica únicamente el servidor de la interfaz.</p></div><a href="#installation">Mi Mac mini →</a></div>
+          <form id="workspace-login" class="workspace-login">
+            <div><h3>Conectar mi espacio</h3><p>Introduce los datos de acceso entregados con tu instalación. La sesión se conserva en esta pestaña.</p></div>
+            <label>Dirección del servicio<input id="workspace-login-url" type="url" required placeholder="http://127.0.0.1:8790" autocomplete="off"></label>
+            <label>Espacio de trabajo<input id="workspace-login-tenant" required maxlength="200" placeholder="mi-agencia" autocomplete="organization"></label>
+            <label>Clave de sesión<input id="workspace-login-token" type="password" required minlength="16" maxlength="4096" autocomplete="off"></label>
+            <button type="submit">Conectar y ver mis trabajos</button><p id="workspace-login-status" role="status" aria-live="polite"></p>
+          </form>
           <div class="settings-summary"><strong>Demostración con datos de ejemplo</strong><p>Configurar un proveedor requiere permisos de su cuenta y ajustes del servidor. Ninguna tarjeta significa que una conexión esté activa.</p></div>
+          <div class="local-service-check"><div><h3>Servicio de este Mac</h3><p>Comprueba la interfaz instalada. No verifica WhatsApp, CRM, calendario ni el modelo.</p></div><button type="button" id="local-health-check">Comprobar servicio local</button><p id="local-health-result" role="status" aria-live="polite">Todavía no comprobado.</p></div>
           <div class="connection-grid"><article><div class="connection-heading"><h3>WhatsApp Business</h3><span>Sin verificar</span></div><p>Recepción mediante webhook firmado y respuestas mediante operaciones confirmadas.</p><details><summary>Requisitos de instalación</summary><p>Cuenta Business, número autorizado, token y configuración del webhook en Meta. El instalador configura estos datos en el servidor.</p></details></article><article><div class="connection-heading"><h3>Holded</h3><span>Lectura preparada</span></div><p>Contexto del cliente para preparar el trabajo del agente.</p><details><summary>Requisitos de instalación</summary><p>Acceso autorizado a la cuenta y clave del proveedor. La pantalla de Clientes actual sigue usando contactos ficticios.</p></details></article><article><div class="connection-heading"><h3>Google Calendar</h3><span>Lectura preparada</span></div><p>Agenda y creación de citas mediante operaciones revisadas.</p><details><summary>Requisitos de instalación</summary><p>Autorización de Google y selección del calendario. Las citas actuales son de demostración.</p></details></article><article><div class="connection-heading"><h3>Asistente local</h3><span>Sin verificar</span></div><p>Clasificación de mensajes en el Mac mediante el modelo local configurado.</p><details><summary>Requisitos de instalación</summary><p>Servicio Ollama y modelo instalado. El consumo y la velocidad deben verificarse en el Mac mini de 16 GB.</p></details></article><article><div class="connection-heading"><h3>Otros canales</h3><span>Gateway previsto</span></div><p>Telegram, correo e iMessage dependen de un gateway compatible y autorizado.</p><details><summary>Requisitos de instalación</summary><p>Cada canal necesita su propio proveedor y permisos. No hay una conexión directa verificada con la bandeja personal de iMessage.</p></details></article><article><div class="connection-heading"><h3>Copia de seguridad</h3><span>Revisión manual</span></div><p>La recuperación debe comprobarse durante la entrega del equipo.</p><a href="#installation">Revisar puesta en marcha →</a></article></div>
         </section>
         <footer>PYMES / AGENT WORLD OS <span>·</span> Prototipo de flujo de trabajo con datos ficticios</footer>
@@ -123,5 +133,8 @@
   <script type="module" src="/src/clients-screen.ts"></script>
   <script type="module" src="/src/tasks-screen.ts"></script>
   <script type="module" src="/src/navigation.ts"></script>
+  <script type="module" src="/src/local-health-screen.ts"></script>
+<script type="module" src="/src/workspace-login.ts"></script>
+<script type="module" src="/src/runtime-screen.ts"></script>
 </body>
 </html>

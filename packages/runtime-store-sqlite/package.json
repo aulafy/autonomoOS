@@ -9,6 +9,11 @@
     "test": "node --import tsx --test tests/*.test.ts"
   },
   "dependencies": {
+    "@agent-world/verification": "0.1.0",
+    "@agent-world/evidence-ledger": "0.1.0",
+    "@agent-world/decision-ledger": "0.1.0",
+    "@agent-world/artifacts": "0.1.0",
+    "@agent-world/context-engine": "0.1.0",
     "@agent-world/budgets": "0.1.0",
     "@agent-world/composition-policy": "0.1.0",
     "@agent-world/contracts": "0.1.0",
@@ -18,7 +23,9 @@
     "@agent-world/observation": "0.1.0",
     "@agent-world/reconciliation": "0.1.0",
     "@agent-world/resources": "0.1.0",
-    "@agent-world/supervision": "0.1.0"
+    "@agent-world/supervision": "0.1.0",
+    "@agent-world/task-runtime": "0.1.0",
+    "@agent-world/routing": "0.1.0"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

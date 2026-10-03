@@ -21,7 +21,7 @@ function response(status: number, body: Record<string, unknown>, requestId = nor
     "x-dns-prefetch-control": "off", "x-permitted-cross-domain-policies": "none" };
   if (origin && allowedOrigins.includes(origin)) {
     headers["access-control-allow-origin"] = origin;
-    headers["access-control-allow-headers"] = "Authorization, Content-Type, X-PYMES-Ingress-Token, X-PYMES-Ingress-Signature, X-Request-Id";
+    headers["access-control-allow-headers"] = "Authorization, Content-Type, Cache-Control, X-PYMES-Ingress-Token, X-PYMES-Ingress-Signature, X-Request-Id";
     headers["access-control-allow-methods"] = "GET, POST, OPTIONS";
     headers["access-control-expose-headers"] = "x-request-id, retry-after";
     headers["access-control-max-age"] = "600";

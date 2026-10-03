@@ -27,5 +27,9 @@
   },
   "engines": {
     "node": ">=22"
+  },
+  "dependencies": {
+    "@agent-world/task-runtime": "0.1.0",
+    "@agent-world/runtime-store-sqlite": "0.1.0"
   }
 }

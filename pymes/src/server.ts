@@ -1,3 +1,4 @@
+import { openWorkspaceRuntime } from "./runtime-source.js";
 import { createServer } from "node:http";
 import { WorkspaceApi } from "./workspace-api.js";
 import { handlePymesRequest } from "./api-server.js";
@@ -42,7 +43,8 @@ const enterprisePolicy = {
   maxFutureSkewMs: parseBoundedOptionalNumber(process.env.PYMES_OPENCLAW_MAX_FUTURE_SKEW_MS, 24 * 60 * 60 * 1000, "INVALID_PYMES_OPENCLAW_MAX_FUTURE_SKEW_MS"),
   signingSecret: ingressSigningSecret
 };
-const api = new WorkspaceApi(repository, ingressToken ? { token: ingressToken, policy: enterprisePolicy } : undefined);
+const runtime = await openWorkspaceRuntime(process.env.PYMES_RUNTIME_DB_PATH ?? "./data/pymes-task-runtime.db", tenantId);
+const api = new WorkspaceApi(repository, ingressToken ? { token: ingressToken, policy: enterprisePolicy } : undefined, runtime.source);
 const whatsappWebhook = whatsappVerifyToken && whatsappAppSecret
   ? { verifyToken: whatsappVerifyToken, appSecret: whatsappAppSecret,
       tenantId, agentId: process.env.PYMES_OPENCLAW_AGENT_ID ?? "whatsapp-agent", resourceId: process.env.PYMES_OPENCLAW_RESOURCE_ID ?? "whatsapp-business",
@@ -56,6 +58,7 @@ let repositoryClosed = false;
 function closeRepository(): void {
   if (repositoryClosed) return;
   repositoryClosed = true;
+  runtime.close();
   repository.close();
 }
 function safeError(error: unknown): { name: string; message: string } {

@@ -1,0 +1,6 @@
+{
+  "name": "@agent-world/provider-orca", "version": "0.1.0", "private": true, "type": "module", "main": "src/index.ts",
+  "scripts": { "typecheck": "tsc -p tsconfig.json --noEmit", "test": "node --import tsx --test tests/*.test.ts", "probe": "tsx src/probe.ts" },
+  "dependencies": { "@agent-world/execution-providers": "0.1.0" },
+  "devDependencies": { "@types/node": "^24.0.0", "tsx": "^4.19.0", "typescript": "^5.8.3" }
+}

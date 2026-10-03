@@ -1,3 +1,5 @@
+import { parseRuntimeView } from "./runtime-view.js";
+import type { RuntimeWorkspaceView } from "@agent-world/task-runtime";
 import { isConnectorConfig, supportedChannels, type ConnectorStatus } from "./config.js";
 const MAX_REMOTE_ITEMS = 10_000;
 const MAX_REMOTE_RESPONSE_BYTES = 1_048_576;
@@ -131,11 +133,19 @@ function validConfig(config: WorkspaceClientConfig): void {
 }
 
 export class WorkspaceClient {
+  async createRuntimeTask(input: { id: string; goal: string }): Promise<void> {
+    const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/runtime`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) });
+    if (body.tenantId !== this.config.tenantId || body.taskId !== input.id || typeof body.created !== "boolean") throw new Error("INVALID_RUNTIME_CREATE_RESPONSE");
+  }
+  async runtimeView(): Promise<RuntimeWorkspaceView> {
+    const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/runtime`);
+    return parseRuntimeView(body, this.config.tenantId);
+  }
   private lastRequestIdValue: string | null = null;
   private lastStatusValue: number | null = null;
   private lastResponseRequestIdValue: string | null = null;
   constructor(private readonly config: WorkspaceClientConfig,
-    private readonly fetcher: typeof fetch = fetch) {
+    private readonly fetcher: typeof fetch = (input, init) => fetch(input, init)) {
     validConfig(config);
     this.config = { baseUrl: new URL(config.baseUrl.trim()).toString().replace(/\/$/, ""), tenantId: config.tenantId.trim(), token: config.token.trim(), requestTimeoutMs: config.requestTimeoutMs ?? 10000 };
   }

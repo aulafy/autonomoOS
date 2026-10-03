@@ -21,10 +21,14 @@ test("compiled UI serves pages but blocks secrets, writes and external symlinks"
     const page = await fetch(base);
     assert.equal(page.status, 200);
     assert.equal(await page.text(), "<h1>PYMES</h1>");
+    const health = await (await fetch(base + "/api/local-health")).json() as { service: string; memoryGiB: number };
+    assert.equal(health.service, "pymes-ui");
+    assert.ok(health.memoryGiB > 0);
     assert.equal(page.headers.get("x-content-type-options"), "nosniff");
     assert.equal((await fetch(base + "/.env")).status, 404);
     assert.equal((await fetch(base + "/linked.html")).status, 404);
-    assert.equal((await fetch(base + "/api/demo-classify/msg-1")).status, 404);
+    assert.equal((await fetch(base + "/api/demo-classify/msg-1")).status, 405);
+    assert.equal((await fetch(base + "/api/demo-classify/msg-1", { method: "POST" })).status, 403);
     assert.equal((await fetch(base, { method: "POST" })).status, 405);
     const head = await fetch(base, { method: "HEAD" });
     assert.equal(head.status, 200);

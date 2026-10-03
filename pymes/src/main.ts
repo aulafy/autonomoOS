@@ -1,3 +1,4 @@
+import { setRuntimeClient, setRuntimeUnavailable } from "./runtime-screen.js";
 import { normalizeSearch } from "./search.js";
 import { buildMorningBrief, type Channel, type Topic, type WorkItem } from "./domain.js";
 import { demoData } from "./demo-data.js";
@@ -109,6 +110,7 @@ async function checkRemoteWorkspace(): Promise<void> {
   if (!baseUrl || !tenantId || !token) {
     if (workspaceAutoRefreshTimer !== null) { window.clearInterval(workspaceAutoRefreshTimer); workspaceAutoRefreshTimer = null; }
     const configured = Boolean(baseUrl || tenantId);
+    if (configured) setRuntimeUnavailable(); else setRuntimeClient(null);
     status.className = configured ? "workspace-pill error" : "workspace-pill";
     status.dataset.state = configured ? "authentication-required" : "demo";
     status.textContent = configured ? "● SESIÓN NECESARIA" : "● DEMOSTRACIÓN";
@@ -139,6 +141,7 @@ async function checkRemoteWorkspace(): Promise<void> {
       attention = inbox.filter(item => item.state === "pending_review" || item.state === "uncertain");
     }
     remoteWorkspaceClient = client;
+    setRuntimeClient(client);
     remoteInbox = new Map(inbox.map(item => [item.id, item]));
     $("attention-count").textContent = String(attention.length);
     renderWorkspaceMetrics(metrics);
@@ -234,6 +237,7 @@ async function checkRemoteWorkspace(): Promise<void> {
     retry.disabled = false;
     retry.removeAttribute("aria-busy");
     remoteWorkspaceClient = null;
+    setRuntimeUnavailable();
     document.getElementById("workspace-logout")?.remove();
     document.getElementById("workspace-refresh")?.remove();
     if (workspaceRetryTimer === null) {
@@ -702,11 +706,13 @@ function renderDetail(item: WorkItem) {
   };
   requestProposal.addEventListener("click", async () => {
     requestProposal.disabled = true;
+    requestProposal.setAttribute("aria-busy", "true");
     modelStatus.textContent = "Consultando el modelo local…";
     try {
       const response = await fetch(`/api/demo-classify/${encodeURIComponent(item.id)}`, {
         method: "POST", headers: { Accept: "application/json" }
       });
+      if (response.status === 429) throw new Error("MODEL_BUSY");
       if (!response.ok) throw new Error("MODEL_UNAVAILABLE");
       const data: unknown = await response.json();
       if (!data || typeof data !== "object") throw new Error("INVALID_MODEL_RESULT");
@@ -718,9 +724,12 @@ function renderDetail(item: WorkItem) {
       modelSuggestions.set(item.id, { proposal: parseClassificationProposal(result.proposed),
         model: result.model });
       showModelSuggestion();
-    } catch {
-      modelStatus.textContent = "Modelo local no disponible. Puedes corregir manualmente.";
+    } catch (error) {
+      modelStatus.textContent = error instanceof Error && error.message === "MODEL_BUSY"
+        ? "El asistente está preparando otra solicitud. Reintenta cuando termine."
+        : "Modelo local no disponible. Puedes corregir manualmente.";
     } finally {
+      requestProposal.removeAttribute("aria-busy");
       requestProposal.disabled = false;
     }
   });

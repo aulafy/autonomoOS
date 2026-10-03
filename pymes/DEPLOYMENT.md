@@ -319,8 +319,10 @@ permitidos dentro de `dist`, escucha solo en loopback y no usa HMR de Vite.
 `PYMES_UI_PORT` permite cambiar el puerto. Deben instalarse también las
 herramientas de ejecución del proyecto (Node y tsx).
 
-Este servidor no inicia la API, Ollama ni los workers, y no incorpora el endpoint
-experimental `/api/demo-classify` de Vite. Las operaciones del workspace necesitan
+Este servidor no inicia la API, Ollama ni los workers. Incluye el endpoint
+`/api/demo-classify` compartido con Vite, limitado a mensajes ficticios conocidos,
+peticiones desde el mismo origen y una clasificación simultánea. Ollama debe estar
+arrancado para usarlo. Las operaciones del workspace necesitan
 su servidor y sesión separados. Para conectar la API desde este origen, añadir
 `http://127.0.0.1:5175` a `PYMES_API_CORS_ORIGINS`. No constituye todavía un
 instalador ni configura arranque automático de macOS.
@@ -355,3 +357,14 @@ rm "$HOME/Library/LaunchAgents/com.pymes.os.ui.plist"
 
 La generación y el formato pueden verificarse sin registrar el agente. La prueba
 real tras cerrar sesión o reiniciar el equipo sigue siendo un criterio de entrega.
+
+### V2 task runtime storage
+
+The API opens a separate authoritative SQLite journal at
+`PYMES_RUNTIME_DB_PATH` (default `./data/pymes-task-runtime.db`). Include its database
+and WAL state in the existing quiesced backup workflow. It is bound to the bootstrap
+tenant and rejects a different tenant on reopen. No example tasks are inserted.
+`GET /v1/workspaces/<tenant>/runtime` uses an authenticated workspace session;
+runtime task owners must match workspace user IDs. Only task-runtime and tenant
+binding commands are supported in this product journal; do not point it at a
+legacy/shared H1 database. Live task creation/orchestration is still pending.

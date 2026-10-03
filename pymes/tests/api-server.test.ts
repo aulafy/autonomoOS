@@ -164,3 +164,9 @@ test("HTTP adapter bounds OpenClaw ingress bodies before dispatch", async () => 
   assert.equal(response.status, 413);
   assert.deepEqual(await response.json(), { error: "BODY_TOO_LARGE" });
 });
+
+test('workspace browser CORS accepts authenticated no-store request headers',async()=>{
+ const result=await handlePymesRequest(api(),new Request('http://localhost/v1/workspaces/agency-1/runtime',{method:'OPTIONS',headers:{origin:'http://127.0.0.1:5174','access-control-request-headers':'authorization,cache-control,x-request-id'}}));
+ assert.equal(result.headers.get('access-control-allow-origin'),'http://127.0.0.1:5174');
+ assert.ok(result.headers.get('access-control-allow-headers')!.toLowerCase().includes('cache-control'));
+});

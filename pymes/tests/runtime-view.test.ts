@@ -1,0 +1,5 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {parseRuntimeView} from '../src/runtime-view.js';import {WorkspaceClient} from '../src/workspace-client.js';
+const body={tenantId:'agency',schemaVersion:1,revision:1,hasMore:false,tasks:[]};
+test('runtime client uses authenticated bounded request and preserves empty real state',async()=>{let url='';let auth='';const client=new WorkspaceClient({baseUrl:'http://localhost',tenantId:'agency',token:'owner-token-123456'},async(u,init)=>{url=String(u);auth=new Headers(init?.headers).get('authorization')!;return new Response(JSON.stringify(body),{headers:{'content-type':'application/json'}});});assert.deepEqual((await client.runtimeView()).tasks,[]);assert.equal(url,'http://localhost/v1/workspaces/agency/runtime');assert.equal(auth,'Bearer owner-token-123456');});
+test('malformed runtime response and foreign tenant cannot be rendered',()=>{for(const value of [{...body,tenantId:'other'},{...body,schemaVersion:2},{...body,revision:-1},{...body,tasks:[{id:'task'}]}])assert.throws(()=>parseRuntimeView(value,'agency'),/INVALID_RUNTIME_RESPONSE/);});
