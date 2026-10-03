@@ -17,7 +17,7 @@ export function parseEmailView(
     !object(value) ||
     value.tenantId !== tenantId ||
     value.taskId !== taskId ||
-    value.simulated !== true ||
+    typeof value.simulated !== "boolean" ||
     !text(value.status, 100) ||
     !Array.isArray(value.effects) ||
     value.effects.length > 10 ||
@@ -25,6 +25,7 @@ export function parseEmailView(
     value.audit.length > 1000
   )
     return fail();
+  if(value.draft!==undefined&&value.draft!==null){const p=value.draft;if(!object(p)||!text(p.from,254)||!text(p.subject,500)||!text(p.body,8000)||!text(p.contactId,500)||!['to','cc','bcc'].every(k=>Array.isArray(p[k])&&(p[k] as unknown[]).length<=10&&(p[k] as unknown[]).every(a=>text(a,254))))return fail();}
   if (value.review !== null) {
     const r = value.review;
     if (

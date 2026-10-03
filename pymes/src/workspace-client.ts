@@ -144,11 +144,17 @@ export class WorkspaceClient {
     if(result.tenantId!==this.config.tenantId||result.taskId!==taskId||!Number.isSafeInteger(result.planVersion)||Number(result.planVersion)<1||typeof result.created!=='boolean')throw new Error('INVALID_RUNTIME_PLAN_RESPONSE');
   }
 
-  async emailWorkflow(taskId:string,operation?:'review'|'decision'|'execute'|'reconcile',decision?:{bindingHash:string;decision:'approved'|'rejected'}) {
+  async emailWorkflow(taskId:string,operation?:'review'|'decision'|'execute'|'reconcile'|'draft',decision?:{bindingHash:string;decision:'approved'|'rejected'}|{to:string;subject:string;body:string;contactId:string}) {
     if(!/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,99}$/.test(taskId))throw new Error('INVALID_RUNTIME_TASK');
     const path=`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/runtime/${encodeURIComponent(taskId)}/email${operation?'/'+operation:''}`;
     const response=await this.request(path,operation?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(decision??{})}:{},[],40_000);
     return parseEmailView(response,this.config.tenantId,taskId);
+  }
+
+  async gmail(operation?:'connect'|'check'|'disconnect',verification=false):Promise<import('./gmail-oauth.js').GmailConnectionView>{
+    const value=await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/gmail${operation?'/'+operation:''}`,operation?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(operation==='connect'?{verification}:{})}:{});
+    if(value.tenantId!==this.config.tenantId||!['not_connected','connecting','connected','authorization_error'].includes(String(value.state))||typeof value.configured!=='boolean'||typeof value.verification!=='boolean'||!(value.account===null||typeof value.account==='string'&&value.account.length<=254)||!Array.isArray(value.scopes)||value.scopes.length>10||!value.scopes.every(s=>typeof s==='string'&&s.length<256)||!(value.lastCheckedAt===null||Number.isFinite(value.lastCheckedAt))||!(value.error===null||typeof value.error==='string'&&value.error.length<100))throw new Error('INVALID_GMAIL_VIEW');
+    return structuredClone(value) as unknown as import('./gmail-oauth.js').GmailConnectionView;
   }
 
   async runtimeView(): Promise<RuntimeWorkspaceView> {
