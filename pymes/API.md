@@ -343,3 +343,34 @@ caracteres. La aplicación utiliza, como mínimo, estas formas de payload:
 
 Estas formas describen una propuesta de trabajo; no autorizan por sí mismas el
 envío, la llamada, la creación de una cita ni la modificación del CRM.
+
+## Local job planning — first email workflow
+
+`POST /v1/workspaces/:tenant/runtime/:taskId/plan`
+
+Bearer session, owner/agent role and ownership required. Body must be exactly:
+
+```json
+{"workflow":"email-lead-v1"}
+```
+
+201: first validated durable plan. 200: identical workflow already persisted,
+without another inference call. 409: task state/concurrent planning/other workflow
+conflict. 401: session absent or revoked during planning. 404: missing/foreign task
+or planner unavailable. 400: invalid input or local proposal not confirmed.
+
+Response contains tenantId, taskId, created and planVersion. GET runtime returns
+its units/dependencies using the existing authenticated read model. The caller
+cannot submit a plan, approval, destination or authority fields. A saved plan is
+not authorization: no effect/executor is dispatched by this endpoint. Host-owned
+workflow slots will need bindings and live C8/C9/C11 checks before execution.
+
+## M2 governed simulated email
+
+With `PYMES_FAKE_EMAIL_ENABLED=1`, authenticated owners can evaluate, approve/reject,
+execute and reconcile the simulated workflow. Base route:
+`/v1/workspaces/<tenant>/runtime/<task>/email`. GET reads state; POST suffixes:
+`review`, `decision`, `execute`, `reconcile`. `decision` accepts only bindingHash and
+approved/rejected; other POST bodies must be `{}`. Approval uses approveOffer permission,
+execution uses executeEffect, and all operations enforce task ownership. Unknown effects
+are never resent. See `../docs/AUTONOMO_OS_GOVERNED_EMAIL_M2.md`.

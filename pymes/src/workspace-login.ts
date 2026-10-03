@@ -17,7 +17,10 @@ form.addEventListener('submit',async event=>{
   await client.inbox();
   sessionStorage.setItem('pymes.workspace.token',key);token.value='';
   const next=new URL(location.href);next.searchParams.set('workspaceApi',baseUrl);next.searchParams.set('tenant',tenantId);next.hash='runtime-screen';
-  status.textContent='Sesión verificada. Abriendo tus trabajos…';location.assign(next.toString());
+  status.textContent='Sesión verificada. Abriendo tus trabajos…';
+  // A hash-only navigation does not rerun main.ts after a new token is stored.
+  if(next.search===location.search){history.replaceState(null,'',next.toString());location.reload();}
+  else location.assign(next.toString());
  } catch {
   token.value='';status.textContent='No se ha podido conectar. Revisa la dirección, el espacio y la clave de sesión.';
   submit.disabled=false;form.removeAttribute('aria-busy');

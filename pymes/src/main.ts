@@ -96,6 +96,7 @@ const channelLabels: Record<Channel, string> = {
 };
 let selectedId = brief.items[0]?.id ?? null;
 
+let runtimeConnectionKey='';
 async function checkRemoteWorkspace(): Promise<void> {
   if (workspaceSyncInFlight) return;
   const status = $("workspace-status");
@@ -110,7 +111,7 @@ async function checkRemoteWorkspace(): Promise<void> {
   if (!baseUrl || !tenantId || !token) {
     if (workspaceAutoRefreshTimer !== null) { window.clearInterval(workspaceAutoRefreshTimer); workspaceAutoRefreshTimer = null; }
     const configured = Boolean(baseUrl || tenantId);
-    if (configured) setRuntimeUnavailable(); else setRuntimeClient(null);
+    runtimeConnectionKey='';if (configured) setRuntimeUnavailable(); else setRuntimeClient(null);
     status.className = configured ? "workspace-pill error" : "workspace-pill";
     status.dataset.state = configured ? "authentication-required" : "demo";
     status.textContent = configured ? "● SESIÓN NECESARIA" : "● DEMOSTRACIÓN";
@@ -141,7 +142,8 @@ async function checkRemoteWorkspace(): Promise<void> {
       attention = inbox.filter(item => item.state === "pending_review" || item.state === "uncertain");
     }
     remoteWorkspaceClient = client;
-    setRuntimeClient(client);
+    const connectionKey=JSON.stringify([baseUrl,tenantId,token]);
+    if(connectionKey!==runtimeConnectionKey){runtimeConnectionKey=connectionKey;setRuntimeClient(client);}
     remoteInbox = new Map(inbox.map(item => [item.id, item]));
     $("attention-count").textContent = String(attention.length);
     renderWorkspaceMetrics(metrics);
@@ -237,7 +239,7 @@ async function checkRemoteWorkspace(): Promise<void> {
     retry.disabled = false;
     retry.removeAttribute("aria-busy");
     remoteWorkspaceClient = null;
-    setRuntimeUnavailable();
+    runtimeConnectionKey='';setRuntimeUnavailable();
     document.getElementById("workspace-logout")?.remove();
     document.getElementById("workspace-refresh")?.remove();
     if (workspaceRetryTimer === null) {

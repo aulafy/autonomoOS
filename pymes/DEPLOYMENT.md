@@ -365,6 +365,14 @@ The API opens a separate authoritative SQLite journal at
 and WAL state in the existing quiesced backup workflow. It is bound to the bootstrap
 tenant and rejects a different tenant on reopen. No example tasks are inserted.
 `GET /v1/workspaces/<tenant>/runtime` uses an authenticated workspace session;
-runtime task owners must match workspace user IDs. Only task-runtime and tenant
-binding commands are supported in this product journal; do not point it at a
-legacy/shared H1 database. Live task creation/orchestration is still pending.
+runtime task owners must match workspace user IDs. Task runtime, tenant binding, C1–C12 governance and email review/artifact commands are registered before replay; do not point it at a legacy/shared H1 database. Authenticated task creation and first-plan persistence are supported. M2 simulated governed email execution is available with explicit opt-in. See
+`../docs/AUTONOMO_OS_PLANNING_M1.md` for the local planner configuration.
+
+### M2 simulated email opt-in
+
+Set `PYMES_FAKE_EMAIL_ENABLED=1` on the API process to enable the local fake mailbox.
+It writes `<PYMES_RUNTIME_DB_PATH>.fake-email.db` (using the default runtime path if unset),
+only accepts `@example.test` addresses and never connects Gmail. Back up both SQLite
+databases and their WAL files using coordinated/quiesced backups. Run one API writer
+per product journal. See `../docs/AUTONOMO_OS_GOVERNED_EMAIL_M2.md` for approval,
+crash recovery, simulation limits and tested behavior.

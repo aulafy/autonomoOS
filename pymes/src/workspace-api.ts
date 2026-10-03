@@ -39,7 +39,7 @@ export interface WorkspaceApiRequest {
 }
 
 export interface WorkspaceApiResponse {
-  status: 200 | 201 | 400 | 401 | 403 | 404 | 409;
+  status: 200 | 201 | 400 | 401 | 403 | 404 | 405 | 409;
   body: Record<string, unknown>;
 }
 
@@ -162,9 +162,11 @@ function validIngressSignature(body: unknown, signature: string | undefined, sec
  * response shaping; persistence can be replaced without changing callers.
  */
 export interface WorkspaceRuntimeSource {
+  email?:ReturnType<typeof import('./email-workflow.js').createEmailWorkflow>;
   /** Host selects a tenant-isolated runtime; never a global shared snapshot. */
   snapshotForTenant(tenantId: string): TaskRuntimeState | null;
   principalIdForSession(principal: WorkspacePrincipal): string;
+  planTask?(tenantId:string,owner:string,input:{taskId:string;workflow:string},mayCommit?:()=>boolean):Promise<{created:boolean;planVersion:number}>;
   createTask?(tenantId: string, owner: string, input: { id: string; goal: string }): { created: boolean };
 }
 
@@ -199,6 +201,64 @@ export class WorkspaceApi {
     this.repository.appendCaseAudit({ id: `audit-${tenantId}-${effect.caseId}-${operation}-${effect.id}-${priorAudit.length}`, tenantId,
       caseId: effect.caseId, from: currentCase?.state ?? "received", to: currentCase?.state ?? "received",
       operation, actorId, at, requestId, version: priorAudit.length ? priorAudit[priorAudit.length - 1]!.version + 1 : currentCase?.version ?? 0 });
+  }
+
+  private async handleEmail(request:WorkspaceApiRequest,parts:string[]):Promise<WorkspaceApiResponse>{
+    const token=tokenFrom(request),principal=token?this.repository.findSession(token):null;
+    if(!principal)return {status:401,body:{error:'UNAUTHENTICATED'}};
+    const tenant=parts[2],taskId=parts[4];if(tenant!==principal.tenantId)return {status:403,body:{error:'TENANT_SCOPE_DENIED'}};
+    if(request.method!=='GET'&&request.method!=='POST'||request.method==='GET'&&parts.length!==6||request.method==='POST'&&parts.length!==7)return {status:405,body:{error:'METHOD_NOT_ALLOWED'}};
+    const permission=request.method==='GET'?'readRuntime':parts[6]==='decision'?'approveOffer':parts[6]==='execute'?'executeEffect':'createRuntimeTask';
+    try{requirePermission(principal,permission,{tenantId:tenant,id:taskId});}catch{return {status:403,body:{error:'PERMISSION_DENIED'}};}
+    const email=this.runtime?.email;if(!email)return {status:404,body:{error:'EMAIL_SIMULATION_NOT_CONFIGURED'}};
+    const owner=this.runtime!.principalIdForSession(principal);
+    const live=()=>{const p=token?this.repository.findSession(token):null;return Boolean(p&&p.tenantId===tenant&&p.userId===owner&&p.role===principal.role);};
+    try{
+      if(request.method==='GET'&&parts.length===6)return {status:200,body:{tenantId:tenant,...email.view(taskId,owner)}};
+      const body=jsonRecord(request.body);if(!body)return {status:400,body:{error:'INVALID_EMAIL_REQUEST'}};
+      let result;
+      if(parts[6]==='review'&&Object.keys(body).length===0)result=await email.propose(taskId,owner);
+      else if(parts[6]==='decision'&&Object.keys(body).sort().join(',')==='bindingHash,decision'&&typeof body.bindingHash==='string'&&(body.decision==='approved'||body.decision==='rejected'))result=await email.decide(taskId,owner,{bindingHash:body.bindingHash,decision:body.decision},live);
+      else if(parts[6]==='execute'&&Object.keys(body).length===0)result=await email.execute(taskId,owner,live);
+      else if(parts[6]==='reconcile'&&Object.keys(body).length===0)result=await email.reconcile(taskId,owner);
+      else return {status:400,body:{error:'INVALID_EMAIL_REQUEST'}};
+      if(!live())return {status:401,body:{error:'UNAUTHENTICATED'}};
+      return {status:200,body:{tenantId:tenant,...result}};
+    }catch(error){const code=error instanceof Error?error.message:'';if(code==='EMAIL_TASK_NOT_FOUND')return {status:404,body:{error:code}};return {status:409,body:{error:'EMAIL_OPERATION_NOT_CONFIRMED'}};}
+  }
+
+  /** Async planning route; existing synchronous contracts remain unchanged. */
+  async handleAsync(request:WorkspaceApiRequest):Promise<WorkspaceApiResponse> {
+    const parts=pathParts(request.path);
+    if(parts?.[0]==='v1'&&parts[1]==='workspaces'&&parts[3]==='runtime'&&parts[5]==='email'&&(parts.length===6||parts.length===7))return this.handleEmail(request,parts);
+    if(request.method!=='POST'||parts?.[0]!=='v1'||parts[1]!=='workspaces'||parts[3]!=='runtime'||parts[5]!=='plan'||parts.length!==6)return this.handle(request);
+    const token=tokenFrom(request),principal=token?this.repository.findSession(token):null;
+    if(!principal)return {status:401,body:{error:'UNAUTHENTICATED'}};
+    const tenant=parts[2],taskId=parts[4];
+    if(tenant!==principal.tenantId)return {status:403,body:{error:'TENANT_SCOPE_DENIED'}};
+    try{requirePermission(principal,'createRuntimeTask',{tenantId:tenant,id:taskId});}
+    catch{return {status:403,body:{error:'PERMISSION_DENIED'}};}
+    const body=jsonRecord(request.body);
+    if(!body||Object.keys(body).some(k=>k!=='workflow')||body.workflow!=='email-lead-v1')return {status:400,body:{error:'INVALID_WORKFLOW'}};
+    if(!this.runtime?.planTask)return {status:404,body:{error:'RUNTIME_PLANNER_NOT_CONFIGURED'}};
+    const owner=this.runtime.principalIdForSession(structuredClone(principal));
+    if(!this.runtime.snapshotForTenant(tenant)?.tasks[taskId]||this.runtime.snapshotForTenant(tenant)?.tasks[taskId]?.owner!==owner)return {status:404,body:{error:'RUNTIME_TASK_NOT_FOUND'}};
+    try {
+      const result=await this.runtime.planTask(tenant,owner,{taskId,workflow:body.workflow},()=>{
+        const live=token?this.repository.findSession(token):null;
+        return Boolean(live&&live.userId===principal.userId&&live.tenantId===tenant&&live.role===principal.role);
+      });
+      // A session revoked while inference ran must not expose the resulting plan.
+      const current=token?this.repository.findSession(token):null;
+      if(!current||current.userId!==principal.userId||current.tenantId!==tenant)return {status:401,body:{error:'UNAUTHENTICATED'}};
+      return {status:result.created?201:200,body:{tenantId:tenant,taskId,...result}};
+    } catch(error) {
+      const code=error instanceof Error?error.message:'';
+      if(code==='RUNTIME_AUTH_CHANGED')return {status:401,body:{error:'UNAUTHENTICATED'}};
+      if(code==='RUNTIME_TASK_NOT_FOUND')return {status:404,body:{error:code}};
+      if(['RUNTIME_TASK_CHANGED','RUNTIME_PLANNING_IN_PROGRESS','RUNTIME_TASK_NOT_PLANNABLE','RUNTIME_PLAN_WORKFLOW_CONFLICT'].includes(code))return {status:409,body:{error:code}};
+      return {status:400,body:{error:'LOCAL_PLAN_NOT_CONFIRMED'}};
+    }
   }
 
   handle(request: WorkspaceApiRequest): WorkspaceApiResponse {

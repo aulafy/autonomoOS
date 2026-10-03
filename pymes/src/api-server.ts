@@ -76,7 +76,7 @@ export async function handlePymesRequest(api: WorkspaceApi, request: Request, op
     ingressToken: request.headers.get("x-pymes-ingress-token") ?? undefined,
     ingressSignature: request.headers.get("x-pymes-ingress-signature") ?? undefined, requestId, body };
   try {
-    const result = api.handle(input);
+    const result = await api.handleAsync(input);
     return response(result.status, result.body, requestId, origin, allowedOrigins);
   } catch {
     return response(500, { error: "INTERNAL_SERVER_ERROR" }, requestId, origin, allowedOrigins);

@@ -24,7 +24,9 @@ export interface PlanContext {
 export const ProposedActionSchema = z.object({
   action: z.enum(["say", "goto", "look_at", "pick", "drop", "use", "use_tool",
     "delegate", "ask_human", "purchase_compute", "file.read", "file.write",
-    "api.create_record"]),
+    "api.create_record", "email.identify_contact", "crm.lookup_contact", "crm.propose_lead",
+    "email.classify", "email.draft_reply", "email.review_reply", "email.send_reply",
+    "crm.record_interaction", "crm.create_followup"]),
   targetId: z.string().optional(),
   parameters: z.record(z.unknown()).optional()
 }).strict();
@@ -63,7 +65,8 @@ export class LlamaCppProvider implements InferenceProvider {
       "http://127.0.0.1:8080";
     const endpoint = new URL(this.baseUrl);
     if (endpoint.protocol !== "http:" ||
-      !["127.0.0.1", "localhost", "[::1]"].includes(endpoint.hostname)) {
+      !["127.0.0.1", "localhost", "[::1]"].includes(endpoint.hostname) ||
+      endpoint.username || endpoint.password || endpoint.search || endpoint.hash || endpoint.pathname !== "/") {
       throw new Error("LOCAL_INFERENCE_ENDPOINT_REQUIRED");
     }
     this.apiKey = options?.apiKey ?? process.env.LLAMA_API_KEY ?? undefined;
@@ -80,7 +83,7 @@ export class LlamaCppProvider implements InferenceProvider {
   private async fetchModels(signal?: AbortSignal) {
     const started = performance.now();
     const response = await fetch(`${this.baseUrl}/v1/models`, {
-      headers: this.headers(), signal: signal ?
+      headers: this.headers(), redirect: "error", signal: signal ?
         AbortSignal.any([signal, AbortSignal.timeout(this.timeoutMs)]) :
         AbortSignal.timeout(this.timeoutMs)
     });
@@ -158,7 +161,7 @@ export class LlamaCppProvider implements InferenceProvider {
       ...(context.constraints ?? [])
     ].join("\n");
     const response = await fetch(`${this.baseUrl}/v1/chat/completions`, {
-      method: "POST", headers: this.headers(),
+      method: "POST", headers: this.headers(), redirect: "error",
       signal: options?.signal ? AbortSignal.any([options.signal,
         AbortSignal.timeout(this.timeoutMs)]) : AbortSignal.timeout(this.timeoutMs),
       body: JSON.stringify({ model: modelId, temperature: 0, max_tokens: 1024,

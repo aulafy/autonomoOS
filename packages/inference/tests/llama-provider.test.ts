@@ -72,3 +72,18 @@ test("provider requests JSON mode, passes minimal context and reports actual tok
     assert.equal(JSON.stringify(requestBody).includes("/Users/"), false);
   } finally { await server.close(); }
 });
+
+test('local inference rejects credentials/path overrides and never follows model-list or completion redirects',async()=>{
+ for(const url of ['http://secret@127.0.0.1:8080','http://127.0.0.1:8080/cloud','http://127.0.0.1:8080?forward=cloud'])assert.throws(()=>new LlamaCppProvider({baseUrl:url}),/LOCAL_INFERENCE_ENDPOINT_REQUIRED/);
+ let received=0,redirectModels=true;
+ const destination=await serverFor((_req,res)=>{received++;json(res,{data:[{id:'remote'}]});});
+ const local=await serverFor((req,res)=>{
+  if(req.url==='/v1/models'&&!redirectModels)return json(res,{data:[{id:'local'}]});
+  res.writeHead(307,{Location:destination.url});res.end();
+ });
+ try{
+  const p=new LlamaCppProvider({baseUrl:local.url});assert.equal((await p.health()).ok,false);
+  redirectModels=false;await assert.rejects(p.proposePlan({agentId:'owner',userGoal:'goal',availableActions:['say'],entities:[]}));
+  assert.equal(received,0);
+ }finally{await local.close();await destination.close();}
+});

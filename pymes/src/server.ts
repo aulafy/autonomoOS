@@ -43,7 +43,7 @@ const enterprisePolicy = {
   maxFutureSkewMs: parseBoundedOptionalNumber(process.env.PYMES_OPENCLAW_MAX_FUTURE_SKEW_MS, 24 * 60 * 60 * 1000, "INVALID_PYMES_OPENCLAW_MAX_FUTURE_SKEW_MS"),
   signingSecret: ingressSigningSecret
 };
-const runtime = await openWorkspaceRuntime(process.env.PYMES_RUNTIME_DB_PATH ?? "./data/pymes-task-runtime.db", tenantId);
+const runtime = await openWorkspaceRuntime(process.env.PYMES_RUNTIME_DB_PATH ?? "./data/pymes-task-runtime.db", tenantId,{fakeEmail:process.env.PYMES_FAKE_EMAIL_ENABLED==='1'});
 const api = new WorkspaceApi(repository, ingressToken ? { token: ingressToken, policy: enterprisePolicy } : undefined, runtime.source);
 const whatsappWebhook = whatsappVerifyToken && whatsappAppSecret
   ? { verifyToken: whatsappVerifyToken, appSecret: whatsappAppSecret,

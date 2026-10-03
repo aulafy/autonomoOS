@@ -1,3 +1,4 @@
+import {parseEmailView} from './email-view.js';
 import { parseRuntimeView } from "./runtime-view.js";
 import type { RuntimeWorkspaceView } from "@agent-world/task-runtime";
 import { isConnectorConfig, supportedChannels, type ConnectorStatus } from "./config.js";
@@ -137,6 +138,19 @@ export class WorkspaceClient {
     const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/runtime`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) });
     if (body.tenantId !== this.config.tenantId || body.taskId !== input.id || typeof body.created !== "boolean") throw new Error("INVALID_RUNTIME_CREATE_RESPONSE");
   }
+  async planRuntimeTask(taskId:string):Promise<void> {
+    if(!/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,99}$/.test(taskId))throw new Error('INVALID_RUNTIME_TASK');
+    const result=await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/runtime/${encodeURIComponent(taskId)}/plan`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({workflow:'email-lead-v1'})},[201],40_000);
+    if(result.tenantId!==this.config.tenantId||result.taskId!==taskId||!Number.isSafeInteger(result.planVersion)||Number(result.planVersion)<1||typeof result.created!=='boolean')throw new Error('INVALID_RUNTIME_PLAN_RESPONSE');
+  }
+
+  async emailWorkflow(taskId:string,operation?:'review'|'decision'|'execute'|'reconcile',decision?:{bindingHash:string;decision:'approved'|'rejected'}) {
+    if(!/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,99}$/.test(taskId))throw new Error('INVALID_RUNTIME_TASK');
+    const path=`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/runtime/${encodeURIComponent(taskId)}/email${operation?'/'+operation:''}`;
+    const response=await this.request(path,operation?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(decision??{})}:{},[],40_000);
+    return parseEmailView(response,this.config.tenantId,taskId);
+  }
+
   async runtimeView(): Promise<RuntimeWorkspaceView> {
     const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/runtime`);
     return parseRuntimeView(body, this.config.tenantId);
@@ -150,9 +164,9 @@ export class WorkspaceClient {
     this.config = { baseUrl: new URL(config.baseUrl.trim()).toString().replace(/\/$/, ""), tenantId: config.tenantId.trim(), token: config.token.trim(), requestTimeoutMs: config.requestTimeoutMs ?? 10000 };
   }
 
-  private async request(path: string, init: RequestInit = {}, acceptedStatuses: readonly number[] = []): Promise<Record<string, unknown>> {
+  private async request(path: string, init: RequestInit = {}, acceptedStatuses: readonly number[] = [], timeoutMs?:number): Promise<Record<string, unknown>> {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), this.config.requestTimeoutMs ?? 10000);
+    const timeout = setTimeout(() => controller.abort(), timeoutMs ?? this.config.requestTimeoutMs ?? 10000);
     const correlationId = requestId();
     this.lastRequestIdValue = correlationId;
     this.lastStatusValue = null;
