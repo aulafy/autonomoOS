@@ -15,7 +15,7 @@ export const ActionIntentSchema = z.object({
     "delegate",
     "purchase_compute",
     "ask_human",
-    "file.read", "file.write", "api.create_record"
+    "file.read", "file.write", "api.create_record", "email.send"
   ]),
 
   targetId: z.string().optional(),
