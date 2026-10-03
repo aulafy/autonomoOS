@@ -153,9 +153,22 @@ Criterios: conservar aprobación exacta, comprobar UNKNOWN histórico después d
 | Keychain nativo | Verificado con datos sintéticos | Credencial real guardada por OAuth, sin exponerla |
 | A: entrega real + efecto comprobado | Pendiente | Mensaje recibido y referencias del efecto |
 | B: conexión tras reinicio + segundo envío | Pendiente | Capturas/refs del segundo trabajo |
-| C: SIGKILL, UNKNOWN, reconciliación sin duplicado | Equivalente sintético verificado | Variante Google si se exige para la aceptación final |
+| C: SIGKILL, UNKNOWN, reconciliación sin duplicado | Equivalente sintético verificado | Variante contra Google requerida por la decisión del propietario |
 | Ausencia de secretos en auditoría/SQLite/logs reales | Pendiente de sesión real | Inspección que informe solo coincidencias, sin imprimir secretos |
 | Suite, tipos y build | Verificados en M3 | Repetir si cambia código durante el piloto |
 | Tag de cierre M3 | No creado | Aceptación de las evidencias reales |
 
 La aceptación sintética de C no sustituye OAuth real, llegada del correo real ni persistencia real de B. M4 sigue pendiente del cierre M3.
+
+
+## Decisión del propietario — 2026-10-04
+
+Autorizados gmail.send + gmail.readonly exclusivamente en una cuenta dedicada de prueba/piloto, junto con los permisos de identidad ya documentados. No usar el Gmail personal principal. No es necesario volver a solicitar esta misma autorización; sigue pendiente conocer la ruta real del JSON Desktop y el destinatario controlado por el propietario. Los marcadores de posición aportados no son datos ejecutables y el ejemplo de cuenta no identifica una cuenta existente ni un destinatario autorizado.
+
+Se exige A/B/C contra Gmail real, incluida pérdida de respuesta local tras aceptación y SIGKILL/restart/reconciliación sin reenvío. La prueba sintética existente acredita el mecanismo, pero no cierra esta aceptación. Después de A/B/C: actualizar evidencias y límites, suite completa, typecheck, build, número final de tests y commit de cierre. Comunicar el resultado antes de iniciar M4.
+
+### Mejora futura de permisos: metadata
+
+Estudiar gmail.metadata → messages.list con labelIds=SENT y paginación limitada → messages.get(format=METADATA, metadataHeaders=[Message-ID]) → comparar identificador estable. Sin q, ya que gmail.metadata no permite ese parámetro. No se implementa ahora.
+
+Límites a estudiar: messages.list no ofrece un filtro temporal equivalente a q bajo metadata; un listado acotado no garantiza encontrar el mensaje ni permite tratar ausencia como no envío. Deben definirse paginación, ventana/cursor y comportamiento UNKNOWN conservador. La coincidencia de Message-ID en metadata tampoco comprueba el cuerpo aprobado, a diferencia del verificador raw actual; antes de sustituirlo habría que definir qué evidencia satisface el contrato de observación. Para M4 la lectura del contenido seguirá necesitando un permiso adecuado.
