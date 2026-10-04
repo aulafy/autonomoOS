@@ -71,7 +71,7 @@ export async function handlePymesRequest(api: WorkspaceApi, request: Request, op
     try { body = text ? JSON.parse(text) : undefined; }
     catch { return response(400, { error: "INVALID_JSON" }, requestId, origin, allowedOrigins); }
   }
-  const input: WorkspaceApiRequest = { method: request.method, path: pathname,
+  const input: WorkspaceApiRequest = { method: request.method, path: pathname + new URL(request.url).search,
     authorization: request.headers.get("authorization") ?? undefined,
     ingressToken: request.headers.get("x-pymes-ingress-token") ?? undefined,
     ingressSignature: request.headers.get("x-pymes-ingress-signature") ?? undefined, requestId, body };

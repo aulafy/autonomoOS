@@ -1,4 +1,5 @@
 const screenTitles: Record<string, string> = {
+  "#gmail-inbox": "Correo Gmail",
   "#runtime-screen": "Centro de agentes",
   "#morning": "Inicio",
   "#help-screen": "Ayuda",
@@ -27,6 +28,7 @@ function navigate(focus = false): void {
   document.body.classList.toggle("portfolio-view", hash === "#portfolio-screen");
   document.body.classList.toggle("settings-view", hash === "#settings-screen");
   document.body.classList.toggle("agenda-view", hash === "#agenda");
+  document.body.classList.toggle("gmail-inbox-view", hash === "#gmail-inbox");
   document.body.classList.toggle("inbox-view", hash === "#inbox" || hash === "#detail");
   document.body.classList.toggle("review-view", hash === "#review-queue");
   const breadcrumb = document.querySelector("#current-screen-title");
@@ -66,7 +68,7 @@ const navigationDialog = document.querySelector<HTMLDialogElement>("#navigation-
 const navigationInput = document.querySelector<HTMLInputElement>("#navigation-search-input")!;
 const navigationResults = document.querySelector<HTMLElement>("#navigation-search-results")!;
 const destinations = [
-  ["#runtime-screen", "Centro de agentes"], ["#morning", "Mi jornada"], ["#inbox", "Bandeja unificada"],
+  ["#runtime-screen", "Centro de agentes"], ["#morning", "Mi jornada"], ["#inbox", "Bandeja unificada"], ["#gmail-inbox", "Correo Gmail"],
   ["#clients-screen", "Clientes y oportunidades"], ["#tasks-screen", "Trabajo pendiente"],
   ["#agenda", "Agenda"], ["#review-queue", "Cola de revisión"],
   ["#installation", "Mi Mac mini"], ["#help-screen", "Ayuda"], ["#automation-screen", "Reglas de preparación"], ["#portfolio-screen", "Cartera de pólizas"], ["#settings-screen", "Configuración"]
@@ -110,6 +112,7 @@ window.addEventListener("keydown", event => {
 });
 
 const navPaths: Record<string, string> = {
+  "#gmail-inbox": "M3 5h18v14H3z m0 0 9 7 9-7",
   "#morning": "M3 10 12 3l9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z",
   "#inbox": "M4 4h16v16H4z M4 14h5l2 3h2l2-3h5",
   "#agenda": "M4 5h16v16H4z M8 3v4 M16 3v4 M4 11h16",

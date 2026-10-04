@@ -1,3 +1,4 @@
+import { parseGmailInboxStatus, parseGmailInboxPage, parseGmailInboxDetail, parsePurgeChallenge } from "./gmail-inbox-view.js";
 import {parseEmailView} from './email-view.js';
 import { parseRuntimeView } from "./runtime-view.js";
 import type { RuntimeWorkspaceView } from "@agent-world/task-runtime";
@@ -155,6 +156,41 @@ export class WorkspaceClient {
     const value=await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/gmail${operation?'/'+operation:''}`,operation?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(operation==='connect'?{verification}:{})}:{});
     if(value.tenantId!==this.config.tenantId||!['not_connected','connecting','connected','authorization_error'].includes(String(value.state))||typeof value.configured!=='boolean'||typeof value.verification!=='boolean'||!(value.account===null||typeof value.account==='string'&&value.account.length<=254)||!Array.isArray(value.scopes)||value.scopes.length>10||!value.scopes.every(s=>typeof s==='string'&&s.length<256)||!(value.lastCheckedAt===null||Number.isFinite(value.lastCheckedAt))||!(value.error===null||typeof value.error==='string'&&value.error.length<100))throw new Error('INVALID_GMAIL_VIEW');
     return structuredClone(value) as unknown as import('./gmail-oauth.js').GmailConnectionView;
+  }
+
+  private gmailInboxPath(suffix = "", accountRef?: string): string {
+    const path = `/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/gmail-inbox${suffix}`;
+    if (accountRef !== undefined && !/^[a-f0-9]{32}$/.test(accountRef)) throw new Error("INVALID_ACCOUNT_REF");
+    return path + (accountRef ? (path.includes("?") ? "&" : "?") + "accountRef=" + accountRef : "");
+  }
+  async gmailInbox(accountRef?: string) {
+    return parseGmailInboxStatus(await this.request(this.gmailInboxPath("", accountRef)), this.config.tenantId);
+  }
+  async gmailInboxMessages(input: {scope: "inbox" | "sent" | "archived"; query: string; cursor?: string|null; accountRef?: string}) {
+    const q = new URLSearchParams({scope:input.scope,q:input.query,limit:"30"});
+    if(input.cursor) q.set("cursor",input.cursor);
+    return parseGmailInboxPage(await this.request(this.gmailInboxPath("/messages?"+q,input.accountRef)),this.config.tenantId);
+  }
+  async gmailInboxMessage(id: string, accountRef: string) {
+    if(!/^[-a-zA-Z0-9_]{1,100}$/.test(id)) throw new Error("INVALID_MESSAGE_ID");
+    const result=parseGmailInboxDetail(await this.request(this.gmailInboxPath("/messages/"+id,accountRef)),this.config.tenantId);
+    if(result.message.gmailId!==id) throw new Error("INVALID_GMAIL_INBOX_RESPONSE");
+    return result;
+  }
+  async gmailInboxSync() {
+    const response=await this.request(this.gmailInboxPath("/sync"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({background:true})},[202]);
+    return parseGmailInboxStatus(response,this.config.tenantId);
+  }
+  async gmailInboxPreparePurge(accountRef: string) {
+    const response=await this.request(this.gmailInboxPath("/purge/prepare"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({accountRef})});
+    const challenge=parsePurgeChallenge(response,this.config.tenantId);
+    if(challenge.accountRef!==accountRef) throw new Error("INVALID_GMAIL_INBOX_RESPONSE");
+    return challenge;
+  }
+  async gmailInboxPurge(challenge: import("./gmail-inbox-view.js").PurgeChallenge, phrase: string) {
+    const response=await this.request(this.gmailInboxPath("/purge"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({accountRef:challenge.accountRef,confirmationId:challenge.confirmationId,phrase})},[],40_000);
+    if(response.purged!==true) throw new Error("INVALID_GMAIL_INBOX_RESPONSE");
+    return parseGmailInboxStatus(response,this.config.tenantId);
   }
 
   async runtimeView(): Promise<RuntimeWorkspaceView> {

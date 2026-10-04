@@ -21,7 +21,7 @@ const escape = (v: string) =>
 function render(view: GmailConnectionView) {
   const root = document.getElementById("gmail-connection");
   if (!root) return;
-  root.innerHTML = `<div><h3>Email · Gmail</h3><p>${escape(states[view.state])}</p><p>Cuenta: ${escape(view.account ?? "—")}</p><p>Última comprobación: ${view.lastCheckedAt ? escape(new Date(view.lastCheckedAt).toLocaleString("es-ES")) : "—"}</p><details><summary>Permisos concedidos</summary><ul>${view.scopes.map((s) => `<li>${escape(s)}</li>`).join("")}</ul></details></div><div>${view.state === "connected" ? '<button data-gmail="check">Comprobar cuenta</button><button data-gmail="disconnect">Desconectar</button>' : view.state === "connecting" ? '<p>Continúa en el navegador del sistema.</p><button data-gmail="disconnect">Cancelar conexión</button>' : `<label><input id="gmail-verification" type="checkbox"> Autorizar gmail.readonly: permite leer toda la cuenta. M3 solo consulta Enviados para comprobar y reconciliar sin reenviar.</label><p>Sin lectura, los envíos quedan sin comprobación independiente. Se pide gmail.send y openid/email para identificar la cuenta.</p><button data-gmail="connect" ${view.configured ? "" : "disabled"}>Conectar Gmail</button>${view.configured ? "" : "<p>El instalador debe importar el cliente OAuth Desktop al llavero de este Mac.</p>"}`}<button data-gmail="refresh">Actualizar estado</button><p id="gmail-feedback" role="status"></p></div>`;
+  root.innerHTML = `<div><h3>Email · Gmail</h3><p>${escape(states[view.state])}</p><p>Cuenta: ${escape(view.account ?? "—")}</p><p>Última comprobación: ${view.lastCheckedAt ? escape(new Date(view.lastCheckedAt).toLocaleString("es-ES")) : "—"}</p><details><summary>Permisos concedidos</summary><ul>${view.scopes.map((s) => `<li>${escape(s)}</li>`).join("")}</ul></details></div><div>${view.state === "connected" ? '<button data-gmail="check">Comprobar cuenta</button><button data-gmail="disconnect">Desconectar</button>' : view.state === "connecting" ? '<p>Continúa en el navegador del sistema.</p><button data-gmail="disconnect">Cancelar conexión</button>' : `<label><input id="gmail-verification" type="checkbox"> Autorizar gmail.readonly: permite leer toda la cuenta. El inbox consulta Recibidos y Enviados; también permite reconciliar los envíos sin duplicarlos.</label><p>Sin lectura, el inbox no puede sincronizarse y los envíos quedan sin comprobación independiente. Se pide gmail.send y openid/email para identificar la cuenta.</p><button data-gmail="connect" ${view.configured ? "" : "disabled"}>Conectar Gmail</button>${view.configured ? "" : "<p>El instalador debe importar el cliente OAuth Desktop al llavero de este Mac.</p>"}`}<button data-gmail="refresh">Actualizar estado</button><p id="gmail-feedback" role="status"></p></div>`;
   root.querySelectorAll<HTMLButtonElement>("[data-gmail]").forEach(
     (button) =>
       (button.onclick = () => {
@@ -53,6 +53,7 @@ async function update(
     const view = await current.gmail(operation, verification);
     if (current !== client || generation !== epoch) return;
     render(view);
+    window.dispatchEvent(new Event("gmail-connection-changed"));
     if (view.state === "connecting") {
       if (timer) clearTimeout(timer);
       timer = setTimeout(() => void update(), 3000);

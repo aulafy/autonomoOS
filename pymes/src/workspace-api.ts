@@ -10,6 +10,7 @@ import { InMemoryEffectLeaseStore, type EffectLeaseStore } from "./effect-lease.
 import type { OpenClawEnterpriseEnvelope, OpenClawEnterprisePolicy } from "./openclaw-gateway.js";
 import { pilotConfig } from "./config.js";
 import type { Channel } from "./domain.js";
+import { handleGmailInboxRequest } from "./gmail-inbox-api.js";
 export type { ApprovalRecord, WorkspacePrincipal } from "./workspace-policy.js";
 
 export interface WorkspaceInboxRecord {
@@ -39,7 +40,7 @@ export interface WorkspaceApiRequest {
 }
 
 export interface WorkspaceApiResponse {
-  status: 200 | 201 | 400 | 401 | 403 | 404 | 405 | 409;
+  status: 200 | 201 | 202 | 400 | 401 | 403 | 404 | 405 | 409;
   body: Record<string, unknown>;
 }
 
@@ -163,6 +164,8 @@ function validIngressSignature(body: unknown, signature: string | undefined, sec
  */
 export interface WorkspaceRuntimeSource {
   gmail?:import('./gmail-local-connector.js').GmailLocalConnector;
+  /** P04a read-only Gmail inbox sync; separate from /inbox remote cases. */
+  gmailInbox?:import('./inbox-service.js').InboxService;
   email?:ReturnType<typeof import('./email-workflow.js').createEmailWorkflow>;
   /** Host selects a tenant-isolated runtime; never a global shared snapshot. */
   snapshotForTenant(tenantId: string): TaskRuntimeState | null;
@@ -212,8 +215,8 @@ export class WorkspaceApi {
    try{let result;if(request.method==='GET'&&parts.length===4)result=await gmail.status(owner);
    else if(request.method==='POST'&&parts.length===5){const body=jsonRecord(request.body);if(!body)return {status:400,body:{error:'INVALID_GMAIL_REQUEST'}};
     if(parts[4]==='configure'&&Object.keys(body).sort().join(',')==='clientId,clientSecret')result=await gmail.configure(owner,body);
-    else if(parts[4]==='connect'&&Object.keys(body).join(',')==='verification'&&typeof body.verification==='boolean')result=await gmail.connect(owner,body.verification,live);
-    else if(parts[4]==='disconnect'&&Object.keys(body).length===0)result=await gmail.disconnect(owner);
+    else if(parts[4]==='connect'&&Object.keys(body).join(',')==='verification'&&typeof body.verification==='boolean'){const connect=async()=>{if(!live())throw new Error("UNAUTHENTICATED");return gmail.connect(owner,body.verification as boolean,live);};result=this.runtime?.gmailInbox?await this.runtime.gmailInbox.withSuspended(connect):await connect();this.runtime?.gmailInbox?.onAuthorizationChanged();}
+    else if(parts[4]==='disconnect'&&Object.keys(body).length===0){const disconnect=async()=>{if(!live())throw new Error("UNAUTHENTICATED");return gmail.disconnect(owner);};result=this.runtime?.gmailInbox?await this.runtime.gmailInbox.withSuspended(disconnect):await disconnect();}
     else if(parts[4]==='check'&&Object.keys(body).length===0)result=await gmail.check(owner);
     else return {status:400,body:{error:'INVALID_GMAIL_REQUEST'}};
    }else return {status:405,body:{error:'METHOD_NOT_ALLOWED'}};
@@ -251,6 +254,7 @@ export class WorkspaceApi {
     const parts=pathParts(request.path);
     if(parts?.[0]==='v1'&&parts[1]==='workspaces'&&parts[3]==='gmail'&&(parts.length===4||parts.length===5))return this.handleGmail(request,parts);
     if(parts?.[0]==='v1'&&parts[1]==='workspaces'&&parts[3]==='runtime'&&parts[5]==='email'&&(parts.length===6||parts.length===7))return this.handleEmail(request,parts);
+    if(parts?.[0]==='v1'&&parts[1]==='workspaces'&&parts[3]==='gmail-inbox'&&parts.length>=4&&parts.length<=6)return handleGmailInboxRequest(request,parts,this.repository,this.runtime);
     if(request.method!=='POST'||parts?.[0]!=='v1'||parts[1]!=='workspaces'||parts[3]!=='runtime'||parts[5]!=='plan'||parts.length!==6)return this.handle(request);
     const token=tokenFrom(request),principal=token?this.repository.findSession(token):null;
     if(!principal)return {status:401,body:{error:'UNAUTHENTICATED'}};

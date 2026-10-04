@@ -1,5 +1,7 @@
 import {openLocalGmail} from "./gmail-local-connector.js";
 import {createP01ResponseLoss,loadP01Arm} from "./gmail-fault-injection.js";
+import {InboxStore} from "./inbox-store.js";
+import {InboxService} from "./inbox-service.js";
 import {resolve} from "node:path";
 import { openWorkspaceRuntime } from "./runtime-source.js";
 import { createServer } from "node:http";
@@ -55,7 +57,11 @@ if(p01ArmPath&&!gmailEnabled)throw new Error('P01_REQUIRES_GMAIL_PILOT');
 const p01=p01ArmPath?createP01ResponseLoss(fetch,resolve(p01ArmPath),loadP01Arm(resolve(p01ArmPath),{tenant:tenantId,owner:userId}),(event,meta)=>console.warn('P01',event,meta)):undefined;
 if(p01)console.warn('P01 fault-injection configured',{armed:p01.armed()});
 const gmail=gmailEnabled?await openLocalGmail(userId,tenantId,runtimePath+'.gmail-attempts.db',resolve(process.env.PYMES_GMAIL_KEYCHAIN_HELPER??'./data/bin/gmail-keychain'),process.env.PYMES_GMAIL_DESKTOP_CLIENT_PATH,p01?.fetcher??fetch):undefined;
-const runtime = await openWorkspaceRuntime(runtimePath, tenantId,{fakeEmail:process.env.PYMES_FAKE_EMAIL_ENABLED==='1',gmail});
+// P04a: read-only inbox sync in its own SQLite file; GET-only transport, no send capability.
+const inboxStore=gmail?new InboxStore(runtimePath+'.gmail-inbox.db'):undefined;
+const gmailInbox=gmail&&inboxStore?new InboxService(gmail.oauth,inboxStore,{tenant:tenantId,owner:userId},fetch):undefined;
+const runtime = await openWorkspaceRuntime(runtimePath, tenantId,{fakeEmail:process.env.PYMES_FAKE_EMAIL_ENABLED==='1',gmail,gmailInbox});
+gmailInbox?.start();
 const api = new WorkspaceApi(repository, ingressToken ? { token: ingressToken, policy: enterprisePolicy } : undefined, runtime.source);
 const whatsappWebhook = whatsappVerifyToken && whatsappAppSecret
   ? { verifyToken: whatsappVerifyToken, appSecret: whatsappAppSecret,
@@ -66,13 +72,14 @@ const whatsappWebhook = whatsappVerifyToken && whatsappAppSecret
         const result = ingestOpenClawIntoWorkspace({ envelope, policy: enterprisePolicy, repository });
         if (!result.accepted && result.reason !== "DUPLICATE_EVENT") throw new Error(result.reason);
       } } : undefined;
-let repositoryClosed = false;
-function closeRepository(): void {
-  if (repositoryClosed) return;
-  repositoryClosed = true;
-  runtime.close();
-  gmail?.close();
-  repository.close();
+let repositoryClosing: Promise<void> | null = null;
+function closeRepository(): Promise<void> {
+  if (repositoryClosing) return repositoryClosing;
+  repositoryClosing = (async () => {
+    try { await gmailInbox?.close(); }
+    finally { inboxStore?.close(); runtime.close(); gmail?.close(); repository.close(); }
+  })();
+  return repositoryClosing;
 }
 function safeError(error: unknown): { name: string; message: string } {
   const value = error instanceof Error ? error : new Error(String(error));
@@ -156,7 +163,7 @@ server.maxHeadersCount = 100;
 server.maxRequestsPerSocket = 1_000;
 server.on("error", error => {
   console.error("PYMES API listen failed", { error: safeError(error) });
-  closeRepository();
+  void closeRepository().catch(() => undefined);
   process.exitCode = 1;
 });
 server.listen(port, host, () => console.log(`PYMES API listening on http://${host}:${port}`));
@@ -168,14 +175,15 @@ function shutdown(signal: string): void {
   console.log(`PYMES API received ${signal}; shutting down`);
   const forceExit = setTimeout(() => {
     console.error("PYMES API shutdown timed out");
-    closeRepository();
+    void closeRepository();
     process.exit(1);
   }, 25_000);
   forceExit.unref();
   server.close(error => {
-    clearTimeout(forceExit);
-    closeRepository();
-    if (error) { console.error(error); process.exitCode = 1; }
+    void closeRepository().catch(() => { process.exitCode = 1; }).finally(() => {
+      clearTimeout(forceExit);
+      if (error) { console.error(safeError(error)); process.exitCode = 1; }
+    });
   });
 }
 process.once("SIGTERM", () => shutdown("SIGTERM"));
