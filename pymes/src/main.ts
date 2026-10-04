@@ -18,6 +18,7 @@ import "./refresh.css";
 import "./snapshot.css";
 import "./remote-state.css";
 import "./accessibility.css";
+import "./professional.css";
 import { retryDelayMs } from "./retry-delay.js";
 
 let brief = buildMorningBrief(demoData);
@@ -95,7 +96,7 @@ let selectedChannel: Channel | "all" = "all";
 const channelLabels: Record<Channel, string> = {
   whatsapp: "WhatsApp", telegram: "Telegram", imessage: "iMessage", email: "Correo"
 };
-let selectedId = brief.items[0]?.id ?? null;
+let selectedId: string | null = brief.items[0]?.id ?? null;
 
 let runtimeConnectionKey='';
 async function checkRemoteWorkspace(): Promise<void> {
@@ -146,7 +147,6 @@ async function checkRemoteWorkspace(): Promise<void> {
     const connectionKey=JSON.stringify([baseUrl,tenantId,token]);
     if(connectionKey!==runtimeConnectionKey){runtimeConnectionKey=connectionKey;setRuntimeClient(client);setGmailSettingsClient(client);}
     remoteInbox = new Map(inbox.map(item => [item.id, item]));
-    $("attention-count").textContent = String(attention.length);
     renderWorkspaceMetrics(metrics);
     workspaceFailureCount = 0;
     status.dataset.connectorCount = String(connectors.length);
@@ -200,12 +200,10 @@ async function checkRemoteWorkspace(): Promise<void> {
       });
       status.parentElement?.appendChild(refresh);
     }
-    try { const effects = await client.effects(); $("effect-count").textContent = String(effects.filter(effect => effect.status === "pending" || effect.status === "confirmed" || effect.status === "failed").length); } catch { $("effect-count").textContent = "—"; }
     const selected = brief.items.find(item => item.id === selectedId);
     if (selected) renderDetail(selected);
   } catch (error: unknown) {
     document.getElementById("workspace-alerts")?.replaceChildren();
-    $("attention-count").textContent = "—";
     const metricsUpdated = document.getElementById("workspace-metrics-updated");
     if (metricsUpdated && metricsUpdated.textContent !== "Sin sincronizar") {
       metricsUpdated.textContent = "Sin conexión · datos potencialmente desactualizados";
@@ -289,6 +287,7 @@ function renderCounts() {
   $("unidentified-count").textContent = `${brief.counts.unidentified} sin identificar`;
   $("review-count").textContent = String(review.size);
   $("appointment-count").textContent = String(brief.appointments.length);
+  $("demo-contact-count").textContent = String(demoData.contacts.length);
 }
 
 function renderTabs() {
@@ -321,8 +320,14 @@ function renderInbox() {
   list.replaceChildren();
   const items = visibleItems();
   if (!items.length) {
+    selectedId = null;
     list.appendChild(el("div", "empty", "No hay conversaciones para este filtro."));
+    detail.replaceChildren(el("h3", "", "Sin conversaciones"), el("p", "empty-detail", "Prueba con otro nombre o cambia el canal para ver un mensaje."));
     return;
+  }
+  if (!items.some(item => item.id === selectedId)) {
+    selectedId = items[0]!.id;
+    renderDetail(items[0]!);
   }
   for (const item of items) {
     const button = el("button", `message-card${selectedId === item.id ? " active" : ""}`);
