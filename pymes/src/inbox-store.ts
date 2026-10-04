@@ -1,3 +1,4 @@
+import {parseSavedMailProposal,type SavedMailProposal} from './mail-assistance-contract.js';
 import { DatabaseSync } from "node:sqlite";
 import { mkdirSync, chmodSync } from "node:fs";
 import { dirname } from "node:path";
@@ -11,7 +12,7 @@ import type { ParsedInboxMessage } from "./inbox-mime.js";
  * logging of bodies. Writes are fenced by a lease so two syncers (same or
  * different process) cannot interleave on one namespace.
  */
-export const INBOX_SCHEMA_VERSION = 3;
+export const INBOX_SCHEMA_VERSION = 4;
 export type NamespaceSyncState = "never" | "in_progress" | "complete_window" | "complete_truncated" | "blocked";
 export type RunPhase = "enumerate" | "select" | "fetch" | "done" | "abandoned";
 export interface InboxNamespace {
@@ -147,6 +148,9 @@ export class InboxStore {
                 if (!columns.some(c => c.name === "quality_json"))
                     this.db.exec("ALTER TABLE inbox_message ADD COLUMN quality_json TEXT");
                 this.migrateV3();
+                this.db.exec(`CREATE TABLE IF NOT EXISTS inbox_assistance(ns TEXT NOT NULL, gmail_id TEXT NOT NULL, proposal_json TEXT NOT NULL, PRIMARY KEY(ns,gmail_id));
+CREATE TRIGGER IF NOT EXISTS inbox_assistance_updated AFTER UPDATE ON inbox_message BEGIN DELETE FROM inbox_assistance WHERE ns=NEW.ns AND gmail_id=NEW.gmail_id; END;
+CREATE TRIGGER IF NOT EXISTS inbox_assistance_deleted AFTER DELETE ON inbox_message BEGIN DELETE FROM inbox_assistance WHERE ns=OLD.ns AND gmail_id=OLD.gmail_id; END;`);
                 this.db.prepare("UPDATE inbox_meta SET value=? WHERE key='schema_version'").run(String(INBOX_SCHEMA_VERSION));
             });
         }
@@ -154,6 +158,28 @@ export class InboxStore {
             this.db.close();
             throw error;
         }
+    }
+    assistance(ns: string, gmailId: string): SavedMailProposal|null {
+        const row=this.db.prepare('SELECT proposal_json FROM inbox_assistance WHERE ns=? AND gmail_id=?').get(ns,gmailId) as {proposal_json:string}|undefined;
+        if(!row)return null;
+        try{return parseSavedMailProposal(JSON.parse(row.proposal_json));}catch{throw new InboxStoreError('MAIL_AI_STORED_INVALID');}
+    }
+    saveAssistance(ns:string,gmailId:string,expectedRevision:number,value:SavedMailProposal) {
+        return this.tx(()=>{
+            if(this.namespaceInfo(ns)?.revision!==expectedRevision||!this.messageDetail(ns,gmailId))throw new InboxStoreError('MAIL_AI_SOURCE_CHANGED');
+            const validated=parseSavedMailProposal(value);
+            this.db.prepare('INSERT INTO inbox_assistance VALUES(?,?,?) ON CONFLICT(ns,gmail_id) DO UPDATE SET proposal_json=excluded.proposal_json').run(ns,gmailId,JSON.stringify(validated));
+            return validated;
+        });
+    }
+    decideAssistance(ns:string,gmailId:string,proposalId:string,decision:'accepted'|'rejected') {
+        return this.tx(()=>{
+            const p=this.assistance(ns,gmailId);if(!p||p.id!==proposalId||!this.messageDetail(ns,gmailId))throw new InboxStoreError('MAIL_AI_PROPOSAL_CHANGED');
+            if(p.state===decision)return p;
+            if(p.state!=='proposed')throw new InboxStoreError('MAIL_AI_ALREADY_REVIEWED');
+            const value={...p,state:decision,reviewedAt:this.now()};
+            this.db.prepare('UPDATE inbox_assistance SET proposal_json=? WHERE ns=? AND gmail_id=?').run(JSON.stringify(value),ns,gmailId);return value;
+        });
     }
     private tx<T>(fn: () => T): T {
         this.db.exec("BEGIN IMMEDIATE");
@@ -512,7 +538,7 @@ CREATE TABLE IF NOT EXISTS inbox_purge_token(token_hash TEXT PRIMARY KEY, ns TEX
             throw new InboxStoreError("INBOX_SYNC_ACTIVE");
     }
     private purgeRows(ns: string, pause: boolean) {
-        for (const table of ["inbox_message", "inbox_attachment", "inbox_touched", "inbox_incremental", "inbox_resync", "inbox_resync_local", "inbox_history_token"])
+        for (const table of ["inbox_assistance", "inbox_message", "inbox_attachment", "inbox_touched", "inbox_incremental", "inbox_resync", "inbox_resync_local", "inbox_history_token"])
             this.db.prepare(`DELETE FROM ${table} WHERE ns=?`).run(ns);
         this.db.prepare("DELETE FROM inbox_candidate WHERE run_id IN (SELECT run_id FROM inbox_full_run WHERE ns=?)").run(ns);
         this.db.prepare("DELETE FROM inbox_full_run WHERE ns=?").run(ns);

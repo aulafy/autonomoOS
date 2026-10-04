@@ -9,8 +9,12 @@ Consulta el [avance de P05](../docs/handoff/AVANCE_P05_CRM_LOCAL_2026-10-04.md)
 para las pruebas, rutas, almacenamiento y limitaciones. El resto de esta guía
 incluye los escenarios y conectores previstos durante etapas anteriores.
 
-La clasificación con IA del inbox real, el workflow completo desde un correo
-entrante y Google Calendar todavía requieren integración y aceptación.
+El correo dispone de resumen, clasificación y borrador con IA local, revisión
+humana durable y evidencias textuales. Consulta el
+[avance P06](../docs/handoff/AVANCE_P06_ASISTENTE_CORREO_2026-10-04.md).
+El workflow completo desde un correo entrante y Google Calendar todavía
+requieren integración y aceptación. El
+[plan del producto](../docs/AUTONOMO_OS_PRODUCT_BACKLOG.md) recoge lo pendiente.
 
 
 Para preparar conexiones reales con WhatsApp, OpenClaw, Ollama, Holded y Google Calendar, consulta [PRODUCTION_CONNECTORS.md](PRODUCTION_CONNECTORS.md). La demo mantiene datos ficticios hasta que se configuren explícitamente las credenciales del servidor.

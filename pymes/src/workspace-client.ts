@@ -1,3 +1,4 @@
+import {parseMailAssistanceView} from './mail-assistance-contract.js';
 import {parseCrmView,parseCrmResolution} from './crm-view.js';
 import {parseCrmCommand,crmRecord,crmRevision,crmId,type CrmCommandInput} from './crm-contract.js';
 import { parseGmailInboxStatus, parseGmailInboxPage, parseGmailInboxDetail, parsePurgeChallenge } from "./gmail-inbox-view.js";
@@ -160,6 +161,11 @@ export class WorkspaceClient {
     return structuredClone(value) as unknown as import('./gmail-oauth.js').GmailConnectionView;
   }
 
+  async mailAssistance(accountRef:string,gmailId:string,operation?:'generate'|'review',review?:{proposalId:string;decision:'accepted'|'rejected'}){
+    const path=`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/mail-assistance`;
+    const raw=operation?await this.request(path+'/'+operation,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accountRef,gmailId,...(review??{})})}):await this.request(path+'?'+new URLSearchParams({accountRef,gmailId}));
+    return parseMailAssistanceView(raw,this.config.tenantId,accountRef,gmailId);
+  }
   async crm(input:{query?:string;contactId?:string|null;taskStatus?:'pending'|'done'|'cancelled'|'all'}={}) {
     const q=new URLSearchParams({q:input.query??'',taskStatus:input.taskStatus??'pending'});
     if(input.contactId)q.set('contactId',crmId(input.contactId));

@@ -1,3 +1,4 @@
+import {handleMailAssistance} from './mail-assistance-api.js';
 import {handleCrmRequest} from './crm-api.js';
 import { readRuntimeWorkspace, type TaskRuntimeState } from "@agent-world/task-runtime";
 import { createHmac, timingSafeEqual } from "node:crypto";
@@ -164,6 +165,7 @@ function validIngressSignature(body: unknown, signature: string | undefined, sec
  * response shaping; persistence can be replaced without changing callers.
  */
 export interface WorkspaceRuntimeSource {
+  mailAssistance?:import('./mail-assistance-service.js').MailAssistanceService;
   crm?:import('./crm-service.js').CrmService;
   gmail?:import('./gmail-local-connector.js').GmailLocalConnector;
   /** P04a read-only Gmail inbox sync; separate from /inbox remote cases. */
@@ -254,6 +256,7 @@ export class WorkspaceApi {
   /** Async planning route; existing synchronous contracts remain unchanged. */
   async handleAsync(request:WorkspaceApiRequest):Promise<WorkspaceApiResponse> {
     const parts=pathParts(request.path);
+    if(parts?.[0]==='v1'&&parts[1]==='workspaces'&&parts[3]==='mail-assistance'&&parts.length>=4&&parts.length<=5)return handleMailAssistance(request,parts,this.repository,this.runtime);
     if(parts?.[0]==='v1'&&parts[1]==='workspaces'&&parts[3]==='crm'&&parts.length>=4&&parts.length<=5)return handleCrmRequest(request,parts,this.repository,this.runtime);
     if(parts?.[0]==='v1'&&parts[1]==='workspaces'&&parts[3]==='gmail'&&(parts.length===4||parts.length===5))return this.handleGmail(request,parts);
     if(parts?.[0]==='v1'&&parts[1]==='workspaces'&&parts[3]==='runtime'&&parts[5]==='email'&&(parts.length===6||parts.length===7))return this.handleEmail(request,parts);

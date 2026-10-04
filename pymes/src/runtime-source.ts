@@ -1,3 +1,5 @@
+import {MailAssistanceService} from './mail-assistance-service.js';
+import {LocalJsonProvider,type JsonProposalProvider} from '@agent-world/inference';
 import {CrmStore} from './crm-store.js';
 import {CrmService} from './crm-service.js';
 import {createEmailGovernance} from './email-governance.js';
@@ -10,7 +12,7 @@ import {RuntimeDatabase,JournalKernel,ReplayClock,createDurableTaskRuntime,creat
 import type {WorkspaceRuntimeSource} from './workspace-api.js';
 /** One tenant per authoritative journal. Startup fails on tenant mismatch or replay
  * drift; no empty/demo replacement is returned when persistence fails. */
-export async function openWorkspaceRuntime(path:string,tenantId:string,options:{provider?:InferenceProvider;planningTimeoutMs?:number;fakeEmail?:boolean;emailProvider?:EmailProvider;gmail?:import('./gmail-local-connector.js').GmailLocalConnector;gmailInbox?:import('./inbox-service.js').InboxService;emailHooks?:{beforeDispatch?:()=>void;afterDispatchMarker?:()=>void}}={}) {
+export async function openWorkspaceRuntime(path:string,tenantId:string,options:{mailProposalProvider?:JsonProposalProvider;provider?:InferenceProvider;planningTimeoutMs?:number;fakeEmail?:boolean;emailProvider?:EmailProvider;gmail?:import('./gmail-local-connector.js').GmailLocalConnector;gmailInbox?:import('./inbox-service.js').InboxService;emailHooks?:{beforeDispatch?:()=>void;afterDispatchMarker?:()=>void}}={}) {
  if(!tenantId.trim()) throw new Error('RUNTIME_TENANT_REQUIRED');
  const database=new RuntimeDatabase(path);let ownEmail:FakeEmailProvider|null=null;
  try {
@@ -34,8 +36,11 @@ export async function openWorkspaceRuntime(path:string,tenantId:string,options:{
   const emailProvider=options.gmail?.provider??options.emailProvider??ownEmail;
   const crm=new CrmService(crmStore,journal,tenantId,options.gmailInbox);
   const email=emailProvider?createEmailWorkflow(kernel,journal,emailReviews,createEmailGovernance(journal,domain,emailReviews,emailProvider,options.emailHooks),()=>({from:'office@example.test',to:['client@example.test'],cc:[],bcc:[],subject:'Respuesta a su consulta · simulación',body:'Gracias por su consulta. Prepararemos los siguientes pasos y le confirmaremos la información necesaria. Este correo es una simulación local.',contactId:'simulated-contact'}),options.gmail?{crm:crm.workflowAdapter(),simulated:false,context:()=>options.gmail!.provider.approvalBinding(),draftFrom:()=>options.gmail!.provider.account(),validatePayload:p=>options.gmail!.provider.prepare(p)}:{crm:crm.workflowAdapter()}):undefined;
+  const mailAiKind=process.env.PYMES_MAIL_AI_PROVIDER??'ollama';
+  if(options.gmailInbox&&!['ollama','llama.cpp'].includes(mailAiKind))throw new Error('MAIL_AI_PROVIDER_INVALID');
+  const mailAssistance=options.gmailInbox?new MailAssistanceService(options.gmailInbox,options.mailProposalProvider??new LocalJsonProvider({kind:mailAiKind as 'ollama'|'llama.cpp',model:process.env.PYMES_MAIL_AI_MODEL??process.env.PYMES_LOCAL_MODEL??'llama3.2:3b',baseUrl:process.env.PYMES_MAIL_AI_URL,apiKey:process.env.PYMES_MAIL_AI_PROVIDER==='llama.cpp'?process.env.LLAMA_API_KEY:undefined})):undefined;
   const planning=new Set<string>();
-  const source:WorkspaceRuntimeSource={crm,email,gmail:options.gmail,gmailInbox:options.gmailInbox,planTask:async(tenant,owner,input,mayCommit)=>{
+  const source:WorkspaceRuntimeSource={mailAssistance,crm,email,gmail:options.gmail,gmailInbox:options.gmailInbox,planTask:async(tenant,owner,input,mayCommit)=>{
    if(closed||!journal.isHealthy())throw new Error('RUNTIME_CLOSED');
    if(tenant!==tenantId)throw new Error('RUNTIME_TENANT_SCOPE_DENIED');
    if(input.workflow!==EMAIL_LEAD_WORKFLOW)throw new Error('INVALID_WORKFLOW');
@@ -91,7 +96,7 @@ export async function openWorkspaceRuntime(path:string,tenantId:string,options:{
     successCriteria:[{id:'professional-review',kind:'human-approval',approver:owner}]},state.revision);
    return {created:true};
   }};
-  return {source,kernel,close:()=>{if(!closed){closed=true;crm.close();ownEmail?.close();database.close();}}};
+  return {source,kernel,close:()=>{if(!closed){closed=true;mailAssistance?.close();crm.close();ownEmail?.close();database.close();}}};
  } catch(error) {ownEmail?.close();database.close();throw error;}
 }
 

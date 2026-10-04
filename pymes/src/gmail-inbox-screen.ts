@@ -1,3 +1,4 @@
+import {mountMailAssistance} from './mail-assistance-screen.js';
 import type { WorkspaceClient } from './workspace-client.js';
 import { WorkspaceHttpError } from './workspace-client.js';
 import type { InboxStatusView } from './inbox-service.js';
@@ -132,6 +133,7 @@ async function loadDetail() {
             detail.append(files);
         }
         const crmButton=el('button','gmail-button','Ver / vincular contacto');crmButton.type='button';crmButton.addEventListener('click',()=>{if(c!==client||!context||!acceptInboxDetail(context,response,items,selected))return;window.dispatchEvent(new CustomEvent('crm:open-mail',{detail:{accountRef:context.accountRef,gmailId:m.gmailId}}));});detail.append(crmButton);
+        if(context?.accountRef)mountMailAssistance(detail,c,context.accountRef,m.gmailId,()=>c===client&&seq===detailEpoch&&requestEpoch===epoch&&selected===m.gmailId&&items.some(i=>i.gmailId===selected));
         detail.append(el('p', 'gmail-readonly-note', 'Vista de lectura · Este mensaje no activa tareas ni concede permisos al asistente.'));
     }
     catch (error) {
@@ -147,8 +149,10 @@ async function loadDetail() {
     }
 }
 function schedule(ms: number) { if (timer)
-    clearTimeout(timer); timer = setTimeout(() => { timer = null; if (location.hash === '#gmail-inbox' && client && !operating)
-    void reload(); }, ms); }
+    clearTimeout(timer); timer = setTimeout(() => { timer = null; if (location.hash === '#gmail-inbox' && client && !operating) {
+    if(detail.querySelector('[data-mail-ai-busy="true"]'))schedule(2000);
+    else void reload();
+    } }, ms); }
 async function reload(append = false) {
     const c = client;
     if (!c || operating)

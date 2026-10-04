@@ -188,3 +188,5 @@ export class LlamaCppProvider implements InferenceProvider {
       } };
   }
 }
+
+export { LocalJsonProvider, type JsonProposalProvider, type JsonProposalResult } from './local-json.js';
