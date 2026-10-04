@@ -13,6 +13,7 @@ Mac mini 16 GB y MacBook 24 GB. La aplicación completa todavía no está termin
 | M3 Gmail | A/B/C real, autorización Keychain, reinicio y reconciliación sin reenvío |
 | P03/P04 inbox | SQLite separado, full/incremental, leases, cursor, lectura y purga BORRAR |
 | P05 CRM | Contactos, identidades, oportunidades, interacciones y seguimientos locales durables |
+| P09 revisión real | Cola local del runtime, versiones agrupadas, búsqueda/filtros y cursor paginado; UNKNOWN prioritario y acceso a trabajos fuera de los primeros 50; 10 pruebas nuevas |
 | P08 versiones de respuesta | Rechazo/corrección y retirada antes de C6, sucesor durable, nueva aprobación y oportunidad CRM reutilizada; 11 pruebas nuevas |
 | P07 flujo de correo | Trabajo durable, borrador editable antes de revisión, aprobación exacta, respuesta en hilo y CRM/seguimiento; QA sintético y recuperación; aceptación Gmail nueva pendiente |
 | P06 IA de correo | Resumen/clasificación/borrador local, evidencia y revisión; 8 casos reales con modelo instalado |
@@ -22,9 +23,9 @@ reales. Holded, Google Calendar y otros canales siguen pendientes de integració
 
 ## Orden de trabajo
 
-1. **Revisión y trabajo desde correo.** P07 y P08 implementados. Completar
-   cancelación deliberada de pendientes y revisión unificada con versiones
-   agrupadas/paginadas. Cada versión requiere aprobación nueva; un claim C6
+1. **Revisión y trabajo desde correo.** P07, P08 y P09 implementados. Completar
+   cancelación deliberada de pendientes. La revisión unificada ya agrupa y pagina
+   versiones. Cada versión requiere aprobación nueva; un claim C6
    bloquea correcciones. Mostrar también la distinción de proveedor simulado
    en el historial CRM.
 2. **Conversaciones e identidad.** Respuestas Gmail en hilo, referencia a
@@ -67,6 +68,7 @@ aprobación exacta, journal durable, estados UNKNOWN y reconciliación sin reenv
 - `docs/handoff/AVANCE_P06_ASISTENTE_CORREO_2026-10-04.md`
 - `docs/handoff/AVANCE_P07_FLUJO_CORREO_2026-10-04.md`
 - `docs/handoff/AVANCE_P08_REVISION_RESPUESTAS_2026-10-04.md`
+- `docs/handoff/AVANCE_P09_REVISION_REAL_2026-10-04.md`
 
 La autorización activa del usuario cubre continuar desarrollando lo pendiente.
 Credenciales, alcance de permisos nuevos y aceptación de comunicaciones reales

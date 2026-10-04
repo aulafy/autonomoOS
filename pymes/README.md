@@ -277,3 +277,24 @@ controles C1–C12 de Agent World OS. El primer piloto real necesitará validar
 las cuentas y canales accesibles mediante conectores autorizados. Véase
 también el [estado de los canales](INTEGRATIONS.md), en
 especial la diferencia entre iMessage personal y Messages for Business.
+
+## P09 · Revisión conectada al runtime
+
+Conecta el workspace y abre **Revisión**. La lista muestra la última versión de
+cada trabajo del usuario autenticado, priorizando envíos inciertos y pendientes.
+Tiene búsqueda de asunto/cliente sin distinguir tildes, filtros y páginas de 25.
+Abrir una fila consulta el trabajo exacto, incluso fuera de los primeros 50 del
+Centro de agentes; la aprobación y el envío siguen en el panel existente.
+
+La lista es una lectura del journal y del CRM local: no consulta Gmail, no
+invoca el modelo y no prepara ni ejecuta efectos. Un cursor queda invalidado si
+cambian sus datos o filtros; la pantalla vuelve a la primera página. Al fallar
+la conexión, limpia las filas y muestra un error. Solo el modo sin configuración
+usa la cola de demostración, etiquetada como tal.
+
+Contrato: `GET /v1/workspaces/<tenant>/review-queue`, parámetros `filter`,
+`query`, `limit` (1–50) y `cursor`. Un envío confirmado con pasos de CRM aún
+pendientes no se presenta como trabajo completado. Los permisos/cuenta/contenido
+se verifican en la revisión completa, no al listar metadatos.
+
+Estado y límites: [informe P09](../docs/handoff/AVANCE_P09_REVISION_REAL_2026-10-04.md).

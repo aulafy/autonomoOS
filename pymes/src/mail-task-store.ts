@@ -29,4 +29,5 @@ export class MailTaskStore {
   this.records.set(value.taskId,structuredClone(value));return structuredClone(value);
  }
  hash(taskId:string){const r=this.task(taskId);return r?emailHash(r):null;}
+ snapshotForOwner(owner:string){return structuredClone([...this.records.values()].filter(r=>r.owner===owner));}
 }

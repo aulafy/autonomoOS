@@ -1,3 +1,5 @@
+import {ReviewService} from './review-service.js';
+import {resolveEffectiveEffectOutcome} from '@agent-world/reconciliation';
 import {MailAssistanceService} from './mail-assistance-service.js';
 import {MailTaskStore} from './mail-task-store.js';
 import {MailTaskService} from './mail-task-service.js';
@@ -46,8 +48,12 @@ export async function openWorkspaceRuntime(path:string,tenantId:string,options:{
   const sourceFor=(id:string)=>mailTaskStore.task(id);
   const requireSource=(id:string)=>{if(sourceFor(id)&&!mailTasks)throw new Error('MAIL_TASK_SOURCE_UNAVAILABLE');};
   const email=emailProvider?createEmailWorkflow(kernel,journal,emailReviews,createEmailGovernance(journal,domain,emailReviews,emailProvider,options.emailHooks),()=>({from:'office@example.test',to:['client@example.test'],cc:[],bcc:[],subject:'Respuesta a su consulta · simulación',body:'Gracias por su consulta. Prepararemos los siguientes pasos y le confirmaremos la información necesaria. Este correo es una simulación local.',contactId:'simulated-contact'}),{replacementFor:id=>mailTaskStore.replacement(id),createRevision:async(id,owner,payload,guard)=>{requireSource(id);if(!mailTasks)throw new Error('MAIL_TASK_SOURCE_UNAVAILABLE');return mailTasks.revise(id,owner,payload,guard);},crm:crm.workflowAdapter(sourceFor),...(options.gmail?{simulated:false,context:providerContext}:{}),draftFrom:sender,validatePayload:p=>emailProvider.prepare(p),sourceFor,checkSource:async(id,owner)=>{requireSource(id);await mailTasks?.check(id,owner);},assertSource:(id,owner)=>{requireSource(id);mailTasks?.assert(id,owner);},assertPayload:(id,owner,p)=>{requireSource(id);mailTasks?.assertPayload(id,owner,p);}}):undefined;
+  const reviews=new ReviewService(tenantId,()=>{if(closed||!journal.isHealthy())throw new Error('RUNTIME_CLOSED');return kernel.snapshot();},emailReviews,mailTaskStore,()=>{
+   const decisions=domain.reconciliations.listDecisions();
+   return domain.effects.list().filter(e=>e.action==='email.send').map(e=>({taskId:e.taskId,status:e.status,effective:resolveEffectiveEffectOutcome(e,decisions).effectiveOutcome}));
+  },emailProvider?.id==='gmail-email'?'gmail':emailProvider?'test':'unconfigured',(owner,id)=>crmStore.contact(owner,id)?.name??null);
   const planning=new Set<string>();
-  const source:WorkspaceRuntimeSource={mailTasks,mailAssistance,crm,email,gmail:options.gmail,gmailInbox:options.gmailInbox,planTask:async(tenant,owner,input,mayCommit)=>{
+  const source:WorkspaceRuntimeSource={reviews,mailTasks,mailAssistance,crm,email,gmail:options.gmail,gmailInbox:options.gmailInbox,planTask:async(tenant,owner,input,mayCommit)=>{
    if(closed||!journal.isHealthy())throw new Error('RUNTIME_CLOSED');
    if(tenant!==tenantId)throw new Error('RUNTIME_TENANT_SCOPE_DENIED');
    if(input.workflow!==EMAIL_LEAD_WORKFLOW)throw new Error('INVALID_WORKFLOW');

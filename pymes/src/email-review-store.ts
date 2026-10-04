@@ -46,6 +46,10 @@ export interface EmailAudit {
   at: number;
   reference: string;
 }
+export interface EmailQueueRecord {
+ taskId:string;review:Pick<EmailReview,'id'|'owner'|'provider'|'at'|'bindingHash'|'payloadHash'|'planVersion'>|null;
+ decision:EmailDecision|null;policy:EmailPolicy|null;draftAt:number|null;draftHash:string|null;
+}
 /** Append-only journal projection; inputs to this store come only from trusted host services. */
 export class EmailReviewStore {
   private drafts: Array<{taskId:string;owner:string;payload:EmailPayload;at:number}>=[];
@@ -93,6 +97,15 @@ export class EmailReviewStore {
   draft(taskId:string){return structuredClone(this.drafts.find(d=>d.taskId===taskId)??null);}
   listReviews(): EmailReview[] {
     return structuredClone(this.reviews);
+  }
+  /** Metadata only: the queue must never export an email body or draft. */
+  queueSnapshot(owner:string):EmailQueueRecord[]{
+    const latest=new Map<string,EmailReview>();for(const r of this.reviews)if(r.owner===owner)latest.set(r.taskId,r);
+    const decisions=new Map(this.decisions.map(d=>[d.reviewId,d])),policies=new Map(this.policies.map(p=>[p.reviewId,p])),drafts=new Map(this.drafts.filter(d=>d.owner===owner).map(d=>[d.taskId,d]));
+    return [...new Set([...latest.keys(),...drafts.keys()])].map(taskId=>{
+      const r=latest.get(taskId),d=drafts.get(taskId);
+      return {taskId,review:r?{id:r.id,owner:r.owner,...(r.provider?{provider:r.provider}:{}),at:r.at,planVersion:r.planVersion,bindingHash:r.bindingHash,payloadHash:r.payloadHash}:null,decision:r?structuredClone(decisions.get(r.id)??null):null,policy:r?structuredClone(policies.get(r.id)??null):null,draftAt:d?.at??null,draftHash:d?emailHash(d.payload):null};
+    });
   }
   recordArtifact(input: EmailArtifact): EmailArtifact {
     if (

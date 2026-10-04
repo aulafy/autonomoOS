@@ -121,7 +121,7 @@ function renderLive(loading=false):void {
 async function refreshLive():Promise<void>{
  const client=liveClient;if(!client)return;const generation=++liveGeneration;
  liveError=false;liveView=null;renderLive(true);
- try {const view=await client.runtimeView();if(generation!==liveGeneration||client!==liveClient)return;liveView=view;renderLive();const task=view.tasks.find(t=>t.id===liveSelected);if(task&&task.planVersion>0)void loadEmail(task.id);}
+ try {const view=await client.runtimeView();if(liveSelected&&!view.tasks.some(t=>t.id===liveSelected)){const selected=await client.runtimeView(liveSelected);view.tasks.push(...selected.tasks);}if(generation!==liveGeneration||client!==liveClient)return;liveView=view;renderLive();const task=view.tasks.find(t=>t.id===liveSelected);if(task&&task.planVersion>0)void loadEmail(task.id);}
  catch {if(generation!==liveGeneration||client!==liveClient)return;liveError=true;liveView=null;renderLive();}
 }
 export function setRuntimeClient(client:import('./workspace-client.js').WorkspaceClient|null):void {

@@ -1,3 +1,4 @@
+import {parseReviewQuery,parseReviewPage,type ReviewQuery} from './review-contract.js';
 import {parseMailAssistanceView} from './mail-assistance-contract.js';
 import {parseMailTaskInput,parseMailTaskView,type MailTaskInput} from './mail-task-contract.js';
 import {parseCrmView,parseCrmResolution} from './crm-view.js';
@@ -233,9 +234,17 @@ export class WorkspaceClient {
     return parseGmailInboxStatus(response,this.config.tenantId);
   }
 
-  async runtimeView(): Promise<RuntimeWorkspaceView> {
-    const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/runtime`);
-    return parseRuntimeView(body, this.config.tenantId);
+  async reviewQueue(raw:Partial<ReviewQuery>={}){
+    const q=parseReviewQuery(raw),params=new URLSearchParams({filter:q.filter,query:q.query,limit:String(q.limit)});
+    if(q.cursor)params.set('cursor',q.cursor);
+    return parseReviewPage(await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/review-queue?${params}`),this.config.tenantId,q);
+  }
+  async runtimeView(taskId?:string): Promise<RuntimeWorkspaceView> {
+    const suffix=taskId===undefined?'':'/'+encodeURIComponent(crmId(taskId));
+    const body = await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/runtime${suffix}`);
+    const view=parseRuntimeView(body, this.config.tenantId);
+    if(taskId!==undefined&&(view.tasks.length!==1||view.tasks[0]!.id!==taskId))throw new Error('INVALID_RUNTIME_RESPONSE');
+    return view;
   }
   private lastRequestIdValue: string | null = null;
   private lastStatusValue: number | null = null;
