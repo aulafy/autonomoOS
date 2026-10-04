@@ -172,3 +172,10 @@ Se exige A/B/C contra Gmail real, incluida pérdida de respuesta local tras acep
 Estudiar gmail.metadata → messages.list con labelIds=SENT y paginación limitada → messages.get(format=METADATA, metadataHeaders=[Message-ID]) → comparar identificador estable. Sin q, ya que gmail.metadata no permite ese parámetro. No se implementa ahora.
 
 Límites a estudiar: messages.list no ofrece un filtro temporal equivalente a q bajo metadata; un listado acotado no garantiza encontrar el mensaje ni permite tratar ausencia como no envío. Deben definirse paginación, ventana/cursor y comportamiento UNKNOWN conservador. La coincidencia de Message-ID en metadata tampoco comprueba el cuerpo aprobado, a diferencia del verificador raw actual; antes de sustituirlo habría que definir qué evidencia satisface el contrato de observación. Para M4 la lectura del contenido seguirá necesitando un permiso adecuado.
+
+
+## P01 integrado — 2026-10-04
+
+Harness de respuesta descartada integrado y endurecido tras revisión de la entrega de Claude. 24 pruebas dirigidas pasan, incluidas las de SIGKILL/reconciliación y helper; suite completa: 739 tests, 738 pasan, 0 fallos, 1 omitido opcional Orca. Typecheck y build completos correctos. API shape y conservación de UNKNOWN en C11 comprobados. Ver `docs/handoff/REVISION_P01_CODEX_2026-10-04.md` para correcciones, límites y uso.
+
+M3 sigue abierto: OAuth/Gmail/entrega/reinicio/C reales y la inspección de secretos de la sesión real no se han ejecutado. Siguen pendientes ruta OAuth Desktop y destinatario. M4 no iniciado.

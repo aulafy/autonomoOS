@@ -19,7 +19,8 @@
     "benchmark:local": "tsx src/benchmark-local.ts",
     "start:ui": "tsx src/ui-server.ts",
     "mac:launch-agent": "tsx src/mac-launch-agent.ts",
-    "gmail:build-keychain": "bash scripts/build-gmail-keychain.sh"
+    "gmail:build-keychain": "bash scripts/build-gmail-keychain.sh",
+    "p01:kill": "tsx src/p01-pilot-kill.ts"
   },
   "devDependencies": {
     "tsx": "^4.20.0",

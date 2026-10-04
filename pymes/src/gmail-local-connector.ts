@@ -58,6 +58,7 @@ export async function openLocalGmail(
   path: string,
   helper: string,
   configPath?: string,
+  fetcher: typeof fetch = fetch,
 ) {
   const connector = new GmailLocalConnector(
     owner,
@@ -80,6 +81,7 @@ export async function openLocalGmail(
             : reject(new Error("GMAIL_BROWSER_UNAVAILABLE")),
         );
       }),
+    fetcher,
   );
   try {
     if (configPath) {

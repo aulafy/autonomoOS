@@ -1,4 +1,5 @@
 import {openLocalGmail} from "./gmail-local-connector.js";
+import {createP01ResponseLoss,loadP01Arm} from "./gmail-fault-injection.js";
 import {resolve} from "node:path";
 import { openWorkspaceRuntime } from "./runtime-source.js";
 import { createServer } from "node:http";
@@ -48,7 +49,12 @@ const enterprisePolicy = {
 const runtimePath=process.env.PYMES_RUNTIME_DB_PATH??"./data/pymes-task-runtime.db";
 const gmailEnabled=process.env.PYMES_GMAIL_ENABLED==='1';
 if(gmailEnabled&&(host!=='127.0.0.1'||process.env.PYMES_FAKE_EMAIL_ENABLED==='1'))throw new Error('GMAIL_LOCAL_EXCLUSIVE_PROVIDER_REQUIRED');
-const gmail=gmailEnabled?await openLocalGmail(userId,tenantId,runtimePath+'.gmail-attempts.db',resolve(process.env.PYMES_GMAIL_KEYCHAIN_HELPER??'./data/bin/gmail-keychain'),process.env.PYMES_GMAIL_DESKTOP_CLIENT_PATH):undefined;
+// P01 pilot-only: response-loss injection for M3 test C. Off unless an arm file is given.
+const p01ArmPath=process.env.PYMES_P01_FAULT_ARM_FILE?.trim();
+if(p01ArmPath&&!gmailEnabled)throw new Error('P01_REQUIRES_GMAIL_PILOT');
+const p01=p01ArmPath?createP01ResponseLoss(fetch,resolve(p01ArmPath),loadP01Arm(resolve(p01ArmPath),{tenant:tenantId,owner:userId}),(event,meta)=>console.warn('P01',event,meta)):undefined;
+if(p01)console.warn('P01 fault-injection configured',{armed:p01.armed()});
+const gmail=gmailEnabled?await openLocalGmail(userId,tenantId,runtimePath+'.gmail-attempts.db',resolve(process.env.PYMES_GMAIL_KEYCHAIN_HELPER??'./data/bin/gmail-keychain'),process.env.PYMES_GMAIL_DESKTOP_CLIENT_PATH,p01?.fetcher??fetch):undefined;
 const runtime = await openWorkspaceRuntime(runtimePath, tenantId,{fakeEmail:process.env.PYMES_FAKE_EMAIL_ENABLED==='1',gmail});
 const api = new WorkspaceApi(repository, ingressToken ? { token: ingressToken, policy: enterprisePolicy } : undefined, runtime.source);
 const whatsappWebhook = whatsappVerifyToken && whatsappAppSecret
