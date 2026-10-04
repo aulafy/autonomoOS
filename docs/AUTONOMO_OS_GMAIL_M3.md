@@ -193,3 +193,7 @@ La derivación C6 usada por el helper está vinculada a la identidad y executor 
 Claims nuevos v2 llevan X-AWOS-Effect-Key derivado de la clave C6. Verificación exacta de identidad y payload completo; fallback SENT paginado con límites, sin POST y sin tratar ausencia como no envío. Claims antiguos siguen v1. A original fue recibido pero permanece UNKNOWN; no se reenvía.
 
 Suite: 764 tests, 763 pasan, 0 fallos, 1 omitido. Typecheck y build pasan. Ver docs/handoff/REVISION_P02_CODEX_2026-10-04.md para correcciones, garantías y límites. Listado after: validado mediante GET real. Pendientes marcador en correo nuevo, A2/B/C y auditoría real de secretos. M3 continúa abierto.
+
+## Aceptación real del piloto — 2026-10-04
+
+A2, B y C validados contra Gmail real, incluyendo UNKNOWN + SIGKILL + reinicio + reconciliación sin reenvío. Gates finales: 764 tests, 763 pass, 0 fail, 1 skip; typecheck y build correctos. Evidencias y límites: `handoff/CIERRE_M3_GMAIL_2026-10-04.md`. M4 no iniciado.
