@@ -1,0 +1,13 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {mailTaskFixture} from './fixtures/mail-task-fixture.js';import {cancellationActions,cancellationPreview,cancellationError} from '../src/mail-cancellation-screen.js';
+test('cancellation UI preview uses durable contact, recipient, version, approval and explicit history warning',async()=>{
+ const f=await mailTaskFixture();try{const input=await f.prepare(),id=(await f.client.mailTask(f.ref,'in1',input)).taskId!;const v=await f.client.emailWorkflow(id),html=cancellationPreview(v);for(const text of ['Cliente ficticio','cliente@example.test','Re: Consulta RC','Versión','Sin aprobación','Cancelar este trabajo','Cancelar no equivale a borrar el historial'])assert.ok(html.includes(text));assert.ok(cancellationActions(v).includes('Cancelar trabajo'));
+  const r=await f.client.emailWorkflow(id,'review');await f.client.emailWorkflow(id,'decision',{bindingHash:r.review!.bindingHash,decision:'approved'});assert.ok(cancellationPreview(await f.client.emailWorkflow(id)).includes('Sí · contenido aprobado'));
+  const c=(await f.client.emailWorkflow(id)).cancellationState!,cancelled=await f.client.cancelEmailTask(id,{requestId:'ui-test',expectedRevision:c.expectedRevision,expectedStateHash:c.expectedStateHash,confirmed:true,reason:'<script>ficticio</script>'});const after=cancellationActions(cancelled);assert.ok(after.includes('CANCELLED'));assert.ok(!after.includes('id="rt-cancel-job"'));assert.ok(after.includes('Preparar nueva versión'));assert.ok(after.includes('&lt;script&gt;'));assert.equal(cancellationPreview(cancelled),'');
+ }finally{await f.done();}
+});
+test('blocked attempt has no cancellation action and UNKNOWN keeps reconciliation wording',async()=>{
+ const f=await mailTaskFixture({loseResponse:true});try{const input=await f.prepare(),id=(await f.client.mailTask(f.ref,'in1',input)).taskId!,r=await f.client.emailWorkflow(id,'review');await f.client.emailWorkflow(id,'decision',{bindingHash:r.review!.bindingHash,decision:'approved'});await f.client.emailWorkflow(id,'execute');const v=await f.client.emailWorkflow(id);assert.equal(v.status,'unknown');assert.ok(!cancellationActions(v).includes('Cancelar trabajo'));assert.equal(cancellationPreview(v),'');assert.ok(cancellationError(new Error(v.cancellationState!.blockedReason!)).includes('reconciliación'));}finally{await f.done();}
+});
+test('UI errors stay explicit and never fabricate a CANCELLED confirmation or replace real data',()=>{
+ assert.ok(cancellationError(new Error('EMAIL_CANCEL_STALE')).includes('ha cambiado'));assert.ok(cancellationError(new Error('OFFLINE')).includes('Cancelación no confirmada'));assert.ok(!cancellationError(new Error('OFFLINE')).includes('CANCELLED'));
+});

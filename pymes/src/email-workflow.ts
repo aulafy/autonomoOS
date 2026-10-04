@@ -1,3 +1,5 @@
+import {parseMailCancelInput,type MailCancelInput} from './mail-cancellation-contract.js';
+import type {MailCancellationStore} from './mail-cancellation-store.js';
 import { createEmailTaskBridge } from "./email-task-bridge.js";
 import { randomUUID } from "node:crypto";
 import type { TaskRuntimeKernel } from "@agent-world/task-runtime";
@@ -13,7 +15,7 @@ export function createEmailWorkflow(
   store: EmailReviewStore,
   governance: ReturnType<typeof createEmailGovernance>,
   payloadFor: (taskId: string) => EmailPayload,
-  options:{replacementFor?:(taskId:string)=>string|null;createRevision?:(taskId:string,owner:string,payload:EmailPayload,guard:()=>void)=>Promise<string>;crm?:import('./crm-service.js').CrmWorkflowAdapter;context?:()=>string;simulated?:boolean;draftFrom?:()=>string;validatePayload?:(payload:unknown)=>EmailPayload;sourceFor?:(taskId:string)=>import('./mail-task-contract.js').MailTaskBinding|null;checkSource?:(taskId:string,owner:string)=>Promise<void>;assertSource?:(taskId:string,owner:string)=>void;assertPayload?:(taskId:string,owner:string,p:EmailPayload)=>void}={},
+  options:{cancellations?:MailCancellationStore;runtimeReady?:()=>boolean;contactName?:(owner:string,id:string)=>string|null;cancellationHooks?:{beforePersist?:()=>void;afterTransition?:()=>void;afterPersist?:()=>void};reprepare?:(taskId:string,owner:string,payload:EmailPayload,guard:()=>void)=>Promise<string>;replacementFor?:(taskId:string)=>string|null;createRevision?:(taskId:string,owner:string,payload:EmailPayload,guard:()=>void)=>Promise<string>;crm?:import('./crm-service.js').CrmWorkflowAdapter;context?:()=>string;simulated?:boolean;draftFrom?:()=>string;validatePayload?:(payload:unknown)=>EmailPayload;sourceFor?:(taskId:string)=>import('./mail-task-contract.js').MailTaskBinding|null;checkSource?:(taskId:string,owner:string)=>Promise<void>;assertSource?:(taskId:string,owner:string)=>void;assertPayload?:(taskId:string,owner:string,p:EmailPayload)=>void}={},
 ) {
   const busy = new Set<string>(),
     bridge = createEmailTaskBridge(kernel, journal, store, options.crm,options.sourceFor);
@@ -245,6 +247,65 @@ export function createEmailWorkflow(
     }
   }
   function claimsForTask(taskId:string){return governance.stores.effects.list().filter(e=>e.taskId===taskId&&e.action==='email.send');}
+  function cancellationState(taskId:string,owner:string){
+    const {state,t}=task(taskId,owner),source=options.sourceFor?.(taskId);if(!source)return null;
+    const claims=claimsForTask(taskId),attempts=Object.values(state.attempts).filter(a=>a.taskId===taskId),review=store.latest(taskId),draft=store.draft(taskId),contactName=options.contactName?.(owner,source.contactId)??null;
+    // Local CRM/review steps dispatch within the host. They are not an external
+    // send. Unknown providers and the send WorkUnit are conservatively external.
+    const local=new Set(['p05-local-crm','p07-reviewed-mail','p07-human-review','m2-local-simulation']);
+    const externalStarted=attempts.some(a=>a.startedAt!==undefined&&(!local.has(a.providerId)||state.workUnits[a.workUnitId]?.requiredCapabilities.some(c=>c.capability==='email.send_reply')));
+    const active=attempts.some(a=>!['succeeded','failed','cancelled','unknown'].includes(a.status))||t.workUnitIds.some(id=>state.workUnits[id]?.activeAttemptId);
+    const blockedReason=!journal.isHealthy()||options.runtimeReady?.()===false?'EMAIL_CANCEL_NOT_READY':claims.length?'EMAIL_CANCEL_C6_CLAIM':t.status==='unknown'||attempts.some(a=>a.status==='unknown')?'EMAIL_CANCEL_UNKNOWN':active?'EMAIL_CANCEL_ACTIVE_ATTEMPT':externalStarted?'EMAIL_CANCEL_EXTERNAL_DISPATCH':options.replacementFor?.(taskId)?'EMAIL_CANCEL_SUPERSEDED':['completed','cancelled','failed'].includes(t.status)?'EMAIL_CANCEL_TERMINAL':null;
+    return {canCancel:blockedReason===null,blockedReason,expectedRevision:source.revision??1,expectedStateHash:emailHash(JSON.parse(JSON.stringify({task:t,source,units:t.workUnitIds.map(id=>state.workUnits[id]),attempts,claims,review,decision:review?store.decision(review.id):null,policy:review?store.policy(review.id):null,draft,contactName,replacement:options.replacementFor?.(taskId)??null}))),contactName};
+  }
+  function cancel(taskId:string,owner:string,raw:MailCancelInput,mayCommit?:()=>boolean){
+    task(taskId,owner);const input=parseMailCancelInput(raw),records=options.cancellations;
+    if(!records)throw new Error('EMAIL_CANCEL_NOT_CONFIGURED');
+    if(!journal.isHealthy()||options.runtimeReady?.()===false)throw new Error('EMAIL_CANCEL_NOT_READY');
+    if(mayCommit&&!mayCommit())throw new Error('EMAIL_AUTH_CHANGED');
+    const requestHash=emailHash({tenantId:records.tenant,owner,taskId,...input}),existing=records.request(owner,input.requestId);
+    if(existing){if(existing.taskId!==taskId||existing.requestHash!==requestHash)throw new Error('EMAIL_CANCEL_REQUEST_CONFLICT');return view(taskId,owner);}
+    if(records.task(taskId,owner))throw new Error('EMAIL_CANCEL_ALREADY_CANCELLED');
+    if(busy.has(taskId))throw new Error('EMAIL_BUSY');
+    const guard=()=>{
+      if(mayCommit&&!mayCommit())throw new Error('EMAIL_AUTH_CHANGED');
+      const c=cancellationState(taskId,owner);if(!c)throw new Error('EMAIL_CANCEL_NOT_MAIL');
+      if(!c.canCancel)throw new Error(c.blockedReason!);
+      if(c.expectedRevision!==input.expectedRevision||c.expectedStateHash!==input.expectedStateHash)throw new Error('EMAIL_CANCEL_STALE');
+    };
+    guard();busy.add(taskId);
+    try{
+      options.cancellationHooks?.beforePersist?.();
+      journal.transaction(()=>{
+        guard();const {t}=task(taskId,owner),at=Math.max(Date.now(),t.updatedAt),id='cancel-'+randomUUID();
+        records.record({...input,id,tenantId:records.tenant,owner,actor:owner,taskId,at,planVersion:t.planVersion,previousStatus:t.status,requestHash});
+        kernel.apply({id:randomUUID(),taskId,at,type:'DecisionRecorded',referenceId:id},kernel.snapshot().revision);
+        kernel.apply({id:randomUUID(),taskId,at,type:'EvidenceRecorded',referenceId:id+':evidence'},kernel.snapshot().revision);
+        kernel.apply({id:randomUUID(),taskId,at,type:'GlobalTaskCancelled'},kernel.snapshot().revision);
+        options.cancellationHooks?.afterTransition?.();
+        store.audit({id,taskId,at,type:'job.cancelled.user',reference:id});
+      });
+      options.cancellationHooks?.afterPersist?.();
+    }finally{busy.delete(taskId);}
+    return view(taskId,owner);
+  }
+  async function reprepare(taskId:string,owner:string,cancellationId:string,mayCommit?:()=>boolean){
+    task(taskId,owner);const record=options.cancellations?.task(taskId,owner);
+    if(!record||record.id!==cancellationId)throw new Error('EMAIL_REPREPARE_CANCELLATION_REQUIRED');
+    if(busy.has(taskId))throw new Error('EMAIL_BUSY');busy.add(taskId);
+    try{
+      if(mayCommit&&!mayCommit())throw new Error('EMAIL_AUTH_CHANGED');
+      const existing=options.replacementFor?.(taskId);if(existing)return {taskId,replacementTaskId:existing};
+      const guard=()=>{
+        const {state,t}=task(taskId,owner);
+        if(mayCommit&&!mayCommit())throw new Error('EMAIL_AUTH_CHANGED');
+        if(!journal.isHealthy()||options.runtimeReady?.()===false||t.status!=='cancelled'||claimsForTask(taskId).length||t.workUnitIds.some(id=>state.workUnits[id]?.activeAttemptId)||options.replacementFor?.(taskId))throw new Error('EMAIL_REPREPARE_NOT_AVAILABLE');
+      };
+      guard();const payload=store.latest(taskId)?.payload??store.draft(taskId)?.payload;
+      if(!payload||!options.reprepare)throw new Error('EMAIL_REPREPARE_NOT_AVAILABLE');
+      return {taskId,replacementTaskId:await options.reprepare(taskId,owner,payload,guard)};
+    }finally{busy.delete(taskId);}
+  }
   function revisionReady(taskId:string,owner:string){
     const {state,t}=task(taskId,owner);
     return !!options.sourceFor?.(taskId)&&!!store.latest(taskId)&&!options.replacementFor?.(taskId)&&!['completed','cancelled','failed','unknown'].includes(t.status)&&!claimsForTask(taskId).length&&!t.workUnitIds.some(id=>state.workUnits[id]!.activeAttemptId);
@@ -267,16 +328,21 @@ export function createEmailWorkflow(
   function view(taskId: string, owner: string) {
     const { t } = task(taskId, owner),
       r = store.latest(taskId);
+    const cancellation=options.cancellations?.task(taskId,owner)??null,cancelState=cancellationState(taskId,owner);
+    const controls={cancellation,cancellationState:cancelState&&busy.has(taskId)&&cancelState.canCancel?{...cancelState,canCancel:false,blockedReason:'EMAIL_BUSY'}:cancelState,canReprepare:!busy.has(taskId)&&!!cancellation&&t.status==='cancelled'&&!claimsForTask(taskId).length&&!options.replacementFor?.(taskId)&&!!options.reprepare&&journal.isHealthy()&&options.runtimeReady?.()!==false};
     if (!r)
-      return {
+      return {...controls,
         taskId,
         simulated: options.simulated??true,
-        status: "plan_ready",
+        status: t.status==='cancelled'&&options.sourceFor?.(taskId)?"cancelled":"plan_ready",
+        globalTaskStatus:t.status,
         review: null,
+        decision:null,
+        policy:null,
         draft:store.draft(taskId)?.payload??null,
         source:options.sourceFor?.(taskId)??null,
         effects: [],
-        audit: [],
+        audit: store.timeline(taskId),
         canRevise:false,
         replacementTaskId:options.replacementFor?.(taskId)??null,
       };
@@ -311,6 +377,7 @@ export function createEmailWorkflow(
             ? "approved"
             : "waiting_approval";
     return {
+      ...controls,
       taskId,
       simulated: r.provider!=="gmail-email",
       status: state,
@@ -326,7 +393,7 @@ export function createEmailWorkflow(
       replacementTaskId:options.replacementFor?.(taskId)??null,
     };
   }
-  return { propose, decide, execute, reconcile, view,saveDraft,revise };
+  return { propose, decide, execute, reconcile, view,saveDraft,revise,cancel,reprepare };
 }
 export type EmailWorkflowView = ReturnType<
   ReturnType<typeof createEmailWorkflow>["view"]

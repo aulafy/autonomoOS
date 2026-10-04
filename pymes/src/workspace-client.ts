@@ -1,3 +1,4 @@
+import {parseMailCancelInput} from './mail-cancellation-contract.js';
 import {parseReviewQuery,parseReviewPage,type ReviewQuery} from './review-contract.js';
 import {parseMailAssistanceView} from './mail-assistance-contract.js';
 import {parseMailTaskInput,parseMailTaskView,type MailTaskInput} from './mail-task-contract.js';
@@ -155,6 +156,18 @@ export class WorkspaceClient {
     const path=`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/runtime/${encodeURIComponent(taskId)}/email${operation?'/'+operation:''}`;
     const response=await this.request(path,operation?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(decision??{})}:{},[],40_000);
     return parseEmailView(response,this.config.tenantId,taskId);
+  }
+  async cancelEmailTask(taskId:string,input:import('./mail-cancellation-contract.js').MailCancelInput){
+    if(!/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,99}$/.test(taskId))throw new Error('INVALID_RUNTIME_TASK');
+    const body=parseMailCancelInput(input);
+    const r=await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/runtime/${encodeURIComponent(taskId)}/email/cancel`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)},[],40_000);
+    return parseEmailView(r,this.config.tenantId,taskId);
+  }
+  async reprepareEmailTask(taskId:string,cancellationId:string){
+    if(!/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,99}$/.test(taskId)||!/^cancel-[a-f0-9-]{36}$/.test(cancellationId))throw new Error('INVALID_EMAIL_CANCELLATION');
+    const r=await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/runtime/${encodeURIComponent(taskId)}/email/reprepare`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({cancellationId})},[],40_000);
+    if(Object.keys(r).sort().join(',')!=='replacementTaskId,taskId,tenantId'||r.tenantId!==this.config.tenantId||r.taskId!==taskId||typeof r.replacementTaskId!=='string'||r.replacementTaskId===taskId||!/^mail-[a-zA-Z0-9-]{1,80}$/.test(r.replacementTaskId))throw new Error('INVALID_EMAIL_REVISION_RESPONSE');
+    return r.replacementTaskId;
   }
   async reviseEmailTask(taskId:string,bindingHash:string){
     if(!/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,99}$/.test(taskId)||!/^[a-f0-9]{64}$/.test(bindingHash))throw new Error('INVALID_EMAIL_REVISION');

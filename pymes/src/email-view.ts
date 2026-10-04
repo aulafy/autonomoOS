@@ -1,3 +1,4 @@
+import {parseMailCancellation,parseMailCancellationState} from './mail-cancellation-contract.js';
 import type { EmailWorkflowView } from "./email-workflow.js";
 import {parseMailTaskBinding} from './mail-task-contract.js';
 import {validateEmailReply} from './email-reply.js';
@@ -28,6 +29,12 @@ export function parseEmailView(
   )
     return fail();
   if(value.source!==undefined&&value.source!==null){try{const source=parseMailTaskBinding(value.source);if(source.taskId!==taskId)return fail();}catch{return fail();}}
+  try{
+    if(value.cancellationState!==undefined&&value.cancellationState!==null)parseMailCancellationState(value.cancellationState);
+    if(value.cancellation!==undefined&&value.cancellation!==null){const c=parseMailCancellation(value.cancellation);if(c.taskId!==taskId||c.tenantId!==tenantId||value.status!=='cancelled'||c.owner!==(object(value.source)?value.source.owner:null))return fail();}
+    if(value.canReprepare!==undefined&&(typeof value.canReprepare!=='boolean'||value.canReprepare&&(!value.cancellation||value.status!=='cancelled'||value.replacementTaskId||value.effects.length)))return fail();
+    if(object(value.cancellationState)&&value.cancellationState.canCancel&&(!object(value.source)||value.effects.length||value.status==='cancelled'||value.globalTaskStatus==='unknown'||value.globalTaskStatus==='completed'))return fail();
+  }catch{return fail();}
   if(value.canRevise!==undefined&&typeof value.canRevise!=='boolean')return fail();
   if(value.replacementTaskId!==undefined&&value.replacementTaskId!==null&&(!text(value.replacementTaskId,100)||!/^mail-[a-zA-Z0-9-]{1,80}$/.test(value.replacementTaskId)||value.replacementTaskId===taskId))return fail();
   if(value.canRevise===true&&(value.review===null||!object(value.source)||value.effects.length>0||value.replacementTaskId))return fail();

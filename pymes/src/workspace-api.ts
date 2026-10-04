@@ -236,14 +236,14 @@ export class WorkspaceApi {
     if(!principal)return {status:401,body:{error:'UNAUTHENTICATED'}};
     const tenant=parts[2],taskId=parts[4];if(tenant!==principal.tenantId)return {status:403,body:{error:'TENANT_SCOPE_DENIED'}};
     if(request.method!=='GET'&&request.method!=='POST'||request.method==='GET'&&parts.length!==6||request.method==='POST'&&parts.length!==7)return {status:405,body:{error:'METHOD_NOT_ALLOWED'}};
-    const permission=request.method==='GET'?'readRuntime':['decision','revise'].includes(parts[6]??'')?'approveOffer':parts[6]==='execute'?'executeEffect':'createRuntimeTask';
+    const permission=request.method==='GET'?'readRuntime':['decision','revise','cancel','reprepare'].includes(parts[6]??'')?'approveOffer':parts[6]==='execute'?'executeEffect':'createRuntimeTask';
     try{requirePermission(principal,permission,{tenantId:tenant,id:taskId});}catch{return {status:403,body:{error:'PERMISSION_DENIED'}};}
-    if(parts[6]==='revise'&&principal.role!=='owner')return {status:403,body:{error:'PERMISSION_DENIED'}};
+    if(['revise','cancel','reprepare'].includes(parts[6]??'')&&principal.role!=='owner')return {status:403,body:{error:'PERMISSION_DENIED'}};
     const email=this.runtime?.email;if(!email)return {status:404,body:{error:'EMAIL_SIMULATION_NOT_CONFIGURED'}};
     const owner=this.runtime!.principalIdForSession(principal);
     const live=()=>{const p=token?this.repository.findSession(token):null;return Boolean(p&&p.tenantId===tenant&&p.userId===owner&&p.role===principal.role);};
     try{
-      if(this.runtime?.gmail)await this.runtime.gmail.status(owner);
+      if(this.runtime?.gmail&&parts[6]!=='cancel')await this.runtime.gmail.status(owner);
       if(!live())return {status:401,body:{error:'UNAUTHENTICATED'}};
       if(request.method==='GET'&&parts.length===6)return {status:200,body:{tenantId:tenant,...email.view(taskId,owner)}};
       const body=jsonRecord(request.body);if(!body)return {status:400,body:{error:'INVALID_EMAIL_REQUEST'}};
@@ -253,11 +253,13 @@ export class WorkspaceApi {
       else if(parts[6]==='decision'&&Object.keys(body).sort().join(',')==='bindingHash,decision'&&typeof body.bindingHash==='string'&&(body.decision==='approved'||body.decision==='rejected'))result=await email.decide(taskId,owner,{bindingHash:body.bindingHash,decision:body.decision},live);
       else if(parts[6]==='execute'&&Object.keys(body).length===0)result=await email.execute(taskId,owner,live);
       else if(parts[6]==='reconcile'&&Object.keys(body).length===0)result=await email.reconcile(taskId,owner);
+      else if(parts[6]==='cancel')result=email.cancel(taskId,owner,body as unknown as import('./mail-cancellation-contract.js').MailCancelInput,live);
+      else if(parts[6]==='reprepare'&&Object.keys(body).join(',')==='cancellationId'&&typeof body.cancellationId==='string')result=await email.reprepare(taskId,owner,body.cancellationId,live);
       else if(parts[6]==='revise'&&Object.keys(body).join(',')==='bindingHash'&&typeof body.bindingHash==='string'&&/^[a-f0-9]{64}$/.test(body.bindingHash))result=await email.revise(taskId,owner,body.bindingHash,live);
       else return {status:400,body:{error:'INVALID_EMAIL_REQUEST'}};
       if(!live())return {status:401,body:{error:'UNAUTHENTICATED'}};
       return {status:200,body:{tenantId:tenant,...result}};
-    }catch(error){const code=error instanceof Error?error.message:'';if(code==='EMAIL_TASK_NOT_FOUND')return {status:404,body:{error:code}};return {status:409,body:{error:'EMAIL_OPERATION_NOT_CONFIRMED'}};}
+    }catch(error){const code=error instanceof Error?error.message:'';if(code==='EMAIL_TASK_NOT_FOUND')return {status:404,body:{error:code}};if(code==='EMAIL_CANCEL_INPUT_INVALID')return {status:400,body:{error:code}};if(/^EMAIL_CANCEL_[A-Z0-9_]+$/.test(code)||['EMAIL_BUSY','EMAIL_AUTH_CHANGED','EMAIL_REPREPARE_CANCELLATION_REQUIRED','EMAIL_REPREPARE_NOT_AVAILABLE'].includes(code))return {status:409,body:{error:code}};return {status:409,body:{error:'EMAIL_OPERATION_NOT_CONFIRMED'}};}
   }
 
   /** Async planning route; existing synchronous contracts remain unchanged. */

@@ -96,7 +96,16 @@ export class CrmService {
                 if (payload.to.length !== 1)
                     throw new CrmError('CRM_RECIPIENT_REVIEW_REQUIRED');
                 const b=sourceFor?.(taskId);
-                const result = this.internal(owner, hashed('workflow-prepare', taskId), { type: 'workflow.prepare', taskId, contactId: payload.contactId, recipient: normalizeCrmEmail(payload.to[0]), title: goal.slice(0, 300) || 'Consulta por correo',...(b?{...(b.revisesTaskId?{revisesTaskId:b.revisesTaskId}:{}),line:b.line==='unknown'?'other':b.line,recipientReviewed:true as const,createLead:['quote','renewal'].includes(b.topic),followUpTitle:b.followUpTitle,followUpDueAt:b.followUpDueAt}:{}) }, b?{kind:'gmail',accountRef:b.accountRef,gmailId:b.gmailId}:{ kind: 'user' });
+                // A cancelled draft may never have reached CRM prepare. Reuse the
+                // nearest prepared ancestor; otherwise this is the first lead.
+                let prior=b?.revisesTaskId,prepared:string|undefined;
+                for(let n=0;prior&&n<100;n++){
+                    const ancestor=sourceFor?.(prior);
+                    if(!ancestor||ancestor.owner!==owner||ancestor.contactId!==payload.contactId)throw new CrmError('CRM_REVISION_SCOPE_DENIED');
+                    if(this.store.workflow(owner,prior)){prepared=prior;break;}
+                    prior=ancestor.revisesTaskId;
+                }
+                const result = this.internal(owner, hashed('workflow-prepare', taskId), { type: 'workflow.prepare', taskId, contactId: payload.contactId, recipient: normalizeCrmEmail(payload.to[0]), title: goal.slice(0, 300) || 'Consulta por correo',...(b?{...(prepared?{revisesTaskId:prepared}:{}),line:b.line==='unknown'?'other':b.line,recipientReviewed:true as const,createLead:['quote','renewal'].includes(b.topic),followUpTitle:b.followUpTitle,followUpDueAt:b.followUpDueAt}:{}) }, b?{kind:'gmail',accountRef:b.accountRef,gmailId:b.gmailId}:{ kind: 'user' });
                 return { contactId: payload.contactId, leadId: result.recordId };
             },
             effect: (taskId: string, owner: string, effect: {

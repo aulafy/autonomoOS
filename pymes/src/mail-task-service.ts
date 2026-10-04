@@ -23,7 +23,9 @@ export class MailTaskService {
  }
  async view(owner:string,ref:string,id:string,live:()=>boolean){await this.context(owner,ref,live);return this.store.byMail(owner,ref,id)?.taskId??null;}
  /** Called only after the email workflow certifies that no C6 claim exists. */
- async revise(taskId:string,owner:string,payload:EmailPayload,guard:()=>void){
+ async revise(taskId:string,owner:string,payload:EmailPayload,guard:()=>void){return this.successor(taskId,owner,payload,guard,false);}
+ async reprepare(taskId:string,owner:string,payload:EmailPayload,guard:()=>void){return this.successor(taskId,owner,payload,guard,true);}
+ private async successor(taskId:string,owner:string,payload:EmailPayload,guard:()=>void,reprepare:boolean){
   const previous=this.store.task(taskId,owner);if(!previous)throw new MailTaskError('MAIL_TASK_NOT_FOUND');
   await this.check(taskId,owner);this.assertPayload(taskId,owner,payload);guard();
   const revision=(previous.revision??1)+1;if(revision>100)throw new MailTaskError('MAIL_TASK_REVISION_LIMIT');
@@ -32,14 +34,14 @@ export class MailTaskService {
   this.journal.transaction(()=>{
    guard();this.assertPayload(taskId,owner,payload);
    const state=this.kernel.snapshot();if(state.tasks[taskId]!.workUnitIds.some(id=>state.workUnits[id]!.activeAttemptId))throw new MailTaskError('MAIL_TASK_ACTIVE_ATTEMPT');
-   this.kernel.apply({id:randomUUID(),taskId,at,type:'GlobalTaskCancelled'},state.revision);
+   if(!reprepare)this.kernel.apply({id:randomUUID(),taskId,at,type:'GlobalTaskCancelled'},state.revision);
    this.store.bindRevision(binding);
    this.kernel.apply({id:randomUUID(),taskId:id,at,type:'GlobalTaskCreated',goal:state.tasks[taskId]!.goal,owner,successCriteria:state.tasks[taskId]!.successCriteria},this.kernel.snapshot().revision);
    this.kernel.apply({id:randomUUID(),taskId:id,at,type:'GlobalTaskPlanningStarted'},this.kernel.snapshot().revision);
    this.kernel.apply({id:randomUUID(),taskId:id,at,type:'PlanCommitted',planVersion:1,workUnits:defineEmailLeadUnits({id,owner,planVersion:0})},this.kernel.snapshot().revision);
    this.drafts.saveDraft({taskId:id,owner,payload,at});
-   this.drafts.audit({id:randomUUID(),taskId,type:'draft.superseded',reference:id,at});
-   this.drafts.audit({id:randomUUID(),taskId:id,type:'draft.revised_from',reference:taskId,at});
+   if(!reprepare)this.drafts.audit({id:randomUUID(),taskId,type:'draft.superseded',reference:id,at});
+   this.drafts.audit({id:randomUUID(),taskId:id,type:reprepare?'draft.reprepared_from':'draft.revised_from',reference:taskId,at});
   });return id;
  }
  private contact(owner:string,id:string,to:string,ref:string,gid:string){
