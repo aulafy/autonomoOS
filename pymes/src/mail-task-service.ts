@@ -10,6 +10,7 @@ import type {InboxService,InboxContext} from './inbox-service.js';
 import type {StoredMessage} from './inbox-store.js';
 import type {EmailReviewStore} from './email-review-store.js';
 import {defineEmailLeadUnits} from './job-planner.js';
+import {randomUUID} from 'node:crypto';
 export class MailTaskError extends Error {}
 /** Explicitly selected host workflow; the model supplies proposals, never task authority. */
 export class MailTaskService {
@@ -21,6 +22,26 @@ export class MailTaskService {
   if(!c.info||!c.readable)throw new MailTaskError('MAIL_TASK_SOURCE_UNAVAILABLE');return c;
  }
  async view(owner:string,ref:string,id:string,live:()=>boolean){await this.context(owner,ref,live);return this.store.byMail(owner,ref,id)?.taskId??null;}
+ /** Called only after the email workflow certifies that no C6 claim exists. */
+ async revise(taskId:string,owner:string,payload:EmailPayload,guard:()=>void){
+  const previous=this.store.task(taskId,owner);if(!previous)throw new MailTaskError('MAIL_TASK_NOT_FOUND');
+  await this.check(taskId,owner);this.assertPayload(taskId,owner,payload);guard();
+  const revision=(previous.revision??1)+1;if(revision>100)throw new MailTaskError('MAIL_TASK_REVISION_LIMIT');
+  const id='mail-'+randomUUID(),at=Math.max(this.now(),this.kernel.snapshot().tasks[taskId]!.updatedAt);
+  const binding:MailTaskBinding={...previous,taskId:id,at,revision,revisesTaskId:taskId};
+  this.journal.transaction(()=>{
+   guard();this.assertPayload(taskId,owner,payload);
+   const state=this.kernel.snapshot();if(state.tasks[taskId]!.workUnitIds.some(id=>state.workUnits[id]!.activeAttemptId))throw new MailTaskError('MAIL_TASK_ACTIVE_ATTEMPT');
+   this.kernel.apply({id:randomUUID(),taskId,at,type:'GlobalTaskCancelled'},state.revision);
+   this.store.bindRevision(binding);
+   this.kernel.apply({id:randomUUID(),taskId:id,at,type:'GlobalTaskCreated',goal:state.tasks[taskId]!.goal,owner,successCriteria:state.tasks[taskId]!.successCriteria},this.kernel.snapshot().revision);
+   this.kernel.apply({id:randomUUID(),taskId:id,at,type:'GlobalTaskPlanningStarted'},this.kernel.snapshot().revision);
+   this.kernel.apply({id:randomUUID(),taskId:id,at,type:'PlanCommitted',planVersion:1,workUnits:defineEmailLeadUnits({id,owner,planVersion:0})},this.kernel.snapshot().revision);
+   this.drafts.saveDraft({taskId:id,owner,payload,at});
+   this.drafts.audit({id:randomUUID(),taskId,type:'draft.superseded',reference:id,at});
+   this.drafts.audit({id:randomUUID(),taskId:id,type:'draft.revised_from',reference:taskId,at});
+  });return id;
+ }
  private contact(owner:string,id:string,to:string,ref:string,gid:string){
   const c=this.crm.store.contact(owner,id),link=this.crm.store.link(owner,ref,gid);
   if(!c||c.status!=='active'||link?.contactId!==id||!this.crm.store.match(owner,to).some(c=>c.id===id))throw new MailTaskError('MAIL_TASK_CONTACT_REVIEW_REQUIRED');

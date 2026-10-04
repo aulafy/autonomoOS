@@ -155,6 +155,12 @@ export class WorkspaceClient {
     const response=await this.request(path,operation?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(decision??{})}:{},[],40_000);
     return parseEmailView(response,this.config.tenantId,taskId);
   }
+  async reviseEmailTask(taskId:string,bindingHash:string){
+    if(!/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,99}$/.test(taskId)||!/^[a-f0-9]{64}$/.test(bindingHash))throw new Error('INVALID_EMAIL_REVISION');
+    const r=await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/runtime/${encodeURIComponent(taskId)}/email/revise`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({bindingHash})},[],40_000);
+    if(Object.keys(r).sort().join(',')!=='replacementTaskId,taskId,tenantId'||r.tenantId!==this.config.tenantId||r.taskId!==taskId||typeof r.replacementTaskId!=='string'||r.replacementTaskId===taskId||!/^mail-[a-zA-Z0-9-]{1,80}$/.test(r.replacementTaskId))throw new Error('INVALID_EMAIL_REVISION_RESPONSE');
+    return r.replacementTaskId;
+  }
 
   async gmail(operation?:'connect'|'check'|'disconnect',verification=false):Promise<import('./gmail-oauth.js').GmailConnectionView>{
     const value=await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/gmail${operation?'/'+operation:''}`,operation?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(operation==='connect'?{verification}:{})}:{});

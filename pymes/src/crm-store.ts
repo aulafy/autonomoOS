@@ -10,6 +10,7 @@ type InternalOperation = {
     summary: string;
 } | {
     type: 'workflow.prepare';
+    revisesTaskId?:string;
     taskId: string;
     contactId: string;
     recipient: string;
@@ -231,9 +232,11 @@ export class CrmStore {
                     recordId = old.leadId;
                     break;
                 }
+                const prior=op.revisesTaskId?own(s.workflows,crmId(op.revisesTaskId)):undefined;
+                if(op.revisesTaskId&&(!prior||prior.contactId!==op.contactId))throw new CrmError('CRM_REVISION_SCOPE_DENIED');
                 const id = hashed('workflow-lead', op.taskId);
-                if(op.createLead!==false)newLead(id, op.contactId, crmText(op.title, 300), op.line??'other');
-                s.workflows[op.taskId] = { contactId: op.contactId, leadId: op.createLead===false?null:id,...(op.followUpTitle?{followUpTitle:crmText(op.followUpTitle,300)}:{}),...(op.followUpDueAt!==undefined?{followUpDueAt:crmTime(op.followUpDueAt)}:{}) };
+                if(!prior&&op.createLead!==false)newLead(id, op.contactId, crmText(op.title, 300), op.line??'other');
+                s.workflows[op.taskId] = { contactId: op.contactId, leadId: prior?prior.leadId:op.createLead===false?null:id,...(op.followUpTitle?{followUpTitle:crmText(op.followUpTitle,300)}:{}),...(op.followUpDueAt!==undefined?{followUpDueAt:crmTime(op.followUpDueAt)}:{}) };
                 recordId = s.workflows[op.taskId]!.leadId;
                 break;
             }

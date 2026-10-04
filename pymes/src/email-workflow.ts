@@ -13,7 +13,7 @@ export function createEmailWorkflow(
   store: EmailReviewStore,
   governance: ReturnType<typeof createEmailGovernance>,
   payloadFor: (taskId: string) => EmailPayload,
-  options:{crm?:import('./crm-service.js').CrmWorkflowAdapter;context?:()=>string;simulated?:boolean;draftFrom?:()=>string;validatePayload?:(payload:unknown)=>EmailPayload;sourceFor?:(taskId:string)=>import('./mail-task-contract.js').MailTaskBinding|null;checkSource?:(taskId:string,owner:string)=>Promise<void>;assertSource?:(taskId:string,owner:string)=>void;assertPayload?:(taskId:string,owner:string,p:EmailPayload)=>void}={},
+  options:{replacementFor?:(taskId:string)=>string|null;createRevision?:(taskId:string,owner:string,payload:EmailPayload,guard:()=>void)=>Promise<string>;crm?:import('./crm-service.js').CrmWorkflowAdapter;context?:()=>string;simulated?:boolean;draftFrom?:()=>string;validatePayload?:(payload:unknown)=>EmailPayload;sourceFor?:(taskId:string)=>import('./mail-task-contract.js').MailTaskBinding|null;checkSource?:(taskId:string,owner:string)=>Promise<void>;assertSource?:(taskId:string,owner:string)=>void;assertPayload?:(taskId:string,owner:string,p:EmailPayload)=>void}={},
 ) {
   const busy = new Set<string>(),
     bridge = createEmailTaskBridge(kernel, journal, store, options.crm,options.sourceFor);
@@ -244,6 +244,26 @@ export function createEmailWorkflow(
       busy.delete(taskId);
     }
   }
+  function claimsForTask(taskId:string){return governance.stores.effects.list().filter(e=>e.taskId===taskId&&e.action==='email.send');}
+  function revisionReady(taskId:string,owner:string){
+    const {state,t}=task(taskId,owner);
+    return !!options.sourceFor?.(taskId)&&!!store.latest(taskId)&&!options.replacementFor?.(taskId)&&!['completed','cancelled','failed','unknown'].includes(t.status)&&!claimsForTask(taskId).length&&!t.workUnitIds.some(id=>state.workUnits[id]!.activeAttemptId);
+  }
+  async function revise(taskId:string,owner:string,bindingHash:string,mayCommit?:()=>boolean){
+    if(busy.has(taskId))throw new Error('EMAIL_BUSY');busy.add(taskId);
+    try{
+      task(taskId,owner);const r=store.latest(taskId);
+      if(!r||r.owner!==owner||r.bindingHash!==bindingHash)throw new Error('EMAIL_APPROVAL_STALE');
+      const existing=options.replacementFor?.(taskId);if(existing)return {taskId,replacementTaskId:existing};
+      if(!options.createRevision||!revisionReady(taskId,owner))throw new Error('EMAIL_REVISION_NOT_AVAILABLE');
+      const guard=()=>{
+        if(mayCommit&&!mayCommit())throw new Error('EMAIL_AUTH_CHANGED');
+        if(!revisionReady(taskId,owner)||current(taskId,owner).id!==r.id)throw new Error('EMAIL_REVISION_NOT_AVAILABLE');
+      };
+      const replacementTaskId=await options.createRevision(taskId,owner,r.payload,guard);
+      return {taskId,replacementTaskId};
+    }finally{busy.delete(taskId);}
+  }
   function view(taskId: string, owner: string) {
     const { t } = task(taskId, owner),
       r = store.latest(taskId);
@@ -257,6 +277,8 @@ export function createEmailWorkflow(
         source:options.sourceFor?.(taskId)??null,
         effects: [],
         audit: [],
+        canRevise:false,
+        replacementTaskId:options.replacementFor?.(taskId)??null,
       };
     if (r.owner !== owner) throw new Error("EMAIL_TASK_NOT_FOUND");
     const d = store.decision(r.id),
@@ -268,7 +290,7 @@ export function createEmailWorkflow(
     } catch {
       stale = true;
     }
-    const state = effects.length
+    const state = t.status==='cancelled'&&options.sourceFor?.(taskId)?'cancelled':effects.length
       ? effects.some((e) => e.effective === "unknown")
         ? effects.some((e) =>
             ["dispatching", "prepared", "preparing"].includes(e.status),
@@ -279,12 +301,12 @@ export function createEmailWorkflow(
           ? "completed"
           : "failed"
       : stale ||
-          t.status === "blocked" ||
+          (t.status === "blocked" && d?.decision!=="rejected") ||
           policy?.composition === "deny" ||
           policy?.flow === "deny"
         ? "blocked"
         : d?.decision === "rejected"
-          ? "blocked"
+          ? options.sourceFor?.(taskId)?"rejected":"blocked"
           : d?.decision === "approved"
             ? "approved"
             : "waiting_approval";
@@ -300,9 +322,11 @@ export function createEmailWorkflow(
       globalTaskStatus: t.status,
       scope: options.sourceFor?.(taskId)?'reviewed-mail-workflow':r.provider==="gmail-email"?"test-preparation-real-email":"simulated-email-workflow",
       source:options.sourceFor?.(taskId)??null,
+      canRevise:!stale&&revisionReady(taskId,owner),
+      replacementTaskId:options.replacementFor?.(taskId)??null,
     };
   }
-  return { propose, decide, execute, reconcile, view,saveDraft };
+  return { propose, decide, execute, reconcile, view,saveDraft,revise };
 }
 export type EmailWorkflowView = ReturnType<
   ReturnType<typeof createEmailWorkflow>["view"]

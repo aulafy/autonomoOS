@@ -24,7 +24,7 @@ export async function openWorkspaceRuntime(path:string,tenantId:string,options:{
   const domain=createDurableDomainStores(journal);
   const crmStore=journal.register('pymesCrm',()=>new CrmStore(tenantId),['apply']);
   const emailReviews=journal.register('pymesEmailReviews',()=>new EmailReviewStore(),['propose','decide','audit','recordPolicy','recordArtifact','saveDraft']);
-  const mailTaskStore=journal.register('pymesMailTasks',()=>new MailTaskStore(),['bind']);
+  const mailTaskStore=journal.register('pymesMailTasks',()=>new MailTaskStore(),['bind','bindRevision']);
   await journal.restore();
   if(binding.get()!==null && binding.get()!==tenantId) throw new Error('RUNTIME_TENANT_BINDING_MISMATCH');
   if(binding.get()===null) {
@@ -45,7 +45,7 @@ export async function openWorkspaceRuntime(path:string,tenantId:string,options:{
   const mailTasks=options.gmailInbox&&mailAssistance&&emailProvider?new MailTaskService(tenantId,options.gmailInbox,mailTaskStore,mailAssistance,crm,kernel,journal,emailReviews,sender,p=>emailProvider.prepare(p),providerContext):undefined;
   const sourceFor=(id:string)=>mailTaskStore.task(id);
   const requireSource=(id:string)=>{if(sourceFor(id)&&!mailTasks)throw new Error('MAIL_TASK_SOURCE_UNAVAILABLE');};
-  const email=emailProvider?createEmailWorkflow(kernel,journal,emailReviews,createEmailGovernance(journal,domain,emailReviews,emailProvider,options.emailHooks),()=>({from:'office@example.test',to:['client@example.test'],cc:[],bcc:[],subject:'Respuesta a su consulta · simulación',body:'Gracias por su consulta. Prepararemos los siguientes pasos y le confirmaremos la información necesaria. Este correo es una simulación local.',contactId:'simulated-contact'}),{crm:crm.workflowAdapter(sourceFor),...(options.gmail?{simulated:false,context:providerContext}:{}),draftFrom:sender,validatePayload:p=>emailProvider.prepare(p),sourceFor,checkSource:async(id,owner)=>{requireSource(id);await mailTasks?.check(id,owner);},assertSource:(id,owner)=>{requireSource(id);mailTasks?.assert(id,owner);},assertPayload:(id,owner,p)=>{requireSource(id);mailTasks?.assertPayload(id,owner,p);}}):undefined;
+  const email=emailProvider?createEmailWorkflow(kernel,journal,emailReviews,createEmailGovernance(journal,domain,emailReviews,emailProvider,options.emailHooks),()=>({from:'office@example.test',to:['client@example.test'],cc:[],bcc:[],subject:'Respuesta a su consulta · simulación',body:'Gracias por su consulta. Prepararemos los siguientes pasos y le confirmaremos la información necesaria. Este correo es una simulación local.',contactId:'simulated-contact'}),{replacementFor:id=>mailTaskStore.replacement(id),createRevision:async(id,owner,payload,guard)=>{requireSource(id);if(!mailTasks)throw new Error('MAIL_TASK_SOURCE_UNAVAILABLE');return mailTasks.revise(id,owner,payload,guard);},crm:crm.workflowAdapter(sourceFor),...(options.gmail?{simulated:false,context:providerContext}:{}),draftFrom:sender,validatePayload:p=>emailProvider.prepare(p),sourceFor,checkSource:async(id,owner)=>{requireSource(id);await mailTasks?.check(id,owner);},assertSource:(id,owner)=>{requireSource(id);mailTasks?.assert(id,owner);},assertPayload:(id,owner,p)=>{requireSource(id);mailTasks?.assertPayload(id,owner,p);}}):undefined;
   const planning=new Set<string>();
   const source:WorkspaceRuntimeSource={mailTasks,mailAssistance,crm,email,gmail:options.gmail,gmailInbox:options.gmailInbox,planTask:async(tenant,owner,input,mayCommit)=>{
    if(closed||!journal.isHealthy())throw new Error('RUNTIME_CLOSED');

@@ -23,6 +23,8 @@ y el próximo seguimiento tras confirmar el efecto. La implementación P07 está
 probada localmente; su nuevo recorrido completo con Gmail real sigue pendiente
 de aceptación. Véanse [avance P07](docs/handoff/AVANCE_P07_FLUJO_CORREO_2026-10-04.md)
 y [trabajo pendiente del producto](docs/AUTONOMO_OS_PRODUCT_BACKLOG.md).
+Los borradores revisados pueden corregirse mediante una versión sucesora con
+aprobación nueva mientras no haya claim de envío: [avance P08](docs/handoff/AVANCE_P08_REVISION_RESPUESTAS_2026-10-04.md).
 
 ## Install and verify
 

@@ -28,6 +28,9 @@ export function parseEmailView(
   )
     return fail();
   if(value.source!==undefined&&value.source!==null){try{const source=parseMailTaskBinding(value.source);if(source.taskId!==taskId)return fail();}catch{return fail();}}
+  if(value.canRevise!==undefined&&typeof value.canRevise!=='boolean')return fail();
+  if(value.replacementTaskId!==undefined&&value.replacementTaskId!==null&&(!text(value.replacementTaskId,100)||!/^mail-[a-zA-Z0-9-]{1,80}$/.test(value.replacementTaskId)||value.replacementTaskId===taskId))return fail();
+  if(value.canRevise===true&&(value.review===null||!object(value.source)||value.effects.length>0||value.replacementTaskId))return fail();
   if(object(value.draft)&&value.draft.reply!==undefined){try{validateEmailReply(value.draft.reply);}catch{return fail();}}
   if(value.draft!==undefined&&value.draft!==null){const p=value.draft;if(!object(p)||!text(p.from,254)||!text(p.subject,500)||!text(p.body,8000)||!text(p.contactId,500)||!['to','cc','bcc'].every(k=>Array.isArray(p[k])&&(p[k] as unknown[]).length<=10&&(p[k] as unknown[]).every(a=>text(a,254))))return fail();}
   if (value.review !== null) {
