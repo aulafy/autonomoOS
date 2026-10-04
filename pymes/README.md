@@ -298,3 +298,24 @@ pendientes no se presenta como trabajo completado. Los permisos/cuenta/contenido
 se verifican en la revisión completa, no al listar metadatos.
 
 Estado y límites: [informe P09](../docs/handoff/AVANCE_P09_REVISION_REAL_2026-10-04.md).
+
+
+## P10 · Cancelación explícita de trabajos
+
+Los trabajos ligados a un correo pueden cancelarse con confirmación y evidencia
+append-only mientras no exista claim C6, dispatch externo, intento activo,
+UNKNOWN o COMMITTED. Una nueva preparación crea otra versión con nueva aprobación.
+[Informe P10](../docs/handoff/AVANCE_P10_CANCELACION_TRABAJOS_2026-10-04.md).
+
+## P11 · Conversaciones y procedencia en CRM
+
+La ficha agrupa por cuenta, contacto y `threadId` de Gmail. Distingue simulación,
+correo sincronizado, envío verificado y proveedor histórico sin acreditar. Una
+copia de Enviados solo se asocia al efecto con el ID Gmail del recibo confirmado
+admitido por C6/C12; conserva ambos registros desplegables. UNKNOWN continúa por
+la reconciliación existente. El botón «Ver trabajo» abre su evidencia y revisión.
+
+Es una proyección de lectura: no añade comandos al journal, no modifica los
+interactions de P05 ni sus resultados de replay. Mantiene el límite existente
+de 100 registros por ficha. La agrupación no certifica una conversación completa.
+[Informe P11](../docs/handoff/AVANCE_P11_CONVERSACIONES_CRM_2026-10-05.md).

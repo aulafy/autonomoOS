@@ -1,6 +1,6 @@
 # Autónomo OS · desarrollo del producto
 
-Actualizado: 4 de octubre de 2026. Objetivo: producto profesional instalado en
+Actualizado: 5 de octubre de 2026. Objetivo: producto profesional instalado en
 Mac para autónomos y agencias de seguros en España. Equipos previstos:
 Mac mini 16 GB y MacBook 24 GB. La aplicación completa todavía no está terminada.
 
@@ -13,6 +13,8 @@ Mac mini 16 GB y MacBook 24 GB. La aplicación completa todavía no está termin
 | M3 Gmail | A/B/C real, autorización Keychain, reinicio y reconciliación sin reenvío |
 | P03/P04 inbox | SQLite separado, full/incremental, leases, cursor, lectura y purga BORRAR |
 | P05 CRM | Contactos, identidades, oportunidades, interacciones y seguimientos locales durables |
+| P11 conversaciones CRM | Procedencia histórica de proveedor, recibo Gmail acreditado, agrupación por cuenta/contacto/threadId y copia de Enviados asociada solo por evidencia; 18 pruebas nuevas, incluido SIGKILL |
+| P10 cancelación | Decisión durable explícita, bloqueo por claim/intento/UNKNOWN/COMMITTED, reprepare con nueva aprobación y CRM reutilizado; 28 pruebas nuevas |
 | P09 revisión real | Cola local del runtime, versiones agrupadas, búsqueda/filtros y cursor paginado; UNKNOWN prioritario y acceso a trabajos fuera de los primeros 50; 10 pruebas nuevas |
 | P08 versiones de respuesta | Rechazo/corrección y retirada antes de C6, sucesor durable, nueva aprobación y oportunidad CRM reutilizada; 11 pruebas nuevas |
 | P07 flujo de correo | Trabajo durable, borrador editable antes de revisión, aprobación exacta, respuesta en hilo y CRM/seguimiento; QA sintético y recuperación; aceptación Gmail nueva pendiente |
@@ -23,14 +25,17 @@ reales. Holded, Google Calendar y otros canales siguen pendientes de integració
 
 ## Orden de trabajo
 
-1. **Revisión y trabajo desde correo.** P07, P08 y P09 implementados. Completar
-   cancelación deliberada de pendientes. La revisión unificada ya agrupa y pagina
+1. **Revisión y trabajo desde correo.** P07–P10 implementados;
+   cancelación explícita y durable disponible. La revisión unificada ya agrupa y pagina
    versiones. Cada versión requiere aprobación nueva; un claim C6
-   bloquea correcciones. Mostrar también la distinción de proveedor simulado
-   en el historial CRM.
-2. **Conversaciones e identidad.** Respuestas Gmail en hilo, referencia a
-   Message-ID y threadId; distinguir interacción de envío y mensaje sincronizado
-   sin duplicar por heurísticas. Revisión humana para identidad ambigua.
+   bloquea correcciones. P11 muestra proveedor histórico y separa
+   simulación, envío acreditado y resultado incierto en CRM.
+2. **Conversaciones e identidad.** P11 agrupa por threadId dentro de cuenta y
+   contacto; relaciona la copia sincronizada con el efecto mediante un recibo
+   Gmail confirmado, conservando ambos registros. No usa igualdad de contenido
+   ni Message-ID para deduplicar. Revisión humana para identidad ambigua ya
+   existente. Pendientes: paginación completa del historial y lectura directa
+   de la conversación desde CRM.
 3. **Aceptación real de M4.** Correo entrante controlado, contacto, revisión,
    edición y envío autorizado. Movimientos de etiquetas, archivado, spam,
    papelera, historial caducado y purga local consentida. Evidencias reproducibles.
@@ -69,6 +74,8 @@ aprobación exacta, journal durable, estados UNKNOWN y reconciliación sin reenv
 - `docs/handoff/AVANCE_P07_FLUJO_CORREO_2026-10-04.md`
 - `docs/handoff/AVANCE_P08_REVISION_RESPUESTAS_2026-10-04.md`
 - `docs/handoff/AVANCE_P09_REVISION_REAL_2026-10-04.md`
+- `docs/handoff/AVANCE_P10_CANCELACION_TRABAJOS_2026-10-04.md`
+- `docs/handoff/AVANCE_P11_CONVERSACIONES_CRM_2026-10-05.md`
 
 La autorización activa del usuario cubre continuar desarrollando lo pendiente.
 Credenciales, alcance de permisos nuevos y aceptación de comunicaciones reales
