@@ -98,6 +98,10 @@ export class EmailReviewStore {
   listReviews(): EmailReview[] {
     return structuredClone(this.reviews);
   }
+  /** Read one historically bound review without cloning every mail body. */
+  reviewForIntent(owner: string, taskId: string, intentId: string): EmailReview | null {
+    return structuredClone(this.reviews.find(r => r.owner === owner && r.taskId === taskId && intentId === `email:${r.bindingHash}`) ?? null);
+  }
   /** Metadata only: the queue must never export an email body or draft. */
   queueSnapshot(owner:string):EmailQueueRecord[]{
     const latest=new Map<string,EmailReview>();for(const r of this.reviews)if(r.owner===owner)latest.set(r.taskId,r);

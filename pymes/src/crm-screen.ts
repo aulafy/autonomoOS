@@ -1,3 +1,4 @@
+import {crmConversations, crmDeliveryLabels, crmInteractionDisplay} from './crm-conversations.js';
 import { WorkspaceHttpError, type WorkspaceClient } from './workspace-client.js';
 import { CRM_LINES, type CrmContact, type CrmOperation, type CrmCommandInput, type CrmView } from './crm-contract.js';
 import type { CrmResolution } from './crm-view.js';
@@ -6,6 +7,7 @@ const byId = <T extends HTMLElement>(id: string) => document.getElementById(id) 
 const list = byId('clients-list'), profile = byId('clients-profile'), tasks = byId('tasks-list'), search = byId<HTMLInputElement>('clients-search'), kind = byId<HTMLSelectElement>('clients-kind');
 const dialog = byId<HTMLDialogElement>('crm-dialog'), dialogBody = byId('crm-dialog-body'), dialogFeedback = byId('crm-dialog-feedback');
 let client: WorkspaceClient | null = null, view: CrmView | null = null, taskView: CrmView | null = null, selected: string | null = null, epoch = 0, busy = false, query = '', taskStatus: 'pending' | 'done' | 'cancelled' | 'all' = 'pending';
+let loadFailed = false;
 let searchTimer: ReturnType<typeof setTimeout> | null = null;
 const pending = new Map<string, CrmCommandInput>();
 const lineLabels: Record<string, string> = { car: 'Coche', life: 'Vida', home: 'Hogar', professional_liability: 'RC de autónomos', other: 'Otro / por determinar' };
@@ -206,18 +208,19 @@ function render() {
     list.replaceChildren();
     profile.replaceChildren();
     tasks.replaceChildren();
-    byId('crm-new-contact').toggleAttribute('disabled', !client || busy);
+    byId('crm-new-contact').toggleAttribute('disabled', !client || !view || busy);
     byId('crm-refresh').toggleAttribute('disabled', !client || busy);
     byId('crm-tasks-refresh').toggleAttribute('disabled', !client || busy);
     if (!client || !view) {
         byId('crm-module-contacts').textContent = '—';
         byId('crm-module-tasks').textContent = '—';
-        byId('tasks-count').textContent = 'CRM no conectado';
+        byId('tasks-count').textContent = loadFailed ? 'CRM no disponible' : 'CRM no conectado';
+        byId('clients-results').textContent = '';
         for (const key of ['contacts', 'leads', 'pending', 'overdue'])
             byId('crm-count-' + key).textContent = '—';
-        empty(tasks, 'Conecta tu oficina', 'Los seguimientos se leen del servicio local.');
-        empty(list, client ? 'Cargando CRM…' : 'Conecta tu oficina', 'El directorio se guarda en el servicio local del Mac.');
-        empty(profile, 'Tu próxima conversación, con contexto', 'Contactos, oportunidades e historial aparecerán aquí.');
+        empty(tasks, loadFailed ? 'CRM no disponible' : 'Conecta tu oficina', 'Los seguimientos se leen del servicio local.');
+        empty(list, loadFailed ? 'CRM no disponible' : client ? 'Cargando CRM…' : 'Conecta tu oficina', 'El directorio se guarda en el servicio local del Mac.');
+        empty(profile, loadFailed ? 'No se ha podido consultar el historial' : 'Tu próxima conversación, con contexto', loadFailed ? 'Comprueba el servicio local y pulsa Actualizar CRM.' : 'Contactos, oportunidades e historial aparecerán aquí.');
         return;
     }
     byId('crm-module-contacts').textContent = String(view.counts.contacts);
@@ -285,10 +288,33 @@ function render() {
         if (!view.followUps.length)
             profile.append(node('p', 'crm-muted', 'Sin seguimientos programados.'));
         profile.append(node('h4', '', 'Historial de conversaciones'));
-        for (const i of view.interactions) {
-            const row = node('article', 'crm-record');
-            row.append(node('strong', '', statusLabels[i.state]), node('p', '', i.summary), node('small', 'crm-muted', `${date(i.updatedAt)} · ${i.source.kind === 'gmail' ? 'Correo Gmail' : i.source.kind === 'effect' ? 'Efecto gobernado' : 'Nota del profesional'}`));
-            profile.append(row);
+        if (view.interactions.length) profile.append(node('p', 'crm-muted', 'Últimos 100 registros. Las copias verificadas se muestran con su envío; el historial se conserva.'));
+        for (const conversation of crmConversations(view.interactions)) {
+            const card = node('section', 'crm-conversation');
+            const heading = node('div', 'crm-conversation-heading');
+            heading.append(node('strong', '', conversation.threaded ? 'Conversación Gmail' : 'Actividad registrada'), node('span', 'crm-muted', `${conversation.entries.length} ${conversation.entries.length === 1 ? 'actividad' : 'actividades'}`));
+            card.append(heading);
+            for (const entry of conversation.entries) {
+                const i = entry.primary, delivery = i.trace?.delivery ?? (i.source.kind === 'gmail' ? 'gmail_imported' : i.source.kind === 'user' ? 'note' : 'unclassified');
+                const row = node('article', 'crm-record');
+                const display = crmInteractionDisplay(i);
+                row.append(node('span', 'crm-delivery ' + delivery, crmDeliveryLabels[delivery]), node('strong', '', display.status), node('p', '', display.summary), node('small', 'crm-muted', date(i.updatedAt)));
+                if (i.source.kind === 'effect') {
+                    const taskId = i.source.taskId;
+                    row.append(button('Ver trabajo', () => window.dispatchEvent(new CustomEvent('runtime:open-task', {detail: {taskId}}))));
+                }
+                const evidence = node('details', 'crm-record-evidence');
+                evidence.append(node('summary', '', entry.records.length > 1 ? `${entry.records.length} registros · un único envío verificado` : 'Ver procedencia del registro'));
+                for (const record of entry.records) {
+                    const source = record.source;
+                    evidence.append(node('p', 'crm-muted', `Registro ${record.id} · ${source.kind === 'effect' ? 'Efecto ' + source.effectId : source.kind === 'gmail' ? 'Correo Gmail ' + source.gmailId : 'Nota local'}`));
+                }
+                if (display.summary !== i.summary) evidence.append(node('p', 'crm-muted', 'Texto histórico original: ' + i.summary));
+                if (i.trace?.observationId) evidence.append(node('p', 'crm-muted', 'Observación confirmada: ' + i.trace.observationId));
+                if (i.trace?.mail) evidence.append(node('p', 'crm-muted', 'Conversación: ' + i.trace.mail.threadId + ' · cuenta ' + i.trace.mail.accountRef));
+                row.append(evidence); card.append(row);
+            }
+            profile.append(card);
         }
         if (!view.interactions.length)
             profile.append(node('p', 'crm-muted', 'Sin interacciones registradas.'));
@@ -325,6 +351,8 @@ async function reload() {
         const [v, t] = await Promise.all([c.crm({ query, contactId: id, taskStatus: 'all' }), c.crm({ taskStatus })]);
         if (c !== client || seq !== epoch)
             return;
+        loadFailed = false;
+        feedback('');
         view = v;
         taskView = t;
         render();
@@ -332,6 +360,7 @@ async function reload() {
     catch {
         if (c !== client || seq !== epoch)
             return;
+        loadFailed = true;
         view = null;
         taskView = null;
         render();
@@ -434,6 +463,7 @@ async function openMail(accountRef: string, gmailId: string) {
     }
 }
 export function setCrmClient(value: WorkspaceClient | null) {
+    loadFailed = false;
     epoch++;
     client = value;
     view = null;

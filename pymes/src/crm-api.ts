@@ -18,7 +18,7 @@ export async function handleCrmRequest(request: WorkspaceApiRequest, parts: stri
             if (cid !== null)
                 crmId(cid);
             const taskStatus = crmEnum(params.get('taskStatus') ?? 'pending', ['pending', 'done', 'cancelled', 'all']);
-            return done({ ...service.view(tenant, owner, query, cid, taskStatus) });
+            return done({ ...await service.conversationView(tenant, owner, query, cid, taskStatus, live) });
         }
         if (request.method === 'POST' && parts.length === 5) {
             if (parts[4] === 'commands') {

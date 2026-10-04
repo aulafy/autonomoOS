@@ -1,3 +1,4 @@
+import {createCrmMailTrace} from './crm-mail-trace.js';
 import {MailCancellationStore} from './mail-cancellation-store.js';
 import {ReviewService} from './review-service.js';
 import {resolveEffectiveEffectOutcome} from '@agent-world/reconciliation';
@@ -42,6 +43,7 @@ export async function openWorkspaceRuntime(path:string,tenantId:string,options:{
   ownEmail=options.fakeEmail&&!options.emailProvider&&!options.gmail?new FakeEmailProvider(path+'.fake-email.db'):null;
   const emailProvider=options.gmail?.provider??options.emailProvider??ownEmail;
   const crm=new CrmService(crmStore,journal,tenantId,options.gmailInbox);
+  crm.setMailTrace(createCrmMailTrace(tenantId,emailReviews,mailTaskStore,domain,options.gmailInbox?.store));
   const mailAiKind=process.env.PYMES_MAIL_AI_PROVIDER??'ollama';
   if(options.gmailInbox&&!['ollama','llama.cpp'].includes(mailAiKind))throw new Error('MAIL_AI_PROVIDER_INVALID');
   const mailAssistance=options.gmailInbox?new MailAssistanceService(options.gmailInbox,options.mailProposalProvider??new LocalJsonProvider({kind:mailAiKind as 'ollama'|'llama.cpp',model:process.env.PYMES_MAIL_AI_MODEL??process.env.PYMES_LOCAL_MODEL??'llama3.2:3b',baseUrl:process.env.PYMES_MAIL_AI_URL,apiKey:process.env.PYMES_MAIL_AI_PROVIDER==='llama.cpp'?process.env.LLAMA_API_KEY:undefined})):undefined;

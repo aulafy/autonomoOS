@@ -45,12 +45,20 @@ export interface CrmLead {
     updatedAt: number;
     source: CrmSource;
 }
+/** Read-only provenance, reconstructed from authoritative journal observations.
+ * Missing provenance is legacy/unclassified, never evidence of a real send. */
+export interface CrmMailTrace {
+    delivery: 'gmail_verified' | 'gmail_unverified' | 'simulation' | 'unclassified' | 'gmail_imported' | 'note';
+    mail: { accountRef: string; gmailId: string; threadId: string } | null;
+    observationId: string | null;
+}
 export interface CrmInteraction {
     id: string;
     contactId: string;
     direction: 'incoming' | 'outgoing' | 'note';
     state: 'received' | 'committed' | 'unknown' | 'failed' | 'note';
     summary: string;
+    trace?: CrmMailTrace;
     createdAt: number;
     updatedAt: number;
     source: CrmSource;

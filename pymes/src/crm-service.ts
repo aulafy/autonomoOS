@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import type { JournalKernel } from '@agent-world/runtime-store-sqlite';
 import { CrmStore, type StoreCrmCommand } from './crm-store.js';
 import { CrmError, crmId, crmRef, crmRevision, crmText, normalizeCrmEmail, parseCrmCommand, type CrmCommandInput, type CrmSource } from './crm-contract.js';
+import type { CrmInteraction, CrmMailTrace } from './crm-contract.js';
 import { contextOf, type InboxService } from './inbox-service.js';
 const hashed = (...parts: string[]) => createHash('sha256').update(JSON.stringify(parts)).digest('hex');
 /** Exactly one address, no comments, groups or heuristic alias merging. */
@@ -18,6 +19,40 @@ export function crmMailbox(header: string | null): string | null {
 }
 export class CrmService {
     private closed = false;
+    private traceFor?: (owner: string, interaction: CrmInteraction) => CrmMailTrace;
+    /** Host-only callback; no trace fields are accepted in CRM commands. */
+    setMailTrace(reader: (owner: string, interaction: CrmInteraction) => CrmMailTrace) { this.traceFor = reader; }
+    async conversationView(tenant: string, owner: string, query: string, contactId: string | null, taskStatus: 'pending' | 'done' | 'cancelled' | 'all', live: () => boolean) {
+        const view = this.view(tenant, owner, query, contactId, taskStatus);
+        const contexts = new Map<string, Awaited<ReturnType<InboxService['context']>>>();
+        for (const i of view.interactions) {
+            const trace = this.traceFor?.(owner, i) ?? { delivery: i.source.kind === 'gmail' ? 'gmail_imported' : i.source.kind === 'user' ? 'note' : 'unclassified', mail: null, observationId: null };
+            const pointer = trace.mail ?? (i.source.kind === 'gmail' ? { ...i.source, threadId: '' } : null);
+            trace.mail = null; // Never expose a thread from an unreadable account.
+            if (pointer && this.inbox && this.inbox.owner === owner) {
+                let ctx = contexts.get(pointer.accountRef);
+                if (!ctx) { ctx = await this.inbox.context(pointer.accountRef); contexts.set(pointer.accountRef, ctx); }
+                if (!live()) throw new CrmError('CRM_AUTH_CHANGED');
+                if (ctx.readable && ctx.info) {
+                    const m = this.inbox.store.messageDetail(ctx.info.ns, pointer.gmailId);
+                    if (m && m.threadId &&
+                        (i.source.kind !== 'effect' || trace.delivery === 'gmail_verified' && m.labels.includes('SENT'))) {
+                        trace.mail = { accountRef: pointer.accountRef, gmailId: m.gmailId, threadId: m.threadId };
+                    }
+                }
+            }
+            i.trace = trace;
+        }
+        // Credential changes during asynchronous lookups invalidate the whole response.
+        for (const [ref, ctx] of contexts) {
+            const fresh = await this.inbox!.context(ref);
+            if (JSON.stringify(contextOf(ctx)) !== JSON.stringify(contextOf(fresh))) throw new CrmError('CRM_MAIL_CHANGED');
+        }
+        this.ready(tenant);
+        if (!live()) throw new CrmError('CRM_AUTH_CHANGED');
+        // Projection only: journal/CRM revision and all historical records are unchanged.
+        return view;
+    }
     close() { this.closed = true; }
     constructor(readonly store: CrmStore, private journal: JournalKernel, readonly tenant: string, private inbox?: InboxService, private now: () => number = Date.now) { }
     private ready(tenant: string) {
