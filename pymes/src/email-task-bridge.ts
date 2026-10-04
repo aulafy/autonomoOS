@@ -21,6 +21,7 @@ export function createEmailTaskBridge(
   kernel: TaskRuntimeKernel,
   journal: JournalKernel,
   store: EmailReviewStore,
+  crm?:import('./crm-service.js').CrmWorkflowAdapter,
 ) {
   function apply(taskId: string, event: Command) {
     const state = kernel.snapshot();
@@ -67,7 +68,7 @@ export function createEmailTaskBridge(
       id: randomUUID(),
       taskId,
       attemptId: attemptId ?? null,
-      simulated: !(value.kind==="governed-email-proof"&&value.provider==="gmail-email"),
+      simulated: !(String(value.kind).startsWith("crm-local-")||value.kind==="governed-email-proof"&&value.provider==="gmail-email"),
       value,
       hash: emailHash(value),
       at: Date.now(),
@@ -115,7 +116,7 @@ export function createEmailTaskBridge(
   }
   function local(unit: WorkUnit, value: Record<string, unknown>) {
     if (kernel.snapshot().workUnits[unit.id]!.status === "succeeded") return;
-    const attempt = begin(unit, emailHash(value));
+    const attempt = begin(unit, emailHash(value),String(value.kind).startsWith("crm-local-")?"p05-local-crm":"m2-local-simulation");
     finish(unit, attempt, value);
   }
   function prepare(taskId: string, payload: EmailPayload) {
@@ -141,18 +142,19 @@ export function createEmailTaskBridge(
         ) !== emailHash(expected)
       )
         throw new Error("M2_SIMULATION_PLAN_REQUIRED");
+      const real=crm?.prepare(taskId,t.owner,payload,t.goal);
       const values = [
-        { kind: "identified-simulated-sender", address: payload.to[0]! },
+        { kind: real?"crm-local-recipient":"identified-simulated-sender", address: payload.to[0]! },
         {
-          kind: "simulated-crm-lookup",
+          kind: real?"crm-local-lookup":"simulated-crm-lookup",
           contactId: payload.contactId,
           found: true,
         },
         {
-          kind: "simulated-lead-proposal",
+          kind: real?"crm-local-lead":"simulated-lead-proposal",
           contactId: payload.contactId,
-          created: false,
-          reason: "Fixture contact already exists",
+          created: !!real,
+          ...(real?{leadId:real.leadId}:{reason:"Fixture contact already exists"}),
         },
         {
           kind: "simulated-classification",
@@ -211,6 +213,7 @@ export function createEmailTaskBridge(
     if (!effect) return; // No evidence of external admission; never invent completion or retry.
     journal.transaction(() => {
       if (effect.effective === "unknown") {
+        crm?.effect(r.taskId,r.owner,effect);
         if (
           effect.status === "unknown" &&
           kernel.snapshot().attempts[a]!.status !== "unknown"
@@ -226,6 +229,7 @@ export function createEmailTaskBridge(
       ];
       if (effect.effective === "committed" && !obs.length)
         throw new Error("M2_EMAIL_PROOF_REQUIRED");
+      const crmProof=crm?.effect(r.taskId,r.owner,effect);
       finish(
         unit,
         a,
@@ -243,15 +247,15 @@ export function createEmailTaskBridge(
       if (effect.effective !== "committed") return;
       const u = units(r.taskId);
       local(u[7]!, {
-        kind: "simulated-crm-interaction",
+        kind: crmProof?"crm-local-interaction":"simulated-crm-interaction",
         contactId: r.payload.contactId,
         effectId: effect.id,
         payloadHash: r.payloadHash,
       });
       local(u[8]!, {
-        kind: "simulated-crm-followup",
+        kind: crmProof?"crm-local-followup":"simulated-crm-followup",
         contactId: r.payload.contactId,
-        action: "Revisar necesidades de la consulta ficticia",
+        action: crmProof?"Revisar respuesta y próximos pasos":"Revisar necesidades de la consulta ficticia",
         effectId: effect.id,
       });
       const t = kernel.snapshot().tasks[r.taskId]!;

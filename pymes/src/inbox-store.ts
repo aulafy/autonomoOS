@@ -61,6 +61,7 @@ export interface StoredMessage {
     sizeEstimate: number | null;
     /** null for legacy rows whose parser quality was not persisted. */
     quality: {
+        addressAmbiguous?: boolean;
         charsetFallback: boolean;
         attachmentsTruncated: boolean;
         structureTruncated: boolean;
@@ -383,7 +384,7 @@ export class InboxStore {
             const mark = this.db.prepare("UPDATE inbox_candidate SET fetched=1, outcome=? WHERE run_id=? AND gmail_id=?");
             for (const m of messages) {
                 const p = m.parsed, h = p.headers;
-                up.run(ns, m.gmailId, m.threadId, m.internalDate, JSON.stringify(m.labels), h.from, h.to, h.cc, h.replyTo, h.subject, h.date, h.messageId, h.inReplyTo, h.references, m.snippet, m.tooLarge ? "" : p.bodyText, m.tooLarge ? "too_large" : p.bodySource, m.tooLarge || p.bodyTruncated ? 1 : 0, m.sizeEstimate, t, t, JSON.stringify({ charsetFallback: p.charsetFallback, attachmentsTruncated: p.attachmentsTruncated, structureTruncated: p.structureTruncated, bodyUnavailable: m.tooLarge || p.bodyUnavailable }));
+                up.run(ns, m.gmailId, m.threadId, m.internalDate, JSON.stringify(m.labels), h.from, h.to, h.cc, h.replyTo, h.subject, h.date, h.messageId, h.inReplyTo, h.references, m.snippet, m.tooLarge ? "" : p.bodyText, m.tooLarge ? "too_large" : p.bodySource, m.tooLarge || p.bodyTruncated ? 1 : 0, m.sizeEstimate, t, t, JSON.stringify({ addressAmbiguous: p.addressAmbiguous ?? true, charsetFallback: p.charsetFallback, attachmentsTruncated: p.attachmentsTruncated, structureTruncated: p.structureTruncated, bodyUnavailable: m.tooLarge || p.bodyUnavailable }));
                 delAtt.run(ns, m.gmailId);
                 for (const a of p.attachments)
                     insAtt.run(ns, m.gmailId, a.partId, a.filename, a.mimeType, a.size);
@@ -705,7 +706,7 @@ CREATE TABLE IF NOT EXISTS inbox_purge_token(token_hash TEXT PRIMARY KEY, ns TEX
             size_estimate=excluded.size_estimate, deleted_at=NULL, updated_at=excluded.updated_at, quality_json=excluded.quality_json, scope_state='active', scope_changed_at=excluded.scope_changed_at, confirmed_at=excluded.confirmed_at`)
             .run(ns, m.gmailId, m.threadId, m.internalDate, JSON.stringify(m.labels), h.from, h.to, h.cc, h.replyTo, h.subject, h.date, h.messageId, h.inReplyTo, h.references, m.snippet,
             m.tooLarge ? "" : p.bodyText, m.tooLarge ? "too_large" : p.bodySource, m.tooLarge || p.bodyTruncated ? 1 : 0, m.sizeEstimate, t, t,
-            JSON.stringify({ charsetFallback: p.charsetFallback, attachmentsTruncated: p.attachmentsTruncated, structureTruncated: p.structureTruncated, bodyUnavailable: m.tooLarge || p.bodyUnavailable }), t, t);
+            JSON.stringify({ addressAmbiguous: p.addressAmbiguous ?? true, charsetFallback: p.charsetFallback, attachmentsTruncated: p.attachmentsTruncated, structureTruncated: p.structureTruncated, bodyUnavailable: m.tooLarge || p.bodyUnavailable }), t, t);
         this.db.prepare("DELETE FROM inbox_attachment WHERE ns=? AND gmail_id=?").run(ns, m.gmailId);
         const ins = this.db.prepare("INSERT OR REPLACE INTO inbox_attachment VALUES(?,?,?,?,?,?)");
         for (const a of p.attachments) ins.run(ns, m.gmailId, a.partId, a.filename, a.mimeType, a.size);

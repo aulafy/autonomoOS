@@ -1,3 +1,4 @@
+import {setCrmClient} from './crm-screen.js';
 import { setGmailInboxClient } from "./gmail-inbox-screen.js";
 import {setGmailSettingsClient} from "./gmail-settings.js";
 import { setRuntimeClient, setRuntimeUnavailable } from "./runtime-screen.js";
@@ -114,7 +115,7 @@ async function checkRemoteWorkspace(): Promise<void> {
   if (!baseUrl || !tenantId || !token) {
     if (workspaceAutoRefreshTimer !== null) { window.clearInterval(workspaceAutoRefreshTimer); workspaceAutoRefreshTimer = null; }
     const configured = Boolean(baseUrl || tenantId);
-    setGmailSettingsClient(null);setGmailInboxClient(null);runtimeConnectionKey='';if (configured) setRuntimeUnavailable(); else setRuntimeClient(null);
+    setGmailSettingsClient(null);setGmailInboxClient(null);setCrmClient(null);runtimeConnectionKey='';if (configured) setRuntimeUnavailable(); else setRuntimeClient(null);
     status.className = configured ? "workspace-pill error" : "workspace-pill";
     status.dataset.state = configured ? "authentication-required" : "demo";
     status.textContent = configured ? "● SESIÓN NECESARIA" : "● DEMOSTRACIÓN";
@@ -146,7 +147,7 @@ async function checkRemoteWorkspace(): Promise<void> {
     }
     remoteWorkspaceClient = client;
     const connectionKey=JSON.stringify([baseUrl,tenantId,token]);
-    if(connectionKey!==runtimeConnectionKey){runtimeConnectionKey=connectionKey;setRuntimeClient(client);setGmailSettingsClient(client);setGmailInboxClient(client);}
+    if(connectionKey!==runtimeConnectionKey){runtimeConnectionKey=connectionKey;setRuntimeClient(client);setGmailSettingsClient(client);setGmailInboxClient(client);setCrmClient(client);}
     remoteInbox = new Map(inbox.map(item => [item.id, item]));
     renderWorkspaceMetrics(metrics);
     workspaceFailureCount = 0;
@@ -239,7 +240,7 @@ async function checkRemoteWorkspace(): Promise<void> {
     retry.disabled = false;
     retry.removeAttribute("aria-busy");
     remoteWorkspaceClient = null;
-    setGmailSettingsClient(null);setGmailInboxClient(null);runtimeConnectionKey='';setRuntimeUnavailable();
+    setGmailSettingsClient(null);setGmailInboxClient(null);setCrmClient(null);runtimeConnectionKey='';setRuntimeUnavailable();
     document.getElementById("workspace-logout")?.remove();
     document.getElementById("workspace-refresh")?.remove();
     if (workspaceRetryTimer === null) {

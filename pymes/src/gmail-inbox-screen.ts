@@ -131,6 +131,7 @@ async function loadDetail() {
             }
             detail.append(files);
         }
+        const crmButton=el('button','gmail-button','Ver / vincular contacto');crmButton.type='button';crmButton.addEventListener('click',()=>{if(c!==client||!context||!acceptInboxDetail(context,response,items,selected))return;window.dispatchEvent(new CustomEvent('crm:open-mail',{detail:{accountRef:context.accountRef,gmailId:m.gmailId}}));});detail.append(crmButton);
         detail.append(el('p', 'gmail-readonly-note', 'Vista de lectura · Este mensaje no activa tareas ni concede permisos al asistente.'));
     }
     catch (error) {

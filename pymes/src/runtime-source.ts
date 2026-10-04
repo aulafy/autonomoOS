@@ -1,3 +1,5 @@
+import {CrmStore} from './crm-store.js';
+import {CrmService} from './crm-service.js';
 import {createEmailGovernance} from './email-governance.js';
 import {createEmailWorkflow} from './email-workflow.js';
 import {EmailReviewStore} from './email-review-store.js';
@@ -16,6 +18,7 @@ export async function openWorkspaceRuntime(path:string,tenantId:string,options:{
   const binding=journal.register('pymesTenantBinding',()=>new TenantBinding(),['bind']);
   const kernel=createDurableTaskRuntime(journal);
   const domain=createDurableDomainStores(journal);
+  const crmStore=journal.register('pymesCrm',()=>new CrmStore(tenantId),['apply']);
   const emailReviews=journal.register('pymesEmailReviews',()=>new EmailReviewStore(),['propose','decide','audit','recordPolicy','recordArtifact','saveDraft']);
   await journal.restore();
   if(binding.get()!==null && binding.get()!==tenantId) throw new Error('RUNTIME_TENANT_BINDING_MISMATCH');
@@ -29,9 +32,10 @@ export async function openWorkspaceRuntime(path:string,tenantId:string,options:{
   const provider=options.provider??new LlamaCppProvider();
   ownEmail=options.fakeEmail&&!options.emailProvider&&!options.gmail?new FakeEmailProvider(path+'.fake-email.db'):null;
   const emailProvider=options.gmail?.provider??options.emailProvider??ownEmail;
-  const email=emailProvider?createEmailWorkflow(kernel,journal,emailReviews,createEmailGovernance(journal,domain,emailReviews,emailProvider,options.emailHooks),()=>({from:'office@example.test',to:['client@example.test'],cc:[],bcc:[],subject:'Respuesta a su consulta · simulación',body:'Gracias por su consulta. Prepararemos los siguientes pasos y le confirmaremos la información necesaria. Este correo es una simulación local.',contactId:'simulated-contact'}),options.gmail?{simulated:false,context:()=>options.gmail!.provider.approvalBinding(),draftFrom:()=>options.gmail!.provider.account(),validatePayload:p=>options.gmail!.provider.prepare(p)}:{}):undefined;
+  const crm=new CrmService(crmStore,journal,tenantId,options.gmailInbox);
+  const email=emailProvider?createEmailWorkflow(kernel,journal,emailReviews,createEmailGovernance(journal,domain,emailReviews,emailProvider,options.emailHooks),()=>({from:'office@example.test',to:['client@example.test'],cc:[],bcc:[],subject:'Respuesta a su consulta · simulación',body:'Gracias por su consulta. Prepararemos los siguientes pasos y le confirmaremos la información necesaria. Este correo es una simulación local.',contactId:'simulated-contact'}),options.gmail?{crm:crm.workflowAdapter(),simulated:false,context:()=>options.gmail!.provider.approvalBinding(),draftFrom:()=>options.gmail!.provider.account(),validatePayload:p=>options.gmail!.provider.prepare(p)}:{crm:crm.workflowAdapter()}):undefined;
   const planning=new Set<string>();
-  const source:WorkspaceRuntimeSource={email,gmail:options.gmail,gmailInbox:options.gmailInbox,planTask:async(tenant,owner,input,mayCommit)=>{
+  const source:WorkspaceRuntimeSource={crm,email,gmail:options.gmail,gmailInbox:options.gmailInbox,planTask:async(tenant,owner,input,mayCommit)=>{
    if(closed||!journal.isHealthy())throw new Error('RUNTIME_CLOSED');
    if(tenant!==tenantId)throw new Error('RUNTIME_TENANT_SCOPE_DENIED');
    if(input.workflow!==EMAIL_LEAD_WORKFLOW)throw new Error('INVALID_WORKFLOW');
@@ -87,7 +91,7 @@ export async function openWorkspaceRuntime(path:string,tenantId:string,options:{
     successCriteria:[{id:'professional-review',kind:'human-approval',approver:owner}]},state.revision);
    return {created:true};
   }};
-  return {source,kernel,close:()=>{if(!closed){closed=true;ownEmail?.close();database.close();}}};
+  return {source,kernel,close:()=>{if(!closed){closed=true;crm.close();ownEmail?.close();database.close();}}};
  } catch(error) {ownEmail?.close();database.close();throw error;}
 }
 

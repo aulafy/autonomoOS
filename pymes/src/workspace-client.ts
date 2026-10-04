@@ -1,3 +1,5 @@
+import {parseCrmView,parseCrmResolution} from './crm-view.js';
+import {parseCrmCommand,crmRecord,crmRevision,crmId,type CrmCommandInput} from './crm-contract.js';
 import { parseGmailInboxStatus, parseGmailInboxPage, parseGmailInboxDetail, parsePurgeChallenge } from "./gmail-inbox-view.js";
 import {parseEmailView} from './email-view.js';
 import { parseRuntimeView } from "./runtime-view.js";
@@ -158,6 +160,26 @@ export class WorkspaceClient {
     return structuredClone(value) as unknown as import('./gmail-oauth.js').GmailConnectionView;
   }
 
+  async crm(input:{query?:string;contactId?:string|null;taskStatus?:'pending'|'done'|'cancelled'|'all'}={}) {
+    const q=new URLSearchParams({q:input.query??'',taskStatus:input.taskStatus??'pending'});
+    if(input.contactId)q.set('contactId',crmId(input.contactId));
+    return parseCrmView(await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/crm?${q}`),this.config.tenantId,input.contactId??null);
+  }
+  private crmResult(value:Record<string,unknown>){
+    if(value.tenantId!==this.config.tenantId)throw new Error('INVALID_CRM_RESPONSE');const r=crmRecord(value.result);
+    return {revision:crmRevision(r.revision),contactId:r.contactId===null?null:crmId(r.contactId),recordId:r.recordId===null?null:crmId(r.recordId)};
+  }
+  async crmCommand(input:CrmCommandInput){
+    parseCrmCommand(input);
+    return this.crmResult(await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/crm/commands`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(input)}));
+  }
+  async crmResolve(accountRef:string,gmailId:string){
+    const raw=await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/crm/resolve`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accountRef,gmailId})});
+    return parseCrmResolution(raw,this.config.tenantId,accountRef,gmailId);
+  }
+  async crmLink(input:{commandId:string;expectedRevision:number;accountRef:string;gmailId:string;contactId:string|null;reviewed:boolean}){
+    return this.crmResult(await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/crm/link`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(input)}));
+  }
   private gmailInboxPath(suffix = "", accountRef?: string): string {
     const path = `/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/gmail-inbox${suffix}`;
     if (accountRef !== undefined && !/^[a-f0-9]{32}$/.test(accountRef)) throw new Error("INVALID_ACCOUNT_REF");

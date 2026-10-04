@@ -28,6 +28,8 @@ export interface InboxAttachmentMeta {
 }
 export interface ParsedInboxMessage {
     headers: InboxHeaders;
+    /** Address fields are duplicate, oversized or unavailable for safe matching. */
+    addressAmbiguous?: boolean;
     bodyText: string;
     bodySource: "plain" | "html" | "none";
     bodyTruncated: boolean;
@@ -177,6 +179,16 @@ export function htmlToText(html: string): string {
 export function parseGmailPayload(payload: unknown): ParsedInboxMessage {
     const root = (payload && typeof payload === "object" ? payload : {}) as Part;
     const top = headerMap(root.headers);
+    const addressNames=['from','to','reply-to'];
+    const addressCounts=new Map<string,number>();
+    let addressAmbiguous=!Array.isArray(root.headers)||root.headers.length>500;
+    if(Array.isArray(root.headers))for(const raw of root.headers.slice(0,500)){
+      if(!raw||typeof raw!=='object')continue;
+      const header=raw as {name?:unknown;value?:unknown};
+      if(typeof header.name!=='string'||!addressNames.includes(header.name.toLowerCase()))continue;
+      const name=header.name.toLowerCase();addressCounts.set(name,(addressCounts.get(name)??0)+1);
+      if(addressCounts.get(name)!>1||typeof header.value!=='string'||header.value.length>INBOX_HEADER_MAX_CHARS)addressAmbiguous=true;
+    }
     const h = (name: string) => {
         const v = top.get(name);
         return v === undefined ? null : clean(decodeEncodedWords(v), INBOX_HEADER_MAX_CHARS);
@@ -251,6 +263,7 @@ export function parseGmailPayload(payload: unknown): ParsedInboxMessage {
     const bodyTruncated = decodeTruncated || text.length > INBOX_BODY_MAX_CHARS;
     return {
         headers,
+        addressAmbiguous,
         bodyText: text.slice(0, INBOX_BODY_MAX_CHARS),
         bodySource,
         bodyTruncated,

@@ -13,10 +13,10 @@ export function createEmailWorkflow(
   store: EmailReviewStore,
   governance: ReturnType<typeof createEmailGovernance>,
   payloadFor: (taskId: string) => EmailPayload,
-  options:{context?:()=>string;simulated?:boolean;draftFrom?:()=>string;validatePayload?:(payload:unknown)=>EmailPayload}={},
+  options:{crm?:import('./crm-service.js').CrmWorkflowAdapter;context?:()=>string;simulated?:boolean;draftFrom?:()=>string;validatePayload?:(payload:unknown)=>EmailPayload}={},
 ) {
   const busy = new Set<string>(),
-    bridge = createEmailTaskBridge(kernel, journal, store);
+    bridge = createEmailTaskBridge(kernel, journal, store, options.crm);
   bridge.restore(governance.view);
   function task(taskId: string, owner: string) {
     const state = kernel.snapshot(),

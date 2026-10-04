@@ -1,5 +1,18 @@
 # PYMES · agente de trabajo para seguros
 
+## Estado actual · 4 de octubre de 2026
+
+Gmail dispone de envío gobernado validado en el piloto M3 y de una bandeja local
+con sincronización inicial e incremental. **Clientes** y **Tareas** utilizan ahora
+un CRM local durable: contactos, emails, oportunidades, notas y seguimientos.
+Consulta el [avance de P05](../docs/handoff/AVANCE_P05_CRM_LOCAL_2026-10-04.md)
+para las pruebas, rutas, almacenamiento y limitaciones. El resto de esta guía
+incluye los escenarios y conectores previstos durante etapas anteriores.
+
+La clasificación con IA del inbox real, el workflow completo desde un correo
+entrante y Google Calendar todavía requieren integración y aceptación.
+
+
 Para preparar conexiones reales con WhatsApp, OpenClaw, Ollama, Holded y Google Calendar, consulta [PRODUCTION_CONNECTORS.md](PRODUCTION_CONNECTORS.md). La demo mantiene datos ficticios hasta que se configuren explícitamente las credenciales del servidor.
 
 El historial de cambios del producto está en [CHANGELOG.md](CHANGELOG.md).
