@@ -179,3 +179,11 @@ Límites a estudiar: messages.list no ofrece un filtro temporal equivalente a q 
 Harness de respuesta descartada integrado y endurecido tras revisión de la entrega de Claude. 24 pruebas dirigidas pasan, incluidas las de SIGKILL/reconciliación y helper; suite completa: 739 tests, 738 pasan, 0 fallos, 1 omitido opcional Orca. Typecheck y build completos correctos. API shape y conservación de UNKNOWN en C11 comprobados. Ver `docs/handoff/REVISION_P01_CODEX_2026-10-04.md` para correcciones, límites y uso.
 
 M3 sigue abierto: OAuth/Gmail/entrega/reinicio/C reales y la inspección de secretos de la sesión real no se han ejecutado. Siguen pendientes ruta OAuth Desktop y destinatario. M4 no iniciado.
+
+## P01-R — fingerprint al arrancar
+
+El fingerprint del proceso se calcula al construir el harness, antes de abrir Gmail y de registrar cualquier claim de envío. Un fallo de `/bin/ps` impide arrancar el piloto C. No se ejecuta esa herramienta durante el POST aprobado.
+
+El estado `not_activated` describe la inyección, no la entrega: tras `TRANSPORT_ERROR` o `RESPONSE_TOO_LARGE`, Google puede haber aceptado el correo. No reenviar ni interpretar ese estado como ausencia de envío; conservar UNKNOWN y reconciliar mediante evidencia. El helper rechaza SIGKILL en ese estado.
+
+La derivación C6 usada por el helper está vinculada a la identidad y executor de `email-governance.ts`; mantener ambos coherentes si cambian.

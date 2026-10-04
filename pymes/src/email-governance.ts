@@ -402,6 +402,7 @@ export function createEmailGovernance(
     return {
       sink: mintResourceId(
         "sink_email",
+        // p01-pilot-kill.ts correlates this identity and executor with the C6 key.
         `simulated/${r.owner}/${r.bindingHash}`,
       ),
       intentId: `email:${r.bindingHash}`,

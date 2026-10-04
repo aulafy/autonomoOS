@@ -325,6 +325,8 @@ export function createP01ResponseLoss(
 ): P01Harness {
   const statePath = p01StatePath(armPath);
   arm = { ...arm };
+  // Resolve at startup: diagnostic failure must precede any approved send claim.
+  const processStart = p01ProcessStart(process.pid);
   let consumed = existsSync(statePath);
   if (consumed) log("p01.inert", { reason: "ALREADY_CONSUMED" });
   const now = () => new Date().toISOString();
@@ -352,7 +354,7 @@ export function createP01ResponseLoss(
       version: 1,
       phase: "claimed",
       pid: process.pid,
-      processStart: p01ProcessStart(process.pid),
+      processStart,
       armHash: p01ArmHash(arm),
       payloadHash: inspected.payloadHash,
       claimedAt,
