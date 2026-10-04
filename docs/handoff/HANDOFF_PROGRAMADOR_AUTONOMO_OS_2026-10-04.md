@@ -1,7 +1,8 @@
 # Traspaso al programador — Autónomo OS / Agent World OS / PYMES
 
 Fecha: 4 de octubre de 2026, Europe/Madrid.
-Snapshot de código de partida: `8694a64`, rama `codex/h4-http-api`.
+Snapshot reproducible de código: `134b240531f8ebd48329f32f9eda3383c3bb844e`, rama `codex/h4-http-api`.
+Los ajustes posteriores de este traspaso son documentales. El mensaje de envío indica el SHA completo actual para el checkout de trabajo.
 Repositorio de desarrollo: `/Users/mac/Downloads/agent-world-os`.
 
 ## 1. Lee esto primero
@@ -21,7 +22,7 @@ La relación de trabajo acordada es:
 
 **Primera prioridad: cerrar M3 con pruebas reales A/B/C. No iniciar M4 todavía.** La primera tarea de programación propuesta está en la sección 11. No sustituye los datos reales que debe aportar el propietario.
 
-Este documento no incluye todo el código fuente: es el contexto y especificación de trabajo. El programador necesita el checkout del repo. Si no puede acceder al código, debe pedir los archivos concretos antes de proponer reemplazos; no inventar interfaces ni afirmar que ejecutó tests.
+Este documento no incluye todo el código fuente: es el contexto y especificación de trabajo. El programador necesita el checkout del repo para ejecutar la suite. Se entrega además `FUENTES_P01_GMAIL_2026-10-04.md`, con los cinco archivos clave y sus dependencias inmediatas de email/OAuth, completos y con hashes. Este paquete permite revisar P01 sin inventar contratos; no sustituye el monorepo para ejecutar pruebas. Si faltan imports o interfaces del kernel para un cambio, debe pedir los archivos concretos antes de proponer reemplazos; no afirmar que ejecutó tests sin tener el entorno.
 
 ## 2. Producto que queremos vender
 
@@ -71,6 +72,8 @@ Interfaz de referencia: organización de gestión al estilo Holded, con lenguaje
 | Handoff anterior V2 | `/Users/mac/Downloads/HANDOFF_CLAUDE_AUTONOMO_OS_V2_2026-10-03.md` |
 | Protocolo vigente M3 | `/Users/mac/Downloads/agent-world-os/docs/AUTONOMO_OS_GMAIL_M3.md` |
 | Este documento | `/Users/mac/Downloads/agent-world-os/docs/handoff/HANDOFF_PROGRAMADOR_AUTONOMO_OS_2026-10-04.md` |
+
+Las rutas `/Users/mac/...` identifican la instalación de desarrollo y se comparten aquí como contexto técnico; no son rutas portables para otro equipo. Los parches deben usar rutas relativas al repo. El propietario puede sustituir el prefijo al reenviar el documento si prefiere ocultar su nombre de usuario local.
 
 Los nombres `AI native OS`, `agent-world-os-starter` y `agent-world-os-c1` son referencias históricas. No cambiar de carpeta, mover ni duplicar el repo activo por esos nombres.
 
@@ -367,7 +370,7 @@ Commits relevantes:
 | `dfa636b` | Protocolo A/B/C contra Gmail. |
 | `8694a64` | Autorización de cuenta dedicada y opción futura metadata. |
 
-La rama estaba limpia al preparar este documento. Su propio commit documental será posterior a `8694a64`; pedir SHA actual antes de aplicar código y contrastar los hashes de archivos afectados.
+La rama estaba limpia al preparar este documento. El snapshot de código `134b240531f8ebd48329f32f9eda3383c3bb844e` es reproducible. Las revisiones documentales posteriores no alteran los módulos de P01. Usar el SHA completo del mensaje de envío para el checkout y contrastar los hashes de archivos afectados antes de aplicar cambios.
 
 Capturas locales:
 
@@ -378,6 +381,8 @@ Capturas locales:
 ## 10. Pendiente inmediato: aceptación M3 real
 
 El propietario autorizó `gmail.send` + `gmail.readonly` en una cuenta Gmail dedicada de pruebas, además de los scopes de identidad `openid`/`email` usados para imponer From. Esta autorización ya está dada; no pedirla de nuevo para la misma cuenta dedicada y finalidad.
+
+**Para aceptar A/B/C en este piloto, gmail.readonly es obligatorio y debe marcarse al conectar.** Cuando el Anexo A dice “opcional/desmarcado por defecto”, describe la opción general del conector para otros usos, no una opción para cerrar estas pruebas. No cambiar el default global ni asumir COMMITTED a partir de HTTP 200 si falta observación independiente.
 
 Faltan dos datos reales:
 
@@ -592,7 +597,7 @@ El handoff anterior y la auditoría del 3 de octubre conservan datos como árbol
 
 ## Anexo A — Protocolo M3 completo vigente
 
-Se incluye a continuación una copia de `docs/AUTONOMO_OS_GMAIL_M3.md` a fecha de este traspaso. Es contexto de aceptación, no prueba de que el piloto real haya pasado.
+Se incluye a continuación una copia de `docs/AUTONOMO_OS_GMAIL_M3.md` a fecha de este traspaso. Es contexto de aceptación, no prueba de que el piloto real haya pasado. La decisión actual de la sección 10 exige readonly para A/B/C; las menciones a “opcional” describen únicamente la capacidad general del producto.
 
 # M3 — Gmail local con ejecución gobernada
 
