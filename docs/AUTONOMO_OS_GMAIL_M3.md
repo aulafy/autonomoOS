@@ -187,3 +187,9 @@ El fingerprint del proceso se calcula al construir el harness, antes de abrir Gm
 El estado `not_activated` describe la inyección, no la entrega: tras `TRANSPORT_ERROR` o `RESPONSE_TOO_LARGE`, Google puede haber aceptado el correo. No reenviar ni interpretar ese estado como ausencia de envío; conservar UNKNOWN y reconciliar mediante evidencia. El helper rechaza SIGKILL en ese estado.
 
 La derivación C6 usada por el helper está vinculada a la identidad y executor de `email-governance.ts`; mantener ambos coherentes si cambian.
+
+## P02 — identidad versionada y búsqueda SENT
+
+Claims nuevos v2 llevan X-AWOS-Effect-Key derivado de la clave C6. Verificación exacta de identidad y payload completo; fallback SENT paginado con límites, sin POST y sin tratar ausencia como no envío. Claims antiguos siguen v1. A original fue recibido pero permanece UNKNOWN; no se reenvía.
+
+Suite: 764 tests, 763 pasan, 0 fallos, 1 omitido. Typecheck y build pasan. Ver docs/handoff/REVISION_P02_CODEX_2026-10-04.md para correcciones, garantías y límites. Listado after: validado mediante GET real. Pendientes marcador en correo nuevo, A2/B/C y auditoría real de secretos. M3 continúa abierto.
