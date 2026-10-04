@@ -92,3 +92,7 @@ test('concurrent identical cancellation requests yield one decision and cross-jo
 test('disconnecting/changing the inbox credential does not prevent safe local cancellation',async()=>{
  const f=await mailTaskFixture();try{const {id}=await prepared(f),p=await cancellation(f,id);f.c.state.cred=null;const v=await f.client.cancelEmailTask(id,p);assert.equal(v.status,'cancelled');await assert.rejects(f.client.reprepareEmailTask(id,v.cancellation!.id));assert.equal(f.sender.counts().calls,0);}finally{await f.done();}
 });
+
+test('read-only role sees no cancellation or reprepare permission even for its own user id',async()=>{
+ const f=await mailTaskFixture();try{const {id}=await prepared(f);f.repo.addSession('owner-reader-token-123456789',{tenantId:'agency',userId:'owner',role:'reviewer'});const path=`/v1/workspaces/agency/runtime/${id}/email`,read=await f.api.handleAsync({method:'GET',path,authorization:'Bearer owner-reader-token-123456789'});assert.equal(read.status,200);const state=read.body.cancellationState as {canCancel:boolean;blockedReason:string};assert.equal(state.canCancel,false);assert.equal(state.blockedReason,'EMAIL_CANCEL_PERMISSION_DENIED');assert.equal(read.body.canReprepare,false);await f.client.cancelEmailTask(id,await cancellation(f,id));const after=await f.api.handleAsync({method:'GET',path,authorization:'Bearer owner-reader-token-123456789'});assert.equal(after.body.canReprepare,false);assert.ok(after.body.cancellation);}finally{await f.done();}
+});

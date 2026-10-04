@@ -241,11 +241,12 @@ export class WorkspaceApi {
     if(['revise','cancel','reprepare'].includes(parts[6]??'')&&principal.role!=='owner')return {status:403,body:{error:'PERMISSION_DENIED'}};
     const email=this.runtime?.email;if(!email)return {status:404,body:{error:'EMAIL_SIMULATION_NOT_CONFIGURED'}};
     const owner=this.runtime!.principalIdForSession(principal);
+    const visibleEmail=(v:ReturnType<typeof email.view>)=>principal.role==='owner'?v:{...v,canReprepare:false,cancellationState:v.cancellationState?{...v.cancellationState,canCancel:false,blockedReason:'EMAIL_CANCEL_PERMISSION_DENIED'}:null};
     const live=()=>{const p=token?this.repository.findSession(token):null;return Boolean(p&&p.tenantId===tenant&&p.userId===owner&&p.role===principal.role);};
     try{
       if(this.runtime?.gmail&&parts[6]!=='cancel')await this.runtime.gmail.status(owner);
       if(!live())return {status:401,body:{error:'UNAUTHENTICATED'}};
-      if(request.method==='GET'&&parts.length===6)return {status:200,body:{tenantId:tenant,...email.view(taskId,owner)}};
+      if(request.method==='GET'&&parts.length===6)return {status:200,body:{tenantId:tenant,...visibleEmail(email.view(taskId,owner))}};
       const body=jsonRecord(request.body);if(!body)return {status:400,body:{error:'INVALID_EMAIL_REQUEST'}};
       let result;
       if(parts[6]==='draft'&&Object.keys(body).sort().join(',')==='body,contactId,subject,to'&&['to','subject','body','contactId'].every(k=>typeof body[k]==='string'))result=email.saveDraft(taskId,owner,body as {to:string;subject:string;body:string;contactId:string});
@@ -258,7 +259,7 @@ export class WorkspaceApi {
       else if(parts[6]==='revise'&&Object.keys(body).join(',')==='bindingHash'&&typeof body.bindingHash==='string'&&/^[a-f0-9]{64}$/.test(body.bindingHash))result=await email.revise(taskId,owner,body.bindingHash,live);
       else return {status:400,body:{error:'INVALID_EMAIL_REQUEST'}};
       if(!live())return {status:401,body:{error:'UNAUTHENTICATED'}};
-      return {status:200,body:{tenantId:tenant,...result}};
+      return {status:200,body:{tenantId:tenant,...('cancellationState' in result?visibleEmail(result):result)}};
     }catch(error){const code=error instanceof Error?error.message:'';if(code==='EMAIL_TASK_NOT_FOUND')return {status:404,body:{error:code}};if(code==='EMAIL_CANCEL_INPUT_INVALID')return {status:400,body:{error:code}};if(/^EMAIL_CANCEL_[A-Z0-9_]+$/.test(code)||['EMAIL_BUSY','EMAIL_AUTH_CHANGED','EMAIL_REPREPARE_CANCELLATION_REQUIRED','EMAIL_REPREPARE_NOT_AVAILABLE'].includes(code))return {status:409,body:{error:code}};return {status:409,body:{error:'EMAIL_OPERATION_NOT_CONFIRMED'}};}
   }
 
