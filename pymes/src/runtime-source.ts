@@ -1,4 +1,6 @@
 import {MailAssistanceService} from './mail-assistance-service.js';
+import {MailTaskStore} from './mail-task-store.js';
+import {MailTaskService} from './mail-task-service.js';
 import {LocalJsonProvider,type JsonProposalProvider} from '@agent-world/inference';
 import {CrmStore} from './crm-store.js';
 import {CrmService} from './crm-service.js';
@@ -22,6 +24,7 @@ export async function openWorkspaceRuntime(path:string,tenantId:string,options:{
   const domain=createDurableDomainStores(journal);
   const crmStore=journal.register('pymesCrm',()=>new CrmStore(tenantId),['apply']);
   const emailReviews=journal.register('pymesEmailReviews',()=>new EmailReviewStore(),['propose','decide','audit','recordPolicy','recordArtifact','saveDraft']);
+  const mailTaskStore=journal.register('pymesMailTasks',()=>new MailTaskStore(),['bind']);
   await journal.restore();
   if(binding.get()!==null && binding.get()!==tenantId) throw new Error('RUNTIME_TENANT_BINDING_MISMATCH');
   if(binding.get()===null) {
@@ -35,12 +38,16 @@ export async function openWorkspaceRuntime(path:string,tenantId:string,options:{
   ownEmail=options.fakeEmail&&!options.emailProvider&&!options.gmail?new FakeEmailProvider(path+'.fake-email.db'):null;
   const emailProvider=options.gmail?.provider??options.emailProvider??ownEmail;
   const crm=new CrmService(crmStore,journal,tenantId,options.gmailInbox);
-  const email=emailProvider?createEmailWorkflow(kernel,journal,emailReviews,createEmailGovernance(journal,domain,emailReviews,emailProvider,options.emailHooks),()=>({from:'office@example.test',to:['client@example.test'],cc:[],bcc:[],subject:'Respuesta a su consulta · simulación',body:'Gracias por su consulta. Prepararemos los siguientes pasos y le confirmaremos la información necesaria. Este correo es una simulación local.',contactId:'simulated-contact'}),options.gmail?{crm:crm.workflowAdapter(),simulated:false,context:()=>options.gmail!.provider.approvalBinding(),draftFrom:()=>options.gmail!.provider.account(),validatePayload:p=>options.gmail!.provider.prepare(p)}:{crm:crm.workflowAdapter()}):undefined;
   const mailAiKind=process.env.PYMES_MAIL_AI_PROVIDER??'ollama';
   if(options.gmailInbox&&!['ollama','llama.cpp'].includes(mailAiKind))throw new Error('MAIL_AI_PROVIDER_INVALID');
   const mailAssistance=options.gmailInbox?new MailAssistanceService(options.gmailInbox,options.mailProposalProvider??new LocalJsonProvider({kind:mailAiKind as 'ollama'|'llama.cpp',model:process.env.PYMES_MAIL_AI_MODEL??process.env.PYMES_LOCAL_MODEL??'llama3.2:3b',baseUrl:process.env.PYMES_MAIL_AI_URL,apiKey:process.env.PYMES_MAIL_AI_PROVIDER==='llama.cpp'?process.env.LLAMA_API_KEY:undefined})):undefined;
+  const sender=()=>options.gmail?options.gmail.provider.account():'office@example.test',providerContext=()=>options.gmail?options.gmail.provider.approvalBinding():emailProvider!.id;
+  const mailTasks=options.gmailInbox&&mailAssistance&&emailProvider?new MailTaskService(tenantId,options.gmailInbox,mailTaskStore,mailAssistance,crm,kernel,journal,emailReviews,sender,p=>emailProvider.prepare(p),providerContext):undefined;
+  const sourceFor=(id:string)=>mailTaskStore.task(id);
+  const requireSource=(id:string)=>{if(sourceFor(id)&&!mailTasks)throw new Error('MAIL_TASK_SOURCE_UNAVAILABLE');};
+  const email=emailProvider?createEmailWorkflow(kernel,journal,emailReviews,createEmailGovernance(journal,domain,emailReviews,emailProvider,options.emailHooks),()=>({from:'office@example.test',to:['client@example.test'],cc:[],bcc:[],subject:'Respuesta a su consulta · simulación',body:'Gracias por su consulta. Prepararemos los siguientes pasos y le confirmaremos la información necesaria. Este correo es una simulación local.',contactId:'simulated-contact'}),{crm:crm.workflowAdapter(sourceFor),...(options.gmail?{simulated:false,context:providerContext}:{}),draftFrom:sender,validatePayload:p=>emailProvider.prepare(p),sourceFor,checkSource:async(id,owner)=>{requireSource(id);await mailTasks?.check(id,owner);},assertSource:(id,owner)=>{requireSource(id);mailTasks?.assert(id,owner);},assertPayload:(id,owner,p)=>{requireSource(id);mailTasks?.assertPayload(id,owner,p);}}):undefined;
   const planning=new Set<string>();
-  const source:WorkspaceRuntimeSource={mailAssistance,crm,email,gmail:options.gmail,gmailInbox:options.gmailInbox,planTask:async(tenant,owner,input,mayCommit)=>{
+  const source:WorkspaceRuntimeSource={mailTasks,mailAssistance,crm,email,gmail:options.gmail,gmailInbox:options.gmailInbox,planTask:async(tenant,owner,input,mayCommit)=>{
    if(closed||!journal.isHealthy())throw new Error('RUNTIME_CLOSED');
    if(tenant!==tenantId)throw new Error('RUNTIME_TENANT_SCOPE_DENIED');
    if(input.workflow!==EMAIL_LEAD_WORKFLOW)throw new Error('INVALID_WORKFLOW');

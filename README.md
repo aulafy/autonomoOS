@@ -14,6 +14,16 @@ and limitations.
 The supported Node.js version is recorded in [`.nvmrc`](.nvmrc) and enforced by
 the project manifests.
 
+## Autónomo OS · correo y CRM
+
+La interfaz PYMES permite preparar una respuesta desde un correo entrante:
+propuesta de IA local revisada, cliente y dirección confirmados, borrador
+editable, aprobación exacta y envío gobernado. El CRM registra la interacción
+y el próximo seguimiento tras confirmar el efecto. La implementación P07 está
+probada localmente; su nuevo recorrido completo con Gmail real sigue pendiente
+de aceptación. Véanse [avance P07](docs/handoff/AVANCE_P07_FLUJO_CORREO_2026-10-04.md)
+y [trabajo pendiente del producto](docs/AUTONOMO_OS_PRODUCT_BACKLOG.md).
+
 ## Install and verify
 
 ```bash

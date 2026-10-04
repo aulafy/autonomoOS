@@ -13,10 +13,10 @@ export function createEmailWorkflow(
   store: EmailReviewStore,
   governance: ReturnType<typeof createEmailGovernance>,
   payloadFor: (taskId: string) => EmailPayload,
-  options:{crm?:import('./crm-service.js').CrmWorkflowAdapter;context?:()=>string;simulated?:boolean;draftFrom?:()=>string;validatePayload?:(payload:unknown)=>EmailPayload}={},
+  options:{crm?:import('./crm-service.js').CrmWorkflowAdapter;context?:()=>string;simulated?:boolean;draftFrom?:()=>string;validatePayload?:(payload:unknown)=>EmailPayload;sourceFor?:(taskId:string)=>import('./mail-task-contract.js').MailTaskBinding|null;checkSource?:(taskId:string,owner:string)=>Promise<void>;assertSource?:(taskId:string,owner:string)=>void;assertPayload?:(taskId:string,owner:string,p:EmailPayload)=>void}={},
 ) {
   const busy = new Set<string>(),
-    bridge = createEmailTaskBridge(kernel, journal, store, options.crm);
+    bridge = createEmailTaskBridge(kernel, journal, store, options.crm,options.sourceFor);
   bridge.restore(governance.view);
   function task(taskId: string, owner: string) {
     const state = kernel.snapshot(),
@@ -46,6 +46,7 @@ export function createEmailWorkflow(
       throw new Error("EMAIL_PLAN_REVIEW_REQUIRED");
     const hash = emailHash({
       ...(options.context?{providerContext:options.context()}:{}),
+      ...(options.sourceFor?.(taskId)?{mailSource:options.sourceFor(taskId)}:{}),
       taskId,
       goal: t.goal,
       owner: t.owner,
@@ -64,6 +65,7 @@ export function createEmailWorkflow(
     return { t, hash, stepId: send.id };
   }
   function current(taskId: string, owner: string): EmailReview {
+    options.assertSource?.(taskId,owner);
     const { t, hash, stepId } = plan(taskId, owner),
       r = store.latest(taskId);
     if (
@@ -75,17 +77,22 @@ export function createEmailWorkflow(
       emailHash(r.payload) !== r.payloadHash
     )
       throw new Error("EMAIL_APPROVAL_STALE");
+    options.assertPayload?.(taskId,owner,r.payload);
     return r;
   }
   function saveDraft(taskId:string,owner:string,input:{to:string;subject:string;body:string;contactId:string}){
    if(busy.has(taskId)||!options.draftFrom||!options.validatePayload)throw new Error('EMAIL_DRAFT_NOT_AVAILABLE');plan(taskId,owner);
-   const payload=options.validatePayload({from:options.draftFrom(),to:[input.to],cc:[],bcc:[],subject:input.subject,body:input.body,contactId:input.contactId});
+   const bound=options.sourceFor?.(taskId);
+   const payload=options.validatePayload({from:options.draftFrom(),to:[input.to],cc:[],bcc:[],subject:input.subject,body:input.body,contactId:input.contactId,...(bound?.reply?{reply:bound.reply}:{})});
+   options.assertPayload?.(taskId,owner,payload);
    store.saveDraft({taskId,owner,payload,at:Date.now()});return view(taskId,owner);
   }
-  async function propose(taskId: string, owner: string) {
+  async function propose(taskId: string, owner: string,mayCommit?:()=>boolean) {
     if (busy.has(taskId)) throw new Error("EMAIL_BUSY");
     busy.add(taskId);
     try {
+      await options.checkSource?.(taskId,owner);
+      if(mayCommit&&!mayCommit())throw new Error('EMAIL_AUTH_CHANGED');
       if (
         ["completed", "unknown", "blocked"].includes(
           task(taskId, owner).t.status,
@@ -99,6 +106,7 @@ export function createEmailWorkflow(
       const draft=store.draft(taskId);if(options.simulated===false&&!draft)throw new Error('GMAIL_DRAFT_REQUIRED');
       const payload = draft?.payload??payloadFor(taskId),
         payloadHash = emailHash(payload);
+      options.assertPayload?.(taskId,owner,payload);
       bridge.prepare(taskId, payload);
       if (
         previous &&
@@ -118,6 +126,7 @@ export function createEmailWorkflow(
         at: Date.now(),
       });
       const evaluation = await governance.evaluate(r);
+      if(mayCommit&&!mayCommit())throw new Error('EMAIL_AUTH_CHANGED');
       store.recordPolicy({
         reviewId: r.id,
         composition: evaluation.composition.verdict,
@@ -145,6 +154,7 @@ export function createEmailWorkflow(
     if (busy.has(taskId)) throw new Error("EMAIL_BUSY");
     busy.add(taskId);
     try {
+      await options.checkSource?.(taskId,owner);
       const r = current(taskId, owner);
       if (r.bindingHash !== input.bindingHash)
         throw new Error("EMAIL_APPROVAL_STALE");
@@ -191,6 +201,9 @@ export function createEmailWorkflow(
     if (busy.has(taskId)) throw new Error("EMAIL_BUSY");
     busy.add(taskId);
     try {
+      // Existing effects remain readable/reconcilable even after inbox purge.
+      const prior=store.latest(taskId);if(prior&&prior.owner===owner&&governance.view(prior).length){task(taskId,owner);return view(taskId,owner);}
+      await options.checkSource?.(taskId,owner);
       const r = current(taskId, owner),
         d = store.decision(r.id);
       if (d?.decision !== "approved" || d.bindingHash !== r.bindingHash)
@@ -241,6 +254,7 @@ export function createEmailWorkflow(
         status: "plan_ready",
         review: null,
         draft:store.draft(taskId)?.payload??null,
+        source:options.sourceFor?.(taskId)??null,
         effects: [],
         audit: [],
       };
@@ -284,7 +298,8 @@ export function createEmailWorkflow(
       effects,
       audit: store.timeline(taskId),
       globalTaskStatus: t.status,
-      scope: r.provider==="gmail-email"?"test-preparation-real-email":"simulated-email-workflow",
+      scope: options.sourceFor?.(taskId)?'reviewed-mail-workflow':r.provider==="gmail-email"?"test-preparation-real-email":"simulated-email-workflow",
+      source:options.sourceFor?.(taskId)??null,
     };
   }
   return { propose, decide, execute, reconcile, view,saveDraft };

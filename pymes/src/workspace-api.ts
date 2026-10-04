@@ -1,4 +1,5 @@
 import {handleMailAssistance} from './mail-assistance-api.js';
+import {handleMailTask} from './mail-task-api.js';
 import {handleCrmRequest} from './crm-api.js';
 import { readRuntimeWorkspace, type TaskRuntimeState } from "@agent-world/task-runtime";
 import { createHmac, timingSafeEqual } from "node:crypto";
@@ -165,6 +166,7 @@ function validIngressSignature(body: unknown, signature: string | undefined, sec
  * response shaping; persistence can be replaced without changing callers.
  */
 export interface WorkspaceRuntimeSource {
+  mailTasks?:import('./mail-task-service.js').MailTaskService;
   mailAssistance?:import('./mail-assistance-service.js').MailAssistanceService;
   crm?:import('./crm-service.js').CrmService;
   gmail?:import('./gmail-local-connector.js').GmailLocalConnector;
@@ -239,11 +241,12 @@ export class WorkspaceApi {
     const live=()=>{const p=token?this.repository.findSession(token):null;return Boolean(p&&p.tenantId===tenant&&p.userId===owner&&p.role===principal.role);};
     try{
       if(this.runtime?.gmail)await this.runtime.gmail.status(owner);
+      if(!live())return {status:401,body:{error:'UNAUTHENTICATED'}};
       if(request.method==='GET'&&parts.length===6)return {status:200,body:{tenantId:tenant,...email.view(taskId,owner)}};
       const body=jsonRecord(request.body);if(!body)return {status:400,body:{error:'INVALID_EMAIL_REQUEST'}};
       let result;
       if(parts[6]==='draft'&&Object.keys(body).sort().join(',')==='body,contactId,subject,to'&&['to','subject','body','contactId'].every(k=>typeof body[k]==='string'))result=email.saveDraft(taskId,owner,body as {to:string;subject:string;body:string;contactId:string});
-      else if(parts[6]==='review'&&Object.keys(body).length===0)result=await email.propose(taskId,owner);
+      else if(parts[6]==='review'&&Object.keys(body).length===0)result=await email.propose(taskId,owner,live);
       else if(parts[6]==='decision'&&Object.keys(body).sort().join(',')==='bindingHash,decision'&&typeof body.bindingHash==='string'&&(body.decision==='approved'||body.decision==='rejected'))result=await email.decide(taskId,owner,{bindingHash:body.bindingHash,decision:body.decision},live);
       else if(parts[6]==='execute'&&Object.keys(body).length===0)result=await email.execute(taskId,owner,live);
       else if(parts[6]==='reconcile'&&Object.keys(body).length===0)result=await email.reconcile(taskId,owner);
@@ -256,6 +259,7 @@ export class WorkspaceApi {
   /** Async planning route; existing synchronous contracts remain unchanged. */
   async handleAsync(request:WorkspaceApiRequest):Promise<WorkspaceApiResponse> {
     const parts=pathParts(request.path);
+    if(parts?.[0]==='v1'&&parts[1]==='workspaces'&&parts[3]==='mail-tasks'&&parts.length===4)return handleMailTask(request,parts,this.repository,this.runtime);
     if(parts?.[0]==='v1'&&parts[1]==='workspaces'&&parts[3]==='mail-assistance'&&parts.length>=4&&parts.length<=5)return handleMailAssistance(request,parts,this.repository,this.runtime);
     if(parts?.[0]==='v1'&&parts[1]==='workspaces'&&parts[3]==='crm'&&parts.length>=4&&parts.length<=5)return handleCrmRequest(request,parts,this.repository,this.runtime);
     if(parts?.[0]==='v1'&&parts[1]==='workspaces'&&parts[3]==='gmail'&&(parts.length===4||parts.length===5))return this.handleGmail(request,parts);

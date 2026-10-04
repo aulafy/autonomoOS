@@ -85,7 +85,7 @@ export class CrmService {
         const cid = automatic ? m.matches[0]!.id : crmId(input.contactId);
         return this.store.apply({ tenant, owner, commandId: input.commandId, expectedRevision: input.expectedRevision, at: this.now(), source: { kind: 'gmail', accountRef: m.accountRef, gmailId: m.gmailId }, operation: { type: 'mail.link', accountRef: m.accountRef, gmailId: m.gmailId, contactId: cid, automatic, direction: m.direction, summary: (m.m.subject ?? 'Correo sin asunto').slice(0, 500) } });
     }
-    workflowAdapter() {
+    workflowAdapter(sourceFor?:(taskId:string)=>import('./mail-task-contract.js').MailTaskBinding|null) {
         return {
             prepare: (taskId: string, owner: string, payload: {
                 contactId: string;
@@ -95,7 +95,8 @@ export class CrmService {
                     return null; // Legacy M2/M3 fixtures remain explicitly simulated.
                 if (payload.to.length !== 1)
                     throw new CrmError('CRM_RECIPIENT_REVIEW_REQUIRED');
-                const result = this.internal(owner, hashed('workflow-prepare', taskId), { type: 'workflow.prepare', taskId, contactId: payload.contactId, recipient: normalizeCrmEmail(payload.to[0]), title: goal.slice(0, 300) || 'Consulta por correo' }, { kind: 'user' });
+                const b=sourceFor?.(taskId);
+                const result = this.internal(owner, hashed('workflow-prepare', taskId), { type: 'workflow.prepare', taskId, contactId: payload.contactId, recipient: normalizeCrmEmail(payload.to[0]), title: goal.slice(0, 300) || 'Consulta por correo',...(b?{line:b.line==='unknown'?'other':b.line,recipientReviewed:true as const,createLead:['quote','renewal'].includes(b.topic),followUpTitle:b.followUpTitle,followUpDueAt:b.followUpDueAt}:{}) }, b?{kind:'gmail',accountRef:b.accountRef,gmailId:b.gmailId}:{ kind: 'user' });
                 return { contactId: payload.contactId, leadId: result.recordId };
             },
             effect: (taskId: string, owner: string, effect: {

@@ -58,6 +58,7 @@ export function gmailMime(p: EmailPayload, key: string) {
       "To: " + p.to[0],
       "Subject: " + encodedSubject(p.subject),
       "Message-ID: " + gmailMessageId(key),
+      ...(p.reply?["In-Reply-To: "+p.reply.inReplyTo,"References: "+p.reply.references]:[]),
       "X-AWOS-Payload-SHA256: " + emailHash(p),
       GMAIL_EFFECT_HEADER + ": " + gmailEffectMarker(key),
       "MIME-Version: 1.0",
@@ -110,6 +111,8 @@ export function verifyGmailRaw(
             "bcc",
             "subject",
             "message-id",
+            "in-reply-to",
+            "references",
             "x-awos-payload-sha256",
             "x-awos-effect-key",
             "content-type",
@@ -141,6 +144,7 @@ export function verifyGmailRaw(
       !headers.has("cc") &&
       !headers.has("bcc") &&
       subject === expected.subject &&
+      (expected.reply?headers.get('in-reply-to')===expected.reply.inReplyTo&&headers.get('references')===expected.reply.references:!headers.has('in-reply-to')&&!headers.has('references')) &&
       /^text\/plain\s*;\s*charset="?UTF-8"?$/i.test(
         headers.get("content-type") ?? "",
       ) &&

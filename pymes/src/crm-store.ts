@@ -14,6 +14,11 @@ type InternalOperation = {
     contactId: string;
     recipient: string;
     title: string;
+    line?:import('./crm-contract.js').CrmLine;
+    recipientReviewed?:true;
+    createLead?:boolean;
+    followUpTitle?:string;
+    followUpDueAt?:number;
 } | {
     type: 'workflow.effect';
     taskId: string;
@@ -38,7 +43,9 @@ interface State {
     audit: CrmAudit[];
     workflows: Record<string, {
         contactId: string;
-        leadId: string;
+        leadId: string|null;
+        followUpTitle?:string;
+        followUpDueAt?:number;
     }>;
     commands: Record<string, {
         hash: string;
@@ -215,7 +222,7 @@ export class CrmStore {
             case 'workflow.prepare': {
                 contact(op.contactId);
                 const matches = this.match(raw.owner, op.recipient);
-                if (matches.length !== 1 || matches[0]!.id !== op.contactId)
+                if (op.recipientReviewed? !matches.some(c=>c.id===op.contactId): matches.length !== 1 || matches[0]!.id !== op.contactId)
                     throw new CrmError('CRM_RECIPIENT_REVIEW_REQUIRED');
                 const old = own(s.workflows, op.taskId);
                 if (old && old.contactId !== op.contactId)
@@ -225,8 +232,9 @@ export class CrmStore {
                     break;
                 }
                 const id = hashed('workflow-lead', op.taskId);
-                newLead(id, op.contactId, crmText(op.title, 300), 'other');
-                s.workflows[op.taskId] = { contactId: op.contactId, leadId: id };
+                if(op.createLead!==false)newLead(id, op.contactId, crmText(op.title, 300), op.line??'other');
+                s.workflows[op.taskId] = { contactId: op.contactId, leadId: op.createLead===false?null:id,...(op.followUpTitle?{followUpTitle:crmText(op.followUpTitle,300)}:{}),...(op.followUpDueAt!==undefined?{followUpDueAt:crmTime(op.followUpDueAt)}:{}) };
+                recordId = s.workflows[op.taskId]!.leadId;
                 break;
             }
             case 'workflow.effect': {
@@ -244,7 +252,7 @@ export class CrmStore {
                 if (op.state === 'committed') {
                     const fid = hashed('effect-followup', op.effectId);
                     if (!own(s.followUps, fid))
-                        s.followUps[fid] = { id: fid, contactId: w.contactId, leadId: w.leadId, title: 'Revisar respuesta y próximos pasos', dueAt: at + 86400000, status: 'pending', createdAt: at, updatedAt: at, source };
+                        s.followUps[fid] = { id: fid, contactId: w.contactId, leadId: w.leadId, title: w.followUpTitle??'Revisar respuesta y próximos pasos', dueAt: w.followUpDueAt??at + 86400000, status: 'pending', createdAt: at, updatedAt: at, source };
                 }
                 break;
             }

@@ -1,0 +1,22 @@
+import {mkdtempSync,rmSync} from 'node:fs';import {join} from 'node:path';import {tmpdir} from 'node:os';
+import {InboxStore} from '../../src/inbox-store.js';import {InboxService} from '../../src/inbox-service.js';import {FakeEmailProvider} from '../../src/email-provider.js';import {openWorkspaceRuntime} from '../../src/runtime-source.js';
+import {WorkspaceApi,InMemoryWorkspaceRepository} from '../../src/workspace-api.js';import {WorkspaceClient} from '../../src/workspace-client.js';import {handlePymesRequest} from '../../src/api-server.js';
+import {historyGmail,msg,credentialSource,NOW} from './gmail-history-fake.js';import {P04_SCOPE,P04_OPTIONS} from './inbox-p04-scenarios.js';
+import type {MailTaskInput} from '../../src/mail-task-contract.js';import type {MailProposal} from '../../src/mail-assistance-contract.js';import type {JsonProposalProvider} from '@agent-world/inference';
+export const mailTaskProposal=():MailProposal=>({topic:'quote',line:'professional_liability',priority:'normal',summary:'Solicita un seguro de RC profesional.',reason:'Consulta para preparar presupuesto.',missingInformation:['¿Cuál es su actividad?'],evidenceQuotes:['Necesito responsabilidad civil'],draft:{subject:'Consulta RC',body:'Gracias por su consulta. ¿Puede indicarnos su actividad profesional?'}});
+export async function mailTaskFixture(options:{dir?:string;loseResponse?:boolean;afterSend?:()=>void;provider?:JsonProposalProvider}={}){
+ const ownDir=!options.dir,dir=options.dir??mkdtempSync(join(tmpdir(),'mail-task-')),c=credentialSource(),g=historyGmail([msg('in1',{subject:'Consulta RC',body:'Necesito responsabilidad civil para mi actividad.'})]);
+ const store=new InboxStore(join(dir,'inbox.db'),()=>NOW),inbox=new InboxService(c.source,store,P04_SCOPE,g.fetcher,P04_OPTIONS,()=>NOW);await inbox.syncNow();
+ const sender=new FakeEmailProvider(join(dir,'mailbox.db'),{loseResponse:options.loseResponse,hideObservation:options.loseResponse,afterSend:options.afterSend});
+ let calls=0;const provider=options.provider??{id:'synthetic-local',proposeJson:async()=>{calls++;return {value:mailTaskProposal(),model:'fixture-model',latencyMs:1};}};
+ const repo=new InMemoryWorkspaceRepository();for(const [id,role] of [['owner','owner'],['other','owner'],['agent','agent']] as const)repo.addSession(id+'-token-123456789',{tenantId:'agency',userId:id,role});
+ const open=()=>openWorkspaceRuntime(join(dir,'runtime.db'),'agency',{emailProvider:sender,gmailInbox:inbox,mailProposalProvider:provider});
+ let runtime=await open(),api=new WorkspaceApi(repo,undefined,runtime.source);
+ const client=new WorkspaceClient({baseUrl:'http://127.0.0.1',tenantId:'agency',token:'owner-token-123456789'},(i,o)=>handlePymesRequest(api,new Request(String(i),o)));
+ const ref=(await inbox.context(null)).info!.accountRef;
+ return {dir,ref,g,c,store,inbox,sender,client,repo,calls:()=>calls,get runtime(){return runtime;},get api(){return api;},reopen:async(withInbox=true)=>{runtime.close();runtime=withInbox?await open():await openWorkspaceRuntime(join(dir,'runtime.db'),'agency',{emailProvider:sender});api=new WorkspaceApi(repo,undefined,runtime.source);},prepare:async()=>{
+  if(!runtime.source.crm!.store.contact('owner','contact'))await client.crmCommand({commandId:'contact-create',expectedRevision:(await client.crm()).revision,operation:{type:'contact.create',id:'contact',name:'Cliente ficticio',email:'cliente@example.test',phone:'',notes:'',relationship:'prospect'}});
+  await client.crmResolve(ref,'in1');const p=(await client.mailAssistance(ref,'in1','generate')).proposal!;if(p.state!=='accepted')await client.mailAssistance(ref,'in1','review',{proposalId:p.id,decision:'accepted'});
+  const input:MailTaskInput={accountRef:ref,gmailId:'in1',proposalId:p.id,contactId:'contact',to:'cliente@example.test',subject:'Re: Consulta RC',body:'Gracias por su consulta. Prepararemos la propuesta tras revisar su actividad.',recipientReviewed:true,followUpTitle:'Llamar para confirmar actividad',followUpDueAt:Date.now()+86400000};return input;
+ },done:async()=>{await inbox.close();runtime.close();sender.close();store.close();if(ownDir)rmSync(dir,{recursive:true,force:true});}};
+}

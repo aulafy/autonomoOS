@@ -1,4 +1,6 @@
 import type { EmailWorkflowView } from "./email-workflow.js";
+import {parseMailTaskBinding} from './mail-task-contract.js';
+import {validateEmailReply} from './email-reply.js';
 const object = (v: unknown): v is Record<string, unknown> =>
   !!v && typeof v === "object" && !Array.isArray(v);
 const hash = (v: unknown): v is string =>
@@ -25,6 +27,8 @@ export function parseEmailView(
     value.audit.length > 1000
   )
     return fail();
+  if(value.source!==undefined&&value.source!==null){try{const source=parseMailTaskBinding(value.source);if(source.taskId!==taskId)return fail();}catch{return fail();}}
+  if(object(value.draft)&&value.draft.reply!==undefined){try{validateEmailReply(value.draft.reply);}catch{return fail();}}
   if(value.draft!==undefined&&value.draft!==null){const p=value.draft;if(!object(p)||!text(p.from,254)||!text(p.subject,500)||!text(p.body,8000)||!text(p.contactId,500)||!['to','cc','bcc'].every(k=>Array.isArray(p[k])&&(p[k] as unknown[]).length<=10&&(p[k] as unknown[]).every(a=>text(a,254))))return fail();}
   if (value.review !== null) {
     const r = value.review;
@@ -43,6 +47,7 @@ export function parseEmailView(
     )
       return fail();
     const p = r.payload;
+    if(p.reply!==undefined){try{validateEmailReply(p.reply);}catch{return fail();}}
     if (
       !text(p.from, 254) ||
       !text(p.subject, 500) ||

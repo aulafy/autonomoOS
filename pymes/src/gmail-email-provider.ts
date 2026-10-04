@@ -208,6 +208,7 @@ export class GmailEmailProvider implements EmailProvider {
           },
           body: JSON.stringify({
             raw: Buffer.from(gmailMime(p, key)).toString("base64url"),
+            ...(p.reply?{threadId:p.reply.threadId}:{}),
           }),
           signal: AbortSignal.any([
             signal,
@@ -297,6 +298,7 @@ export class GmailEmailProvider implements EmailProvider {
       )
         return "unverifiable";
       return r.value.labelIds.includes("SENT") &&
+        (!expected.reply||r.value.threadId===expected.reply.threadId) &&
         verifyGmailRaw(r.value.raw, expected, key, version)
         ? "match"
         : "no_match";

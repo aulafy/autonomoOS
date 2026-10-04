@@ -1,11 +1,12 @@
 import type {WorkspaceClient} from './workspace-client.js';
 import type {SavedMailProposal} from './mail-assistance-contract.js';
 import './mail-assistance-screen.css';
+import {mountMailTaskEditor} from './mail-task-screen.js';
 const topic:Record<string,string>={incident:'Incidencia / siniestro',quote:'Propuesta de seguro',renewal:'Renovación',appointment:'Cita',service:'Gestión de póliza',unknown:'Por determinar'};
 const line:Record<string,string>={car:'Coche',life:'Vida',home:'Hogar',professional_liability:'RC profesional',unknown:'Sin ramo confirmado'};
 const node=<K extends keyof HTMLElementTagNameMap>(tag:K,text:string,cls='')=>{const n=document.createElement(tag);n.textContent=text;n.className=cls;return n;};
 /** All model content is text; only a visible, authorized source can offer actions. */
-export function mountMailAssistance(parent:HTMLElement,client:WorkspaceClient,accountRef:string,gmailId:string,authorized:()=>boolean){
+export function mountMailAssistance(parent:HTMLElement,client:WorkspaceClient,accountRef:string,gmailId:string,authorized:()=>boolean,source?:{subject:string;incoming:boolean}){
  const card=node('section','','mail-ai-card');card.setAttribute('aria-label','Asistente local del correo');parent.append(card);
  let value:SavedMailProposal|null=null,busy=false,sequence=0;
  const current=()=>card.isConnected&&authorized();
@@ -25,6 +26,7 @@ export function mountMailAssistance(parent:HTMLElement,client:WorkspaceClient,ac
   if(value.state==='proposed'){const actions=node('div','','mail-ai-actions');actions.append(button('Aceptar propuesta',()=>void request('review','accepted')),button('Descartar propuesta',()=>void request('review','rejected')));card.append(actions);}
   if(value.state==='rejected')card.append(button('Preparar otra propuesta',()=>void request('generate')));
   if(value.state==='accepted')card.append(node('p','Propuesta guardada. El envío requiere preparar un trabajo y aprobar su destinatario y contenido exactos en el Centro de agentes.','mail-ai-note'));
+  if(value.state==='accepted'&&source?.incoming)card.append(button('Preparar trabajo de respuesta',()=>{if(!card.querySelector('.mail-task-editor'))void mountMailTaskEditor(card,client,accountRef,gmailId,value!,source.subject,current);}));
  }
  async function request(operation?:'generate'|'review',decision?:'accepted'|'rejected'){
   if(!current()||busy)return;busy=true;const seq=++sequence;render(operation==='generate'?'El modelo está preparando la propuesta…':operation==='review'?'Guardando tu revisión…':'Consultando la propuesta guardada…');

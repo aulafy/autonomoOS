@@ -2,6 +2,8 @@ import { createHash } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
+import {validateEmailReply} from './email-reply.js';
+export {validateEmailReply} from './email-reply.js';
 export class EmailDispatchError extends Error {
  constructor(code:string,readonly certainty:'not_started'|'unknown'){super(code);this.name='EmailDispatchError';}
 }
@@ -13,6 +15,7 @@ export interface EmailPayload {
   subject: string;
   body: string;
   contactId: string;
+  reply?: {threadId:string;inReplyTo:string;references:string};
 }
 export interface EmailReceipt {
   id: string;
@@ -64,7 +67,7 @@ export function validateEmailPayload(value: unknown): EmailPayload {
   const p = value as Record<string, unknown>;
   if (
     Object.keys(p).sort().join(",") !==
-    ["from", "to", "cc", "bcc", "subject", "body", "contactId"].sort().join(",")
+    ["from", "to", "cc", "bcc", "subject", "body", "contactId",...(p.reply!==undefined?["reply"]:[])].sort().join(",")
   )
     throw new Error("INVALID_EMAIL_PAYLOAD");
   const address = (v: unknown) =>
@@ -102,6 +105,7 @@ export function validateEmailPayload(value: unknown): EmailPayload {
   ];
   if (new Set(all.map((a) => a.toLowerCase())).size !== all.length)
     throw new Error("DUPLICATE_EMAIL_RECIPIENT");
+  if(p.reply!==undefined)validateEmailReply(p.reply);
   return structuredClone(p) as unknown as EmailPayload;
 }
 /** Simulated mailbox, intentionally separate from the runtime journal. No network.

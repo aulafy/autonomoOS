@@ -22,6 +22,7 @@ export function createEmailTaskBridge(
   journal: JournalKernel,
   store: EmailReviewStore,
   crm?:import('./crm-service.js').CrmWorkflowAdapter,
+  sourceFor?:(taskId:string)=>import('./mail-task-contract.js').MailTaskBinding|null,
 ) {
   function apply(taskId: string, event: Command) {
     const state = kernel.snapshot();
@@ -68,7 +69,7 @@ export function createEmailTaskBridge(
       id: randomUUID(),
       taskId,
       attemptId: attemptId ?? null,
-      simulated: !(String(value.kind).startsWith("crm-local-")||value.kind==="governed-email-proof"&&value.provider==="gmail-email"),
+      simulated: !(String(value.kind).startsWith("crm-local-")||['reviewed-mail-recipient','reviewed-mail-classification','reviewed-mail-draft','reviewed-mail-human-review'].includes(String(value.kind))||['governed-email-proof','reviewed-mail-workflow-verified'].includes(String(value.kind))&&value.provider==="gmail-email"),
       value,
       hash: emailHash(value),
       at: Date.now(),
@@ -116,7 +117,7 @@ export function createEmailTaskBridge(
   }
   function local(unit: WorkUnit, value: Record<string, unknown>) {
     if (kernel.snapshot().workUnits[unit.id]!.status === "succeeded") return;
-    const attempt = begin(unit, emailHash(value),String(value.kind).startsWith("crm-local-")?"p05-local-crm":"m2-local-simulation");
+    const attempt = begin(unit, emailHash(value),String(value.kind).startsWith("crm-local-")?"p05-local-crm":String(value.kind).startsWith('reviewed-mail-')?'p07-reviewed-mail':'m2-local-simulation');
     finish(unit, attempt, value);
   }
   function prepare(taskId: string, payload: EmailPayload) {
@@ -143,8 +144,10 @@ export function createEmailTaskBridge(
       )
         throw new Error("M2_SIMULATION_PLAN_REQUIRED");
       const real=crm?.prepare(taskId,t.owner,payload,t.goal);
+      const source=sourceFor?.(taskId);
+      if(source&&!real)throw new Error('MAIL_TASK_CRM_PROOF_REQUIRED');
       const values = [
-        { kind: real?"crm-local-recipient":"identified-simulated-sender", address: payload.to[0]! },
+        { kind: source?'reviewed-mail-recipient':real?"crm-local-recipient":"identified-simulated-sender", address: payload.to[0]!,...(source?{accountRef:source.accountRef,gmailId:source.gmailId,sourceHash:source.sourceHash,contactId:source.contactId,reviewed:true}:{}) },
         {
           kind: real?"crm-local-lookup":"simulated-crm-lookup",
           contactId: payload.contactId,
@@ -153,17 +156,15 @@ export function createEmailTaskBridge(
         {
           kind: real?"crm-local-lead":"simulated-lead-proposal",
           contactId: payload.contactId,
-          created: !!real,
+          created: !!real?.leadId,
           ...(real?{leadId:real.leadId}:{reason:"Fixture contact already exists"}),
         },
         {
-          kind: "simulated-classification",
-          category: "insurance-enquiry",
-          source: "host-fixture",
-          summary: "Consulta ficticia para comprobar el ciclo gobernado",
+          kind: source?'reviewed-mail-classification':"simulated-classification",
+          ...(source?{proposalId:source.proposalId,proposalHash:source.proposalHash,sourceHash:source.sourceHash,provider:source.provider,model:source.model,topic:source.topic,line:source.line,priority:source.priority}:{category:"insurance-enquiry",source:"host-fixture",summary:"Consulta ficticia para comprobar el ciclo gobernado"}),
         },
         {
-          kind: "simulated-email-draft",
+          kind: source?'reviewed-mail-draft':"simulated-email-draft",
           payload,
           payloadHash: emailHash(payload),
         },
@@ -173,12 +174,13 @@ export function createEmailTaskBridge(
   }
   function decision(r: EmailReview, d: EmailDecision) {
     const unit = units(r.taskId)[5]!;
-    const attempt = begin(unit, r.bindingHash);
+    const source = sourceFor?.(r.taskId);
+    const attempt = begin(unit, r.bindingHash, source ? "p07-human-review" : "m2-local-simulation");
     finish(
       unit,
       attempt,
       {
-        kind: "exact-human-review",
+        kind: source ? "reviewed-mail-human-review" : "exact-human-review",
         decisionId: d.id,
         bindingHash: d.bindingHash,
         decision: d.decision,
@@ -270,7 +272,8 @@ export function createEmailTaskBridge(
       if (d?.decision !== "approved")
         throw new Error("M2_GLOBAL_REVIEW_REQUIRED");
       const ref = evidence(r.taskId, undefined, {
-        kind: r.provider?"test-preparation-real-email-verified":"simulated-workflow-verified",
+        kind: sourceFor?.(r.taskId)?'reviewed-mail-workflow-verified':r.provider?"test-preparation-real-email-verified":"simulated-workflow-verified",
+        ...(sourceFor?.(r.taskId)?{provider:r.provider??'fake-email'}:{}),
         planHash: r.planHash,
         bindingHash: r.bindingHash,
         approvalId: d.id,
@@ -288,7 +291,7 @@ export function createEmailTaskBridge(
       store.audit({
         id: randomUUID(),
         taskId: r.taskId,
-        type: r.provider?"job.completed.test-preparation-real-email":"job.completed.simulated",
+        type: sourceFor?.(r.taskId)?'job.completed.reviewed-mail':r.provider?"job.completed.test-preparation-real-email":"job.completed.simulated",
         reference: ref,
         at: Date.now(),
       });
