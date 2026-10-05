@@ -1,4 +1,8 @@
-# Agent World OS
+# Autónomo OS
+
+Producto local para profesionales, construido sobre Agent World OS.
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 Agent World OS is a local prototype for governed AI actions. A model can propose
 an action, but the control plane checks authority, resource scope, data flow,
@@ -25,6 +29,8 @@ de aceptación. Véanse [avance P07](docs/handoff/AVANCE_P07_FLUJO_CORREO_2026-1
 y [trabajo pendiente del producto](docs/AUTONOMO_OS_PRODUCT_BACKLOG.md).
 Los borradores revisados pueden corregirse mediante una versión sucesora con
 aprobación nueva mientras no haya claim de envío: [avance P08](docs/handoff/AVANCE_P08_REVISION_RESPUESTAS_2026-10-04.md).
+
+Estado reciente: [P10 · cancelación durable](docs/handoff/AVANCE_P10_CANCELACION_TRABAJOS_2026-10-04.md) y [P11 · conversaciones y trazabilidad CRM](docs/handoff/AVANCE_P11_CONVERSACIONES_CRM_2026-10-05.md).
 
 ## Install and verify
 
@@ -103,3 +109,9 @@ is future work. See the [operator console notes](docs/OPERATOR_CONSOLE.md).
 
 Read [H4 HTTP/API effects](docs/H4_HTTP_API_EFFECTS.md) and
 [durable runtime](docs/H1_DURABLE_RUNTIME.md) for implementation details.
+
+## Licencia
+
+Código y documentación propios publicados bajo la [licencia MIT](LICENSE).
+Las dependencias y los modelos externos conservan sus respectivas licencias;
+los pesos de modelos, credenciales y datos locales no se incluyen en este repositorio.
