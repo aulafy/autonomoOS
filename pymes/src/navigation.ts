@@ -1,4 +1,5 @@
 const screenTitles: Record<string, string> = {
+  "#capsules-screen": "Mi Autónomo OS",
   "#gmail-inbox": "Correo Gmail",
   "#runtime-screen": "Centro de agentes",
   "#morning": "Inicio",
@@ -16,8 +17,11 @@ const screenTitles: Record<string, string> = {
 };
 function navigate(focus = false): void {
   const hash = location.hash || "#morning";
-  const title = screenTitles[hash] ?? "Inicio";
-  document.body.classList.toggle("morning-view", hash === "#morning" || !screenTitles[hash]);
+  const capsuleDetail = hash.startsWith('#capsule-');
+  const title = screenTitles[hash] ?? (capsuleDetail ? 'Cápsula' : "Inicio");
+  document.body.classList.toggle("morning-view", hash === "#morning" || (!screenTitles[hash] && !capsuleDetail));
+  document.body.classList.toggle('capsules-view', hash === '#capsules-screen');
+  document.body.classList.toggle('capsule-detail-view', capsuleDetail);
   setMenuOpen(false);
   document.body.classList.toggle("runtime-view", hash === "#runtime-screen");
   document.body.classList.toggle("installation-view", hash === "#installation");
@@ -35,16 +39,16 @@ function navigate(focus = false): void {
   if (breadcrumb) breadcrumb.textContent = title;
   document.title = `${title} · Autónomo OS`;
   document.querySelectorAll<HTMLAnchorElement>(".sidebar nav a").forEach(link => {
-    const active = link.hash === hash || (hash === "#detail" && link.hash === "#inbox") || (!screenTitles[hash] && link.hash === "#morning");
+    const active = link.hash === hash || (hash === "#detail" && link.hash === "#inbox") || (!screenTitles[hash] && !capsuleDetail && link.hash === "#morning");
     link.classList.toggle("active", active);
     if (active) link.setAttribute("aria-current", "page");
     else link.removeAttribute("aria-current");
     // Give icon-only navigation a full name at compact viewport widths.
-    const label = link.querySelector("span")?.textContent;
+    const label = link.querySelector("span:not(.capsule-nav-icon)")?.textContent;
     if (label) { link.setAttribute("aria-label", label); link.title = label; }
   });
-  if (focus && screenTitles[hash]) {
-    const heading = document.getElementById(hash.slice(1))?.querySelector<HTMLElement>("h1, h2");
+  if (focus && (screenTitles[hash] || capsuleDetail)) {
+    const heading = document.getElementById(capsuleDetail ? 'capsule-view-screen' : hash.slice(1))?.querySelector<HTMLElement>("h1, h2");
     if (heading) { heading.tabIndex = -1; heading.focus({ preventScroll: true }); }
     if (hash !== "#detail") window.scrollTo({ top: 0, behavior: "instant" });
   }
@@ -68,11 +72,19 @@ const navigationDialog = document.querySelector<HTMLDialogElement>("#navigation-
 const navigationInput = document.querySelector<HTMLInputElement>("#navigation-search-input")!;
 const navigationResults = document.querySelector<HTMLElement>("#navigation-search-results")!;
 const destinations = [
+  ["#capsules-screen", "Mi Autónomo OS"],
   ["#runtime-screen", "Centro de agentes"], ["#morning", "Mi jornada"], ["#inbox", "Bandeja unificada"], ["#gmail-inbox", "Correo Gmail"],
   ["#clients-screen", "Clientes y oportunidades"], ["#tasks-screen", "Trabajo pendiente"],
   ["#agenda", "Agenda"], ["#review-queue", "Cola de revisión"],
   ["#installation", "Mi Mac mini"], ["#help-screen", "Ayuda"], ["#automation-screen", "Reglas de preparación"], ["#portfolio-screen", "Cartera de pólizas"], ["#settings-screen", "Configuración"]
 ];
+window.addEventListener('capsules:changed', event => {
+  for (const hash of Object.keys(screenTitles)) if (hash.startsWith('#capsule-')) delete screenTitles[hash];
+  for (let i=destinations.length-1;i>=0;i--) if (destinations[i]![0]!.startsWith('#capsule-')) destinations.splice(i,1);
+  const items = (event as CustomEvent<Array<{hash:string;title:string;enabled:boolean}>>).detail;
+  for (const item of items) { screenTitles[item.hash]=item.title; if(item.enabled) destinations.push([item.hash,item.title]); }
+  navigate();
+});
 function filterNavigation(): void {
   navigationResults.replaceChildren();
   const query = navigationInput.value.trim().toLocaleLowerCase("es");
@@ -112,6 +124,7 @@ window.addEventListener("keydown", event => {
 });
 
 const navPaths: Record<string, string> = {
+  "#capsules-screen": "M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z",
   "#gmail-inbox": "M3 5h18v14H3z m0 0 9 7 9-7",
   "#morning": "M3 10 12 3l9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z",
   "#inbox": "M4 4h16v16H4z M4 14h5l2 3h2l2-3h5",

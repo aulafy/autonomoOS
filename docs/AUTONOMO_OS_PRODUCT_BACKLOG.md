@@ -1,13 +1,15 @@
 # Autónomo OS · desarrollo del producto
 
 Actualizado: 5 de octubre de 2026. Objetivo: producto profesional instalado en
-Mac para autónomos y agencias de seguros en España. Equipos previstos:
+Mac para autónomos en España, con cápsulas reutilizables y plantillas de profesión.
+La agencia de seguros es la primera plantilla. Equipos previstos:
 Mac mini 16 GB y MacBook 24 GB. La aplicación completa todavía no está terminada.
 
 ## Base disponible
 
 | Área | Evidencia y alcance |
 | --- | --- |
+| Cápsulas v1 | Registro revisado, configuración durable, UI, primera lectura CRM y kit Claude/Codex; extracción de módulos y conectores nuevos pendientes |
 | Kernel C1–C12 | Contratos y runtime integrado; preservar invariantes y tests |
 | M1/M2 | Planificación, aprobación exacta durable y ejecución gobernada |
 | M3 Gmail | A/B/C real, autorización Keychain, reinicio y reconciliación sin reenvío |
@@ -22,6 +24,15 @@ Mac mini 16 GB y MacBook 24 GB. La aplicación completa todavía no está termin
 
 Los menús o pantallas de ejemplo de etapas anteriores no acreditan conexiones
 reales. Holded, Google Calendar y otros canales siguen pendientes de integración.
+
+## Dirección modular
+
+Fundamento de cápsulas v1 implementado. Siguientes pasos: extraer módulos
+existentes a cápsulas, crear plantillas de profesión y añadir conectores
+compartidos (Telegram en lectura como primer candidato, después WhatsApp,
+Odoo y WordPress). El SDK actual solo admite el renderer de lectura del CRM.
+Ampliaciones de acciones deben reutilizar los contratos y gates del runtime.
+El plan de producto anterior conserva sus pendientes de aceptación real:
 
 ## Orden de trabajo
 
@@ -67,6 +78,8 @@ presenta como aceptación de un proveedor real. Las acciones externas conservan
 aprobación exacta, journal durable, estados UNKNOWN y reconciliación sin reenvío.
 
 ## Documentos de estado
+
+- `docs/handoff/AVANCE_CAPSULAS_FUNDACION_2026-10-05.md`
 
 - `docs/handoff/AVANCE_P04_INBOX_GMAIL_2026-10-04.md`
 - `docs/handoff/AVANCE_P05_CRM_LOCAL_2026-10-04.md`

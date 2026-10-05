@@ -32,6 +32,16 @@ aprobación nueva mientras no haya claim de envío: [avance P08](docs/handoff/AV
 
 Estado reciente: [P10 · cancelación durable](docs/handoff/AVANCE_P10_CANCELACION_TRABAJOS_2026-10-04.md) y [P11 · conversaciones y trazabilidad CRM](docs/handoff/AVANCE_P11_CONVERSACIONES_CRM_2026-10-05.md).
 
+## Cápsulas adaptables
+
+**Mi Autónomo OS** permite activar, configurar y desactivar un resumen de
+clientes que reutiliza el CRM local. Las decisiones son durables por propietario.
+El kit descargable aporta los contratos reales para crear variantes con
+Claude/Codex. Véanse [entrega, pruebas y límites](docs/handoff/AVANCE_CAPSULAS_FUNDACION_2026-10-05.md)
+y [ejemplo reutilizable](pymes/examples/capsules/README.md).
+El SDK v1 admite vistas de lectura; los conectores nuevos y la instalación de
+código externo siguen pendientes.
+
 ## Install and verify
 
 ```bash

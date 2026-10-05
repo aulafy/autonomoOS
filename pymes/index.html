@@ -10,7 +10,7 @@
   <div class="shell" id="app">
     <a class="skip-link" href="#main-content">Saltar al contenido</a>
     <aside class="sidebar" id="app-sidebar">
-      <a class="brand" href="#morning" aria-label="Autónomo OS, inicio"><span class="brand-icon">a</span><span>autónomo<span class="brand-accent">os</span></span></a><div class="workspace-identity"><span class="workspace-avatar" aria-hidden="true">SG</span><div><strong>Mi agencia</strong><small>Seguros · España</small></div></div>
+      <a class="brand" href="#morning" aria-label="Autónomo OS, inicio"><span class="brand-icon">a</span><span>autónomo<span class="brand-accent">os</span></span></a><div class="workspace-identity"><span class="workspace-avatar" aria-hidden="true">OS</span><div><strong>Mi espacio</strong><small>Autónomo OS · Local</small></div></div>
       <div class="side-caption">MI TRABAJO</div>
       <nav aria-label="Navegación principal">
         <a class="active" href="#morning">▦ <span>Inicio</span></a>
@@ -30,17 +30,20 @@
       </nav>
       <div class="side-caption">MI ESPACIO</div>
       <nav class="module-nav secondary-nav" aria-label="Administración">
+        <a href="#capsules-screen">▦ <span>Mi Autónomo OS</span></a>
         <a href="#installation">⌘ <span>Mi Mac mini</span></a>
         <a href="#settings-screen">⚙ <span>Configuración</span></a>
         <a href="#help-screen">? <span>Ayuda</span></a>
       </nav>
+      <div class="side-caption" id="capsule-nav-caption" hidden>CÁPSULAS ACTIVAS</div>
+      <nav class="module-nav" id="capsule-nav" aria-label="Cápsulas de mi espacio"></nav>
       <div class="sidebar-note"><span class="local-indicator"></span><strong>Trabaja desde tu Mac</strong><p>Revisa y aprueba cada acción.</p><a href="#help-screen">Centro de ayuda ↗</a></div>
     </aside>
     <main id="main-content" tabindex="-1">
-      <header class="topbar"><div class="topbar-location"><button class="menu-toggle" id="menu-toggle" type="button" aria-label="Abrir navegación" aria-expanded="false" aria-controls="app-sidebar">☰</button><span class="breadcrumb-home">Mi agencia</span><span aria-hidden="true">/</span><strong id="current-screen-title">Mi jornada</strong></div><div class="topbar-right"><button type="button" id="navigation-search-open" class="navigation-search-open" aria-haspopup="dialog">Buscar una sección… <kbd>⌘K</kbd></button><span id="workspace-status" class="demo-pill" aria-live="polite" role="status">● DEMOSTRACIÓN</span><span id="today"></span><a class="profile-link" href="#settings-screen" aria-label="Configuración de mi espacio">SG</a></div></header>
+      <header class="topbar"><div class="topbar-location"><button class="menu-toggle" id="menu-toggle" type="button" aria-label="Abrir navegación" aria-expanded="false" aria-controls="app-sidebar">☰</button><span class="breadcrumb-home">Mi espacio</span><span aria-hidden="true">/</span><strong id="current-screen-title">Mi jornada</strong></div><div class="topbar-right"><button type="button" id="navigation-search-open" class="navigation-search-open" aria-haspopup="dialog">Buscar una sección… <kbd>⌘K</kbd></button><span id="workspace-status" class="demo-pill" aria-live="polite" role="status">● DEMOSTRACIÓN</span><span id="today"></span><a class="profile-link" href="#settings-screen" aria-label="Configuración de mi espacio">SG</a></div></header>
       <div class="content">
         <div class="pilot-context" id="pilot-context"></div>
-        <section class="welcome" id="morning"><div><span class="eyebrow">RESUMEN DEL DÍA</span><h1>Mi jornada</h1><p>Lo importante de tu agencia, en un solo lugar.</p></div><div class="welcome-actions"><a class="ui-button secondary" href="#agenda">Ver agenda</a><a class="ui-button primary" href="#runtime-screen">Abrir asistente <span aria-hidden="true">↗</span></a></div></section>
+        <section class="welcome" id="morning"><div><span class="eyebrow">RESUMEN DEL DÍA</span><h1>Mi jornada</h1><p>Lo importante de tu actividad, en un solo lugar.</p></div><div class="welcome-actions"><a class="ui-button secondary" href="#agenda">Ver agenda</a><a class="ui-button primary" href="#runtime-screen">Abrir asistente <span aria-hidden="true">↗</span></a></div></section>
         <div class="data-notice"><span class="data-notice-icon" aria-hidden="true">i</span><div><strong>Vista de demostración</strong><span>Los mensajes, clientes y citas de este panel son ejemplos. Tus envíos Gmail se gestionan en el Centro de agentes.</span></div><a href="#runtime-screen">Ver trabajos reales →</a></div>
         <section class="metrics" aria-label="Resumen de mensajes"><div><span>CONVERSACIONES NUEVAS</span><strong id="total-count">0</strong><small>Datos de ejemplo · 4 canales</small></div><div><span>REQUIEREN ATENCIÓN</span><strong id="attention-count">0</strong><small id="unidentified-count">0 sin identificar</small></div><div><span>EN COLA DE REVISIÓN</span><strong id="review-count">0</strong><small>Seleccionados o sin identidad</small></div><div><span>CITAS EN AGENDA</span><strong id="appointment-count">0</strong><small>Confirmadas y propuestas</small></div><div><span>CLIENTES Y CONTACTOS</span><strong id="demo-contact-count">0</strong><small>Cartera de ejemplo</small></div></section>
         <section class="workspace-ops" aria-label="Operativa remota"><div><span class="eyebrow">OPERATIVA DEL WORKSPACE</span><h2>Estado en tiempo real</h2><p>Resumen seguro de la actividad de la agencia.</p><small id="workspace-metrics-updated" class="workspace-metrics-updated" aria-live="polite">Sin sincronizar</small><div id="workspace-alerts" class="workspace-alerts" aria-live="polite"></div></div><div id="workspace-metrics" class="workspace-metrics" aria-live="polite"><div><span>Casos</span><strong>—</strong></div><div><span>Pendientes</span><strong>—</strong></div><div><span>Operaciones activas</span><strong>—</strong></div><div><span>Fallidas</span><strong>—</strong></div><div><span>Aprobaciones</span><strong>—</strong></div></div></section>
@@ -91,6 +94,9 @@
           <div class="display-settings"><div><h3>Lectura cómoda</h3><p>Elige el tamaño de texto para este navegador.</p></div><label for="display-text-size">Tamaño de texto<select id="display-text-size"><option value="standard">Estándar</option><option value="large">Grande</option></select></label><span id="display-feedback" role="status" aria-live="polite"></span></div>
           <div class="appliance-boundary"><strong>Local con conexiones externas</strong><span>La IA puede ejecutarse en tu Mac. WhatsApp, Holded y Google Calendar necesitan Internet y sus propias cuentas.</span></div>
         </section>
+        <section id="capsules-screen" aria-label="Mi Autónomo OS"></section>
+        <section id="capsule-view-screen" aria-label="Vista de cápsula"></section>
+        <dialog id="capsule-dialog" aria-label="Configuración y vista previa de cápsula"></dialog>
         <section id="runtime-screen" class="runtime-screen" aria-label="Centro de agentes"></section>
         <section id="clients-screen" class="panel clients-screen" aria-label="Directorio de clientes">
           <div class="panel-heading"><div><span class="eyebrow">RELACIONES · CRM LOCAL</span><h2>Clientes y oportunidades</h2><p>Tu cartera, el contexto de cada conversación y los próximos pasos.</p></div><div class="crm-heading-actions"><button id="crm-refresh" class="gmail-button">Actualizar CRM</button><button id="crm-new-contact" class="gmail-button primary">Nuevo contacto</button></div></div>

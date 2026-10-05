@@ -1,4 +1,5 @@
 import {parseMailCancelInput} from './mail-cancellation-contract.js';
+import {parseCapsuleCatalog,parseCapsuleCommand,parseCapsuleReceipt,parseClientSummary,capsuleId,type CapsuleCommand} from './capsule-sdk.js';
 import {parseReviewQuery,parseReviewPage,type ReviewQuery} from './review-contract.js';
 import {parseMailAssistanceView} from './mail-assistance-contract.js';
 import {parseMailTaskInput,parseMailTaskView,type MailTaskInput} from './mail-task-contract.js';
@@ -191,6 +192,18 @@ export class WorkspaceClient {
     const path=`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/mail-assistance`;
     const raw=operation?await this.request(path+'/'+operation,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accountRef,gmailId,...(review??{})})}):await this.request(path+'?'+new URLSearchParams({accountRef,gmailId}));
     return parseMailAssistanceView(raw,this.config.tenantId,accountRef,gmailId);
+  }
+  async capsules() {
+    return parseCapsuleCatalog(await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/capsules`),this.config.tenantId);
+  }
+  async configureCapsule(raw:CapsuleCommand) {
+    const input=parseCapsuleCommand(raw);
+    parseCapsuleReceipt(await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/capsules/configure`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(input)}),this.config.tenantId,input);
+    return this.capsules();
+  }
+  async capsuleView(id:string) {
+    const valid=capsuleId(id);
+    return parseClientSummary(await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/capsules/${encodeURIComponent(valid)}/view`),this.config.tenantId,valid);
   }
   async crm(input:{query?:string;contactId?:string|null;taskStatus?:'pending'|'done'|'cancelled'|'all'}={}) {
     const q=new URLSearchParams({q:input.query??'',taskStatus:input.taskStatus??'pending'});

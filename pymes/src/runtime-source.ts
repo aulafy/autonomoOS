@@ -1,4 +1,5 @@
 import {createCrmMailTrace} from './crm-mail-trace.js';
+import {CapsuleStore} from './capsule-store.js';
 import {MailCancellationStore} from './mail-cancellation-store.js';
 import {ReviewService} from './review-service.js';
 import {resolveEffectiveEffectOutcome} from '@agent-world/reconciliation';
@@ -20,7 +21,7 @@ import type {WorkspaceRuntimeSource} from './workspace-api.js';
  * drift; no empty/demo replacement is returned when persistence fails. */
 export async function openWorkspaceRuntime(path:string,tenantId:string,options:{mailProposalProvider?:JsonProposalProvider;provider?:InferenceProvider;planningTimeoutMs?:number;fakeEmail?:boolean;emailProvider?:EmailProvider;gmail?:import('./gmail-local-connector.js').GmailLocalConnector;gmailInbox?:import('./inbox-service.js').InboxService;cancellationHooks?:{beforePersist?:()=>void;afterTransition?:()=>void;afterPersist?:()=>void};emailHooks?:{beforeDispatch?:()=>void;afterDispatchMarker?:()=>void}}={}) {
  if(!tenantId.trim()) throw new Error('RUNTIME_TENANT_REQUIRED');
- const database=new RuntimeDatabase(path);let ownEmail:FakeEmailProvider|null=null;
+ const database=new RuntimeDatabase(path);let ownEmail:FakeEmailProvider|null=null;let capsules:CapsuleStore|null=null;
  try {
   const journal=new JournalKernel(database,new ReplayClock());
   const binding=journal.register('pymesTenantBinding',()=>new TenantBinding(),['bind']);
@@ -36,6 +37,7 @@ export async function openWorkspaceRuntime(path:string,tenantId:string,options:{
    if(database.commands().length) throw new Error('UNBOUND_RUNTIME_JOURNAL');
    binding.bind(tenantId);
   }
+  capsules=new CapsuleStore(path===':memory:'?':memory:':path+'.capsules.db',tenantId);
   let closed=false;
   const planningTimeoutMs=options.planningTimeoutMs??30_000;
   if(!Number.isInteger(planningTimeoutMs)||planningTimeoutMs<1||planningTimeoutMs>60_000)throw new Error('INVALID_PLANNING_TIMEOUT');
@@ -57,7 +59,7 @@ export async function openWorkspaceRuntime(path:string,tenantId:string,options:{
    return domain.effects.list().filter(e=>e.action==='email.send').map(e=>({taskId:e.taskId,status:e.status,effective:resolveEffectiveEffectOutcome(e,decisions).effectiveOutcome}));
   },emailProvider?.id==='gmail-email'?'gmail':emailProvider?'test':'unconfigured',(owner,id)=>crmStore.contact(owner,id)?.name??null);
   const planning=new Set<string>();
-  const source:WorkspaceRuntimeSource={reviews,mailTasks,mailAssistance,crm,email,gmail:options.gmail,gmailInbox:options.gmailInbox,planTask:async(tenant,owner,input,mayCommit)=>{
+  const source:WorkspaceRuntimeSource={capsules,reviews,mailTasks,mailAssistance,crm,email,gmail:options.gmail,gmailInbox:options.gmailInbox,planTask:async(tenant,owner,input,mayCommit)=>{
    if(closed||!journal.isHealthy())throw new Error('RUNTIME_CLOSED');
    if(tenant!==tenantId)throw new Error('RUNTIME_TENANT_SCOPE_DENIED');
    if(input.workflow!==EMAIL_LEAD_WORKFLOW)throw new Error('INVALID_WORKFLOW');
@@ -113,8 +115,8 @@ export async function openWorkspaceRuntime(path:string,tenantId:string,options:{
     successCriteria:[{id:'professional-review',kind:'human-approval',approver:owner}]},state.revision);
    return {created:true};
   }};
-  return {source,kernel,close:()=>{if(!closed){closed=true;mailAssistance?.close();crm.close();ownEmail?.close();database.close();}}};
- } catch(error) {ownEmail?.close();database.close();throw error;}
+  return {source,kernel,close:()=>{if(!closed){closed=true;mailAssistance?.close();crm.close();capsules?.close();ownEmail?.close();database.close();}}};
+ } catch(error) {capsules?.close();ownEmail?.close();database.close();throw error;}
 }
 
 class TenantBinding {
