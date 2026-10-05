@@ -1,8 +1,10 @@
 const screenTitles: Record<string, string> = {
+  "#home-screen": "Mi jornada",
+  "#space-screen": "Organizar mi espacio",
   "#capsules-screen": "Mi Autónomo OS",
   "#gmail-inbox": "Correo Gmail",
   "#runtime-screen": "Centro de agentes",
-  "#morning": "Inicio",
+  "#morning": "Vista de demostración",
   "#help-screen": "Ayuda",
   "#inbox": "Bandeja unificada",
   "#agenda": "Agenda",
@@ -16,10 +18,12 @@ const screenTitles: Record<string, string> = {
   "#settings-screen": "Configuración"
 };
 function navigate(focus = false): void {
-  const hash = location.hash || "#morning";
+  const hash = location.hash || "#home-screen";
   const capsuleDetail = hash.startsWith('#capsule-');
   const title = screenTitles[hash] ?? (capsuleDetail ? 'Cápsula' : "Inicio");
-  document.body.classList.toggle("morning-view", hash === "#morning" || (!screenTitles[hash] && !capsuleDetail));
+  document.body.classList.toggle("morning-view", hash === "#morning");
+  document.body.classList.toggle('home-view', hash === '#home-screen' || (!screenTitles[hash] && !capsuleDetail));
+  document.body.classList.toggle('space-view', hash === '#space-screen');
   document.body.classList.toggle('capsules-view', hash === '#capsules-screen');
   document.body.classList.toggle('capsule-detail-view', capsuleDetail);
   setMenuOpen(false);
@@ -39,7 +43,7 @@ function navigate(focus = false): void {
   if (breadcrumb) breadcrumb.textContent = title;
   document.title = `${title} · Autónomo OS`;
   document.querySelectorAll<HTMLAnchorElement>(".sidebar nav a").forEach(link => {
-    const active = link.hash === hash || (hash === "#detail" && link.hash === "#inbox") || (!screenTitles[hash] && !capsuleDetail && link.hash === "#morning");
+    const active = link.hash === hash || (hash === "#detail" && link.hash === "#inbox") || (!screenTitles[hash] && !capsuleDetail && link.hash === "#home-screen");
     link.classList.toggle("active", active);
     if (active) link.setAttribute("aria-current", "page");
     else link.removeAttribute("aria-current");
@@ -71,24 +75,30 @@ navigate();
 const navigationDialog = document.querySelector<HTMLDialogElement>("#navigation-search")!;
 const navigationInput = document.querySelector<HTMLInputElement>("#navigation-search-input")!;
 const navigationResults = document.querySelector<HTMLElement>("#navigation-search-results")!;
-const destinations = [
-  ["#capsules-screen", "Mi Autónomo OS"],
-  ["#runtime-screen", "Centro de agentes"], ["#morning", "Mi jornada"], ["#inbox", "Bandeja unificada"], ["#gmail-inbox", "Correo Gmail"],
-  ["#clients-screen", "Clientes y oportunidades"], ["#tasks-screen", "Trabajo pendiente"],
-  ["#agenda", "Agenda"], ["#review-queue", "Cola de revisión"],
-  ["#installation", "Mi Mac mini"], ["#help-screen", "Ayuda"], ["#automation-screen", "Reglas de preparación"], ["#portfolio-screen", "Cartera de pólizas"], ["#settings-screen", "Configuración"]
+const baseDestinations = [
+  ['#home-screen', 'Mi jornada'], ['#space-screen', 'Organizar mi espacio'], ['#capsules-screen', 'Cápsulas'],
+  ['#runtime-screen', 'Centro de agentes'], ['#review-queue', 'Cola de revisión'],
+  ['#installation', 'Mi Mac mini'], ['#help-screen', 'Ayuda'], ['#settings-screen', 'Configuración']
 ];
+let moduleDestinations: string[][] = [], capsuleDestinations: string[][] = [];
+window.addEventListener('space:changed', event => {
+  const items = (event as CustomEvent<Array<{hash:string;title:string}>>).detail;
+  moduleDestinations = items.map(item => [item.hash, item.title]);
+  for (const item of items) screenTitles[item.hash] = item.title;
+  for (const a of document.querySelectorAll<HTMLAnchorElement>('#space-module-nav a')) addNavIcon(a);
+  navigate(); if(navigationDialog.open) filterNavigation();
+});
 window.addEventListener('capsules:changed', event => {
   for (const hash of Object.keys(screenTitles)) if (hash.startsWith('#capsule-')) delete screenTitles[hash];
-  for (let i=destinations.length-1;i>=0;i--) if (destinations[i]![0]!.startsWith('#capsule-')) destinations.splice(i,1);
   const items = (event as CustomEvent<Array<{hash:string;title:string;enabled:boolean}>>).detail;
-  for (const item of items) { screenTitles[item.hash]=item.title; if(item.enabled) destinations.push([item.hash,item.title]); }
-  navigate();
+  capsuleDestinations = items.filter(i => i.enabled).map(i => [i.hash, i.title]);
+  for (const item of items) screenTitles[item.hash] = item.title;
+  navigate(); if(navigationDialog.open) filterNavigation();
 });
 function filterNavigation(): void {
   navigationResults.replaceChildren();
   const query = navigationInput.value.trim().toLocaleLowerCase("es");
-  const matches = destinations.filter(([, label]) => label!.toLocaleLowerCase("es").includes(query));
+  const matches = [...baseDestinations, ...moduleDestinations, ...capsuleDestinations].filter(([, label]) => label!.toLocaleLowerCase("es").includes(query));
   for (const [hash, label] of matches) {
     const link = document.createElement("a");
     link.href = hash!;
@@ -124,6 +134,8 @@ window.addEventListener("keydown", event => {
 });
 
 const navPaths: Record<string, string> = {
+  "#home-screen": "M3 10 12 3l9 7v10h-6v-7H9v7H3z",
+  "#space-screen": "M4 7h16 M4 17h16 M8 4v6 M16 14v6",
   "#capsules-screen": "M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z",
   "#gmail-inbox": "M3 5h18v14H3z m0 0 9 7 9-7",
   "#morning": "M3 10 12 3l9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z",
@@ -139,14 +151,15 @@ const navPaths: Record<string, string> = {
   "#settings-screen": "M4 7h16 M4 17h16 M8 4v6 M16 14v6",
   "#help-screen": "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18 M9 9a3 3 0 0 1 6 0c0 2-3 2-3 5 M12 17h.01"
 };
-for (const link of document.querySelectorAll<HTMLAnchorElement>(".sidebar nav a")) {
-  const path = navPaths[link.hash]; if (!path) continue;
+function addNavIcon(link: HTMLAnchorElement) {
+  const path = navPaths[link.hash]; if (!path || link.querySelector(".nav-icon")) return;
   for (const child of [...link.childNodes]) if (child.nodeType === Node.TEXT_NODE) child.remove();
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   svg.setAttribute("viewBox", "0 0 24 24"); svg.setAttribute("aria-hidden", "true");
   svg.classList.add("nav-icon"); const p = document.createElementNS(svg.namespaceURI, "path");
   p.setAttribute("d", path); svg.append(p); link.prepend(svg);
 }
+for (const link of document.querySelectorAll<HTMLAnchorElement>(".sidebar nav a")) addNavIcon(link);
 
 document.querySelector<HTMLAnchorElement>(".skip-link")?.addEventListener("click", event => {
   event.preventDefault(); document.querySelector<HTMLElement>("#main-content")?.focus();

@@ -2,6 +2,7 @@ import {handleReviewQueue} from './review-api.js';
 import {handleMailAssistance} from './mail-assistance-api.js';
 import {handleMailTask} from './mail-task-api.js';
 import {handleCrmRequest} from './crm-api.js';
+import {handleSpaceRequest} from './space-api.js';
 import {handleCapsuleRequest} from './capsule-api.js';
 import { readRuntimeWorkspace, type TaskRuntimeState } from "@agent-world/task-runtime";
 import { createHmac, timingSafeEqual } from "node:crypto";
@@ -268,6 +269,7 @@ export class WorkspaceApi {
   /** Async planning route; existing synchronous contracts remain unchanged. */
   async handleAsync(request:WorkspaceApiRequest):Promise<WorkspaceApiResponse> {
     const parts=pathParts(request.path);
+    if(parts?.[0]==='v1'&&parts[1]==='workspaces'&&parts[3]==='space')return handleSpaceRequest(request,parts,this.repository,this.runtime);
     if(parts?.[0]==='v1'&&parts[1]==='workspaces'&&parts[3]==='capsules')return handleCapsuleRequest(request,parts,this.repository,this.runtime);
     if(parts?.[0]==='v1'&&parts[1]==='workspaces'&&parts[3]==='review-queue')return handleReviewQueue(request,parts,this.repository,this.runtime);
     if(parts?.[0]==='v1'&&parts[1]==='workspaces'&&parts[3]==='mail-tasks'&&parts.length===4)return handleMailTask(request,parts,this.repository,this.runtime);

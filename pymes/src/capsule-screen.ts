@@ -113,7 +113,8 @@ function configure(id: string, disable = false) {
 function render() {
   root.replaceChildren();
   const header = heading(root, 'MI ESPACIO · CÁPSULAS', 'Tu Autónomo OS, a tu medida', 'Añade funciones a tu espacio y adapta cada una a tu forma de trabajar.');
-  header.append(action('Crear con Claude / Codex ↗', kit));
+  const compose = el('a', 'Organizar mi espacio', 'ui-button secondary'); compose.href = '#space-screen';
+  header.append(compose, action('Crear con Claude / Codex ↗', kit));
   if (failure || !client) {
     const notice = el('div', '', 'capsule-notice'); notice.setAttribute('role', failure ? 'alert' : 'status');
     notice.append(el('strong', failure ? 'No se pudo consultar tu espacio' : 'Conecta un espacio para empezar'),

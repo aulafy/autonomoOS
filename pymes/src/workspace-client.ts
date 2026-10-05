@@ -1,3 +1,4 @@
+import { parseSpaceCommand, parseSpaceView, parseSpaceReceipt, type SpaceCommand } from './space-contract.js';
 import {parseMailCancelInput} from './mail-cancellation-contract.js';
 import {parseCapsuleCatalog,parseCapsuleCommand,parseCapsuleReceipt,parseClientSummary,capsuleId,type CapsuleCommand} from './capsule-sdk.js';
 import {parseReviewQuery,parseReviewPage,type ReviewQuery} from './review-contract.js';
@@ -192,6 +193,14 @@ export class WorkspaceClient {
     const path=`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/mail-assistance`;
     const raw=operation?await this.request(path+'/'+operation,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accountRef,gmailId,...(review??{})})}):await this.request(path+'?'+new URLSearchParams({accountRef,gmailId}));
     return parseMailAssistanceView(raw,this.config.tenantId,accountRef,gmailId);
+  }
+  async space() {
+    return parseSpaceView(await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/space`), this.config.tenantId);
+  }
+  async configureSpace(raw: SpaceCommand) {
+    const input = parseSpaceCommand(raw);
+    parseSpaceReceipt(await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/space/configure`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input) }), this.config.tenantId, input);
+    return this.space();
   }
   async capsules() {
     return parseCapsuleCatalog(await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/capsules`),this.config.tenantId);

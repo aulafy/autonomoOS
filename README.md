@@ -32,9 +32,18 @@ aprobación nueva mientras no haya claim de envío: [avance P08](docs/handoff/AV
 
 Estado reciente: [P10 · cancelación durable](docs/handoff/AVANCE_P10_CANCELACION_TRABAJOS_2026-10-04.md) y [P11 · conversaciones y trazabilidad CRM](docs/handoff/AVANCE_P11_CONVERSACIONES_CRM_2026-10-05.md).
 
+## Un espacio para cada profesional
+
+La entrada **Mi jornada** lee la actividad real del CRM y de la cola de revisión.
+**Organizar mi espacio** permite elegir una plantilla (profesional independiente,
+consultoría o seguros), mostrar módulos y cambiar su orden. La organización se
+guarda por propietario y puede exportarse/importarse como JSON para adaptarla
+con Claude/Codex. Importar prepara un borrador que debe revisarse y guardarse.
+Véanse [entrega y límites](docs/handoff/AVANCE_ESPACIO_MODULAR_2026-10-05.md).
+
 ## Cápsulas adaptables
 
-**Mi Autónomo OS** permite activar, configurar y desactivar un resumen de
+**Cápsulas** permite activar, configurar y desactivar un resumen de
 clientes que reutiliza el CRM local. Las decisiones son durables por propietario.
 El kit descargable aporta los contratos reales para crear variantes con
 Claude/Codex. Véanse [entrega, pruebas y límites](docs/handoff/AVANCE_CAPSULAS_FUNDACION_2026-10-05.md)
@@ -65,11 +74,13 @@ vulnerabilidades altas o críticas en dependencias de runtime.
 
 ## Run the demos
 
-The [`pymes`](pymes/README.md) workspace starts a Spanish insurance-agency
-morning desk. Run `npm run demo:pymes` and open `http://127.0.0.1:5174/`.
-It uses fictional inbox and calendar data; no channel, CRM, insurer or calendar
-account is connected yet. For the deployment path, see the
-[PYMES deployment guide](pymes/DEPLOYMENT.md).
+The [`pymes`](pymes/README.md) workspace opens the generic professional desk.
+Run `npm run demo:pymes` and open `http://127.0.0.1:5174/`. Connect a configured
+workspace in Settings to read its durable CRM, review queue and organization.
+Without a connection the new home asks for configuration. Legacy fictional
+insurance views remain available by direct route (`#morning`, for example).
+Gmail is available through the configured pilot; other providers require their
+own integration. See the [PYMES deployment guide](pymes/DEPLOYMENT.md).
 
 For a guided company presentation, run `npm run demo:company` and open the
 printed `/demo.html` URL. It starts a loopback runtime and a separate Spanish

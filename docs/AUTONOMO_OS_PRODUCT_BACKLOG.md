@@ -9,6 +9,7 @@ Mac mini 16 GB y MacBook 24 GB. La aplicación completa todavía no está termin
 
 | Área | Evidencia y alcance |
 | --- | --- |
+| Espacio modular | Jornada real, organización durable, tres plantillas, módulos ordenables e importación/exportación de preferencias; conversión completa a cápsulas pendiente |
 | Cápsulas v1 | Registro revisado, configuración durable, UI, primera lectura CRM y kit Claude/Codex; extracción de módulos y conectores nuevos pendientes |
 | Kernel C1–C12 | Contratos y runtime integrado; preservar invariantes y tests |
 | M1/M2 | Planificación, aprobación exacta durable y ejecución gobernada |
@@ -27,8 +28,10 @@ reales. Holded, Google Calendar y otros canales siguen pendientes de integració
 
 ## Dirección modular
 
-Fundamento de cápsulas v1 implementado. Siguientes pasos: extraer módulos
-existentes a cápsulas, crear plantillas de profesión y añadir conectores
+Fundamento de cápsulas v1 y organización del espacio implementados. Tres
+plantillas iniciales ordenan módulos existentes; aún no aportan workflows
+específicos nuevos. Siguientes pasos: extraer módulos existentes a cápsulas
+y añadir conectores
 compartidos (Telegram en lectura como primer candidato, después WhatsApp,
 Odoo y WordPress). El SDK actual solo admite el renderer de lectura del CRM.
 Ampliaciones de acciones deben reutilizar los contratos y gates del runtime.
@@ -79,6 +82,7 @@ aprobación exacta, journal durable, estados UNKNOWN y reconciliación sin reenv
 
 ## Documentos de estado
 
+- `docs/handoff/AVANCE_ESPACIO_MODULAR_2026-10-05.md`
 - `docs/handoff/AVANCE_CAPSULAS_FUNDACION_2026-10-05.md`
 
 - `docs/handoff/AVANCE_P04_INBOX_GMAIL_2026-10-04.md`

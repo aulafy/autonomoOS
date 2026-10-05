@@ -1,6 +1,23 @@
-# PYMES · agente de trabajo para seguros
+# Autónomo OS · espacio de trabajo para profesionales
 
-## Estado actual · 4 de octubre de 2026
+## Espacio modular · 5 de octubre de 2026
+
+La entrada predeterminada es **Mi jornada**, con datos reales del CRM local y
+la cola de revisión del propietario. **Organizar mi espacio** permite nombrarlo,
+elegir una plantilla y ordenar/mostrar Correo Gmail, Clientes y Seguimientos.
+Revisión y Centro de agentes siguen accesibles. Los cambios de navegación no
+conceden permisos ni cancelan trabajos.
+
+La organización es durable e idempotente. Puede exportarse como JSON y cargarse
+como borrador; solo **Guardar mi espacio** la aplica. **Cápsulas** mantiene el
+catálogo, consentimiento y kit de contratos para crear variantes con Claude/Codex.
+[Informe y pruebas](../docs/handoff/AVANCE_ESPACIO_MODULAR_2026-10-05.md).
+
+Las secciones de prototipo que siguen describen también vistas heredadas de
+seguros. Para ese ejemplo se utiliza `#morning`; la jornada genérica no carga
+esos datos como sustituto de una conexión fallida.
+
+## Correo y CRM
 
 Gmail dispone de envío gobernado validado en el piloto M3 y de una bandeja local
 con sincronización inicial e incremental. **Clientes** y **Tareas** utilizan ahora
@@ -12,8 +29,8 @@ incluye los escenarios y conectores previstos durante etapas anteriores.
 El correo dispone de resumen, clasificación y borrador con IA local, revisión
 humana durable y evidencias textuales. Consulta el
 [avance P06](../docs/handoff/AVANCE_P06_ASISTENTE_CORREO_2026-10-04.md).
-El workflow completo desde un correo entrante y Google Calendar todavía
-requieren integración y aceptación. El
+El workflow de correo está implementado hasta P11; su recorrido nuevo con
+Gmail real sigue pendiente de aceptación. Google Calendar requiere integración. El
 [plan del producto](../docs/AUTONOMO_OS_PRODUCT_BACKLOG.md) recoge lo pendiente.
 
 
@@ -56,7 +73,8 @@ Desde la raíz también se puede ejecutar `npm run check:pymes`.
 El mismo gate se ejecuta automáticamente en GitHub Actions mediante
 `.github/workflows/pymes-ci.yml` para cada cambio que afecte a PYMES.
 
-Abrir `http://127.0.0.1:5174/`. Se puede filtrar por canal, buscar un contacto,
+Para la vista heredada ficticia, abrir `http://127.0.0.1:5174/#morning`.
+Se puede filtrar por canal, buscar un contacto,
 revisar el contexto CRM y marcar un borrador para revisión. Todo se queda en la
 sesión del navegador. La cola permite volver a los casos marcados; los mensajes
 sin identidad se añaden automáticamente. Cada caso muestra una ficha de
@@ -71,7 +89,7 @@ ficha no equivale a obtener una cotización: faltan tarifador, condiciones y
 revisión de una oferta real.
 Los nombres y mensajes son ficticios. WhatsApp, Telegram,
 iMessage, correo, CRM y calendario aparecen como fuentes y destinos previstos;
-**aún no hay conexiones reales**.
+**ese escenario usa datos ficticios**; Gmail real pertenece al piloto separado.
 Las pestañas de canales de la bandeja se generan desde la configuración
 compartida de canales soportados.
 

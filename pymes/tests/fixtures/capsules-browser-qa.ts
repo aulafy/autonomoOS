@@ -25,6 +25,11 @@ const server = createServer(async (req, res) => {
 server.listen(port, '127.0.0.1', () => console.log(JSON.stringify({ qa: true, port, tenant: 'capsules-qa', syntheticToken: 'capsules-qa-token-123456789' })));
 const input = createInterface({ input: process.stdin }); input.on('line', line => {
   if (line === 'error') { crm.close(); console.log('QA_CRM_CLOSED'); }
+  if (line === 'space-race') {
+    const space = runtime.source.capsules!.space('capsules-qa', 'qa-owner');
+    runtime.source.capsules!.configureSpace('capsules-qa', 'qa-owner', { commandId: 'qa-race-' + Date.now(), expectedRevision: space.revision, name: 'Otra sesión QA', templateId: 'custom', modules: ['crm'] });
+    console.log('QA_SPACE_CONCURRENT_CHANGE');
+  }
   if (line === 'revoke') { repo.revokeSession('capsules-qa-token-123456789'); console.log('QA_SESSION_REVOKED'); }
   if (line === 'stop') { server.close(); input.close(); runtime.close(); }
 });
