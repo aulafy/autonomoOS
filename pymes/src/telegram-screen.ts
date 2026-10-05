@@ -1,14 +1,16 @@
+import {renderTelegramIdentity} from './telegram-identity-screen.js';
 import type {WorkspaceClient} from './workspace-client.js';
 import {parseTelegramConfig,type TelegramConfigInput,type TelegramStatus,type TelegramPage} from './telegram-contract.js';
 import {telegramSelection,telegramProblemText} from './telegram-view.js';import './telegram-screen.css';
 const root=document.getElementById('telegram-screen')!,dialog=document.createElement('dialog');dialog.className='telegram-dialog';dialog.setAttribute('aria-label','Configurar recepción de Telegram');document.body.append(dialog);
 let client:WorkspaceClient|null=null,status:TelegramStatus|null=null,page:TelegramPage|null=null,epoch=0,busy=false,query='',searchDraft='',cursor:string|null=null,selection:number|null=null,timer:ReturnType<typeof setTimeout>|null=null,failed='';
+let identityRefresh:(()=>void)|null=null;
 const el=<K extends keyof HTMLElementTagNameMap>(tag:K,text='',cls='')=>{const n=document.createElement(tag);n.textContent=text;n.className=cls;return n;};
 const button=(text:string,fn:()=>void,cls='ui-button secondary')=>{const b=el('button',text,cls);b.type='button';b.addEventListener('click',fn);return b;};
 function clearTimer(){if(timer)clearTimeout(timer);timer=null;}
 function schedule(){clearTimer();if(client&&location.hash==='#telegram-screen'&&!busy&&!dialog.open)timer=setTimeout(()=>{void load(true);},5000);}
 function render(){
- root.replaceChildren();const header=el('header','','space-heading'),copy=el('div');copy.append(el('span','CONEXIÓN COMPARTIDA · BOT API','eyebrow'),el('h2','Telegram'),el('p','Mensajes enviados a tu bot, conservados en tu Mac.'));header.append(copy);root.append(header);
+ identityRefresh=null;root.replaceChildren();const header=el('header','','space-heading'),copy=el('div');copy.append(el('span','CONEXIÓN COMPARTIDA · BOT API','eyebrow'),el('h2','Telegram'),el('p','Mensajes enviados a tu bot, conservados en tu Mac.'));header.append(copy);root.append(header);
  header.append(button('Configurar recepción',configure));header.querySelector('button')!.disabled=!client||!status||busy;
  root.append(el('p','Este conector recibe texto de las conversaciones autorizadas. No lee tu cuenta personal, descarga adjuntos ni envía respuestas.','telegram-copy'));
  if(failed||!client||!status){const notice=el('div',failed||(!client?'Conecta tu espacio de trabajo para consultar Telegram.':'Consultando el conector…'),'space-notice');notice.setAttribute('role',failed?'alert':'status');root.append(notice,button('Actualizar conexión',()=>{void load();}));return;}
@@ -25,8 +27,8 @@ function render(){
  for(const item of page?.items??[]){const row=button('',()=>{selection=item.updateId;render();},'telegram-row');row.setAttribute('aria-label',`Abrir mensaje de ${item.senderName}, actualización ${item.updateId}`);row.classList.toggle('selected',selection===item.updateId);row.append(el('strong',item.senderName),el('small',`${new Date(item.at).toLocaleString('es-ES')}${item.edited?' · Edición':''}`),el('span',item.text.slice(0,140)));list.append(row);}
  if(!page?.items.length)list.append(el('p',query?'No hay mensajes que coincidan con esta búsqueda.':'No hay mensajes recibidos para las conversaciones autorizadas.','telegram-copy'));
  const selected=page?telegramSelection(status,page,selection):null;if(!selected){selection=null;detail.append(el('h3','Selecciona un mensaje'),el('p','El detalle solo muestra un evento visible y autorizado de esta página.'));}
- else {detail.append(el('span',selected.edited?'EDICIÓN RECIBIDA · HISTORIAL CONSERVADO':'MENSAJE RECIBIDO','eyebrow'),el('h3',selected.senderName),el('p','Identidad de Telegram · Todavía no vinculada a un contacto del CRM.','telegram-copy'),el('p',`Chat ${selected.chatId} · Mensaje ${selected.messageId} · Actualización ${selected.updateId}`,'telegram-copy'),el('div',selected.text,'telegram-body'),el('p','Contenido externo: no autoriza acciones ni cambia las reglas del asistente.','telegram-copy'));}
- grid.append(list,detail);root.append(grid);const paging=el('div','','telegram-actions');
+ else {detail.append(el('span',selected.edited?'EDICIÓN RECIBIDA · HISTORIAL CONSERVADO':'MENSAJE RECIBIDO','eyebrow'),el('h3',selected.senderName),el('p',`Chat ${selected.chatId} · Mensaje ${selected.messageId} · Actualización ${selected.updateId}`,'telegram-copy'),el('div',selected.text,'telegram-body'),el('p','Contenido externo: no autoriza acciones ni cambia las reglas del asistente.','telegram-copy'));}
+ grid.append(list,detail);root.append(grid);if(selected&&client){const identity=el('section','','telegram-identity');detail.append(identity);const current=client,currentStatus=status,id=selected.updateId;identityRefresh=()=>{const ticket=epoch;void renderTelegramIdentity(identity,{client:current,status:currentStatus,message:selected,dialog,current:()=>current===client&&ticket===epoch&&selection===id,pause:clearTimer,resume:schedule,busy:value=>{if(current===client)busy=value;},changed:()=>{if(current===client){busy=false;void load();}}});};identityRefresh();}const paging=el('div','','telegram-actions');
  if(cursor)paging.append(button('Volver a los recientes',()=>{cursor=null;selection=null;void load();}));
  if(page?.nextCursor)paging.append(button('Ver anteriores',()=>{cursor=page!.nextCursor;selection=null;void load();}));root.append(paging);
 }
@@ -34,7 +36,7 @@ async function load(quiet=false){
  if(quiet&&root.contains(document.activeElement)&&document.activeElement?.tagName==='INPUT'){schedule();return;}
  if(busy||dialog.open)return;clearTimer();const current=client,ticket=++epoch,wanted=selection;if(!quiet){status=null;page=null;selection=null;failed='';render();}if(!current)return;
  try{const [s,p]=await Promise.all([current.telegramStatus(),current.telegramMessages(query,cursor)]);if(ticket!==epoch||current!==client)return;
-  if(s.revision!==p.connectionRevision||s.ownerId!==p.ownerId||s.bot?.id!==(p.botId??undefined)||p.items.some(m=>!s.allowedChatIds.includes(m.chatId)))throw new Error('TELEGRAM_CONTEXT_CHANGED');status=s;page=p;selection=telegramSelection(s,p,wanted)?.updateId??null;failed='';
+  if(s.revision!==p.connectionRevision||s.ownerId!==p.ownerId||s.bot?.id!==(p.botId??undefined)||p.items.some(m=>!s.allowedChatIds.includes(m.chatId)))throw new Error('TELEGRAM_CONTEXT_CHANGED');const unchanged=quiet&&JSON.stringify(status)===JSON.stringify(s)&&JSON.stringify(page)===JSON.stringify(p);status=s;page=p;selection=telegramSelection(s,p,wanted)?.updateId??null;failed='';if(unchanged){identityRefresh?.();schedule();return;}
  }catch(error){if(ticket!==epoch||current!==client)return;status=null;page=null;selection=null;failed=error instanceof Error&&error.message==='TELEGRAM_NOT_CONFIGURED'?'El conector Telegram no está disponible en esta instalación. Consulta la configuración de tu equipo.':'No se pudo consultar Telegram. No se muestran datos de ejemplo. Actualiza para reintentar.';if(error instanceof Error&&error.message==='TELEGRAM_CURSOR_INVALID')cursor=null;}
  render();schedule();
 }

@@ -44,6 +44,11 @@ los controles de Agent World OS.
 
 ## Lecturas implementadas
 
+Telegram incorpora una vinculación humana contra el contacto local por bot/chat/
+remitente numéricos. No usa el nombre para fusionar contactos ni crea interacciones
+de envío. La decisión y su retirada se conservan en el journal; la aceptación con
+un bot real sigue pendiente. Véase [entrega de identidad](../docs/handoff/AVANCE_TELEGRAM_IDENTIDAD_CRM_2026-10-05.md).
+
 `src/connectors.ts` contiene clientes HTTP de solo lectura. Holded consulta
 `GET /api/invoicing/v1/contacts` con coincidencia exacta en `phone` y `mobile`,
 eliminando duplicados por ID; Google

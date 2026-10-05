@@ -1,4 +1,5 @@
 import {parseTelegramStatus,parseTelegramPage,parseTelegramConfig,parseTelegramDecision,type TelegramConfigInput,type TelegramDecisionInput} from './telegram-contract.js';
+import {parseTelegramIdentityView,parseTelegramContactIdentities,parseTelegramIdentityCommand,parseTelegramIdentityReceipt,type TelegramIdentityCommand} from './telegram-identity-contract.js';
 import { parseSpaceCommand, parseSpaceView, parseSpaceReceipt, type SpaceCommand } from './space-contract.js';
 import {parseMailCancelInput} from './mail-cancellation-contract.js';
 import {parseCapsuleCatalog,parseCapsuleCommand,parseCapsuleReceipt,parseClientSummary,capsuleId,type CapsuleCommand} from './capsule-sdk.js';
@@ -196,6 +197,9 @@ export class WorkspaceClient {
     return parseMailAssistanceView(raw,this.config.tenantId,accountRef,gmailId);
   }
   async telegramStatus(){return parseTelegramStatus(await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/telegram`),this.config.tenantId);}
+  async telegramIdentity(botId:string,updateId:number){const query=new URLSearchParams({botId,updateId:String(updateId)});return parseTelegramIdentityView(await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/telegram/identity?${query}`),this.config.tenantId,botId,updateId);}
+  async telegramContactIdentities(contactId:string){return parseTelegramContactIdentities(await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/telegram/identities?${new URLSearchParams({contactId})}`),this.config.tenantId,contactId);}
+  async telegramIdentityCommand(raw:TelegramIdentityCommand){const input=parseTelegramIdentityCommand(raw),receipt=parseTelegramIdentityReceipt(await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/telegram/identity`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(input)}));if(receipt.decisionId!==input.commandId||receipt.revision!==input.expectedRevision+1)throw new Error('TELEGRAM_IDENTITY_INVALID_RESPONSE');return receipt;}
   async telegramMessages(query='',cursor:string|null=null){const q=new URLSearchParams({q:query,limit:'20'});if(cursor)q.set('cursor',cursor);return parseTelegramPage(await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/telegram/messages?${q}`),this.config.tenantId);}
   async telegramSync(){return parseTelegramStatus(await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/telegram/sync`,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'},[202]),this.config.tenantId);}
   private async telegramDecision(path:string,input:TelegramConfigInput|TelegramDecisionInput){

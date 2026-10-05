@@ -56,8 +56,13 @@ El módulo opcional **Telegram** recibe texto del bot en conversaciones autoriza
 con historial local, búsqueda, ediciones conservadas y recuperación tras SIGKILL.
 La credencial se guarda en Keychain; la recepción y el cursor se confirman juntos
 en un SQLite separado. La prueba actual usa un proveedor sintético: queda pendiente
-la aceptación con un bot real y la vinculación al CRM. No incluye envío de respuestas.
+la aceptación con un bot real. No incluye envío de respuestas.
 Véanse [implementación y puesta en marcha](docs/handoff/AVANCE_TELEGRAM_RECEPCION_2026-10-05.md).
+
+El propietario ya puede verificar un remitente contra un contacto existente del CRM,
+consultar su ficha y retirar el vínculo conservando el historial. Las decisiones
+usan el journal existente; una revisión obsoleta se rechaza. Véanse
+[identidad Telegram y CRM](docs/handoff/AVANCE_TELEGRAM_IDENTIDAD_CRM_2026-10-05.md).
 
 ## Install and verify
 

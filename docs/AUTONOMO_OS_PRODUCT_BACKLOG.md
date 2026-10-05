@@ -11,7 +11,8 @@ Mac mini 16 GB y MacBook 24 GB. La aplicación completa todavía no está termin
 | --- | --- |
 | Espacio modular | Jornada real, organización durable, tres plantillas, módulos ordenables e importación/exportación de preferencias; conversión completa a cápsulas pendiente |
 | Cápsulas v1 | Registro revisado, configuración durable, UI, primera lectura CRM y kit Claude/Codex; extracción de módulos pendiente |
-| Telegram inbound | Bot API, Keychain, SQLite separado, recepción y cursor atómicos, historial de ediciones, UI y SIGKILL sintético; bot real, identidad CRM y envío pendientes |
+| Telegram inbound | Bot API, Keychain, SQLite separado, recepción y cursor atómicos, historial de ediciones, UI y SIGKILL sintético; bot real y envío pendientes |
+| Identidad Telegram | Verificación humana con contacto existente, journal/replay, revisión/idempotencia, retirada e historial en ficha CRM; importación de eventos como interacciones y workflow pendientes |
 | Kernel C1–C12 | Contratos y runtime integrado; preservar invariantes y tests |
 | M1/M2 | Planificación, aprobación exacta durable y ejecución gobernada |
 | M3 Gmail | A/B/C real, autorización Keychain, reinicio y reconciliación sin reenvío |
@@ -83,6 +84,7 @@ aprobación exacta, journal durable, estados UNKNOWN y reconciliación sin reenv
 
 ## Documentos de estado
 
+- `docs/handoff/AVANCE_TELEGRAM_IDENTIDAD_CRM_2026-10-05.md`
 - `docs/handoff/AVANCE_TELEGRAM_RECEPCION_2026-10-05.md`
 - `docs/handoff/AVANCE_ESPACIO_MODULAR_2026-10-05.md`
 - `docs/handoff/AVANCE_CAPSULAS_FUNDACION_2026-10-05.md`

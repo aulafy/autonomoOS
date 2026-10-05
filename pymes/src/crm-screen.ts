@@ -249,7 +249,9 @@ function render() {
         const actions = node('div', 'crm-actions');
         if (c.status === 'active')
             actions.append(button('Nueva oportunidad', () => addLead(c.id)), button('Programar seguimiento', () => addFollowUp(c.id)), button('Registrar nota', () => addNote(c.id)));
-        profile.append(actions, node('h4', '', 'Emails de contacto'));
+        profile.append(actions);
+        const telegram=node('section','crm-telegram-identities');profile.append(telegram);void telegramIdentityHistory(telegram,c.id);
+        profile.append(node('h4', '', 'Emails de contacto'));
         for (const i of view.identities.filter(i => i.active)) {
             const row = node('div', 'crm-line');
             row.append(node('span', '', i.email + ' · sin verificar'), button('Retirar email', () => void mutate({ type: 'identity.remove', id: i.id })));
@@ -342,6 +344,17 @@ function render() {
             empty(tasks, 'No hay seguimientos en esta vista', 'Programa tu próxima llamada o revisión desde la ficha del cliente.');
     }
 }
+async function telegramIdentityHistory(root:HTMLElement,contactId:string){
+    const current=client,ticket=epoch;root.append(node('h4','','Identidades Telegram'),node('p','crm-muted','Consultando vinculaciones…'));if(!current)return;
+    try{const v=await current.telegramContactIdentities(contactId);if(current!==client||ticket!==epoch||!root.isConnected||selected!==contactId)return;
+        root.replaceChildren(node('h4','','Identidades Telegram'));
+        for(const l of v.items){const row=node('div','crm-record');row.append(node('strong','',l.revokedAt===null?'Vinculación verificada por el profesional':'Vinculación retirada'),node('p','crm-muted',`Bot ${l.source.botId} · Chat ${l.source.chatId} · Remitente ${l.source.senderId}`),node('p','crm-muted',`${date(l.verifiedAt)} · ${l.actor}${l.revokedAt===null?'':` · Retirada ${date(l.revokedAt)} por ${l.revokedBy}`}`));root.append(row);}
+        if(!v.items.length)root.append(node('p','crm-muted','Sin identidades de Telegram en las conversaciones autorizadas actuales.'));
+        if(v.truncated)root.append(node('p','crm-muted',`Mostrando 100 de ${v.total} vinculaciones.`));
+        root.append(button('Abrir Telegram',()=>{location.hash='#telegram-screen';}));
+    }catch(e){if(current===client&&ticket===epoch&&root.isConnected)root.replaceChildren(node('h4','','Identidades Telegram'),node('p','crm-muted',e instanceof WorkspaceHttpError&&e.status===404?'Telegram no está habilitado en esta instalación.':'No se pudieron consultar las vinculaciones de Telegram. Actualiza para reintentar.'));}
+}
+
 async function reload() {
     const c = client;
     if (!c || busy)
@@ -506,4 +519,5 @@ window.addEventListener('crm:open-mail', e => {
     if (d && typeof d.accountRef === 'string' && typeof d.gmailId === 'string')
         void openMail(d.accountRef, d.gmailId);
 });
+window.addEventListener('crm:open-contact',e=>{const d=(e as CustomEvent).detail;if(!client||busy||!d||typeof d.contactId!=='string')return;selected=d.contactId;query='';search.value='';kind.value='all';location.hash='#clients-screen';void reload();});
 setCrmClient(null);

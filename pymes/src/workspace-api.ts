@@ -170,6 +170,7 @@ function validIngressSignature(body: unknown, signature: string | undefined, sec
  * response shaping; persistence can be replaced without changing callers.
  */
 export interface WorkspaceRuntimeSource {
+  telegramIdentities?:import('./telegram-identity-service.js').TelegramIdentityService;
   telegram?:import('./telegram-service.js').TelegramService;
   capsules?:import('./capsule-store.js').CapsuleStore;
   reviews?:import('./review-service.js').ReviewService;

@@ -1,0 +1,9 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {spawn} from 'node:child_process';import {writeFileSync,copyFileSync} from 'node:fs';import {join} from 'node:path';import {identityFixture} from './fixtures/telegram-identity.js';
+for(const phase of ['before','inside','after'])test(`Telegram identity SIGKILL ${phase} journal transaction restores one decision or none`,async()=>{
+ const f=await identityFixture();try{const c=await f.command();writeFileSync(join(f.dir,'identity-command.json'),JSON.stringify(c),{mode:0o600});f.runtime.close();
+  const child=spawn(process.execPath,['--import','tsx','tests/fixtures/telegram-identity-crash.ts',f.dir,phase],{cwd:process.cwd(),stdio:'pipe'});let output='',watchdog=false;child.stderr.on('data',b=>output+=b);const timeout=setTimeout(()=>{watchdog=true;child.kill('SIGKILL');},10000);
+  const signal=await new Promise<NodeJS.Signals|null>((resolve,reject)=>{child.on('error',reject);child.on('exit',(_c,s)=>resolve(s));});clearTimeout(timeout);assert.equal(watchdog,false,output);assert.equal(signal,'SIGKILL',output);
+  await f.restart();const recovered=await f.client.telegramIdentity('123456789',10);assert.equal(recovered.revision,phase==='after'?1:0);assert.equal(recovered.link!==null,phase==='after');assert.equal(recovered.audit.length,phase==='after'?1:0);
+  await f.client.telegramIdentityCommand(c);await f.client.telegramIdentityCommand(c);const verified=await f.client.telegramIdentity('123456789',10);assert.equal(verified.revision,1);assert.equal(verified.audit.length,1);assert.equal(verified.contact!.id,'a');assert.equal((await f.client.crm()).counts.contacts,2);assert.equal(f.runtime.kernel.snapshot().revision,0);await f.restart();assert.deepEqual(await f.client.telegramIdentity('123456789',10),verified);
+ }finally{await f.close();}
+});

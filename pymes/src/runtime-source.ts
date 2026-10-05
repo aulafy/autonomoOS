@@ -1,4 +1,6 @@
 import {createCrmMailTrace} from './crm-mail-trace.js';
+import {TelegramIdentityStore} from './telegram-identity-store.js';
+import {TelegramIdentityService} from './telegram-identity-service.js';
 import {CapsuleStore} from './capsule-store.js';
 import {MailCancellationStore} from './mail-cancellation-store.js';
 import {ReviewService} from './review-service.js';
@@ -19,7 +21,7 @@ import {RuntimeDatabase,JournalKernel,ReplayClock,createDurableTaskRuntime,creat
 import type {WorkspaceRuntimeSource} from './workspace-api.js';
 /** One tenant per authoritative journal. Startup fails on tenant mismatch or replay
  * drift; no empty/demo replacement is returned when persistence fails. */
-export async function openWorkspaceRuntime(path:string,tenantId:string,options:{telegram?:import('./telegram-service.js').TelegramService;mailProposalProvider?:JsonProposalProvider;provider?:InferenceProvider;planningTimeoutMs?:number;fakeEmail?:boolean;emailProvider?:EmailProvider;gmail?:import('./gmail-local-connector.js').GmailLocalConnector;gmailInbox?:import('./inbox-service.js').InboxService;cancellationHooks?:{beforePersist?:()=>void;afterTransition?:()=>void;afterPersist?:()=>void};emailHooks?:{beforeDispatch?:()=>void;afterDispatchMarker?:()=>void}}={}) {
+export async function openWorkspaceRuntime(path:string,tenantId:string,options:{telegramIdentityHooks?:{beforePersist?:()=>void;afterTransition?:()=>void;afterPersist?:()=>void};telegram?:import('./telegram-service.js').TelegramService;mailProposalProvider?:JsonProposalProvider;provider?:InferenceProvider;planningTimeoutMs?:number;fakeEmail?:boolean;emailProvider?:EmailProvider;gmail?:import('./gmail-local-connector.js').GmailLocalConnector;gmailInbox?:import('./inbox-service.js').InboxService;cancellationHooks?:{beforePersist?:()=>void;afterTransition?:()=>void;afterPersist?:()=>void};emailHooks?:{beforeDispatch?:()=>void;afterDispatchMarker?:()=>void}}={}) {
  if(!tenantId.trim()) throw new Error('RUNTIME_TENANT_REQUIRED');
  const database=new RuntimeDatabase(path);let ownEmail:FakeEmailProvider|null=null;let capsules:CapsuleStore|null=null;
  try {
@@ -28,6 +30,7 @@ export async function openWorkspaceRuntime(path:string,tenantId:string,options:{
   const kernel=createDurableTaskRuntime(journal);
   const domain=createDurableDomainStores(journal);
   const crmStore=journal.register('pymesCrm',()=>new CrmStore(tenantId),['apply']);
+  const telegramIdentityStore=journal.register('pymesTelegramIdentities',()=>new TelegramIdentityStore(tenantId),['apply']);
   const emailReviews=journal.register('pymesEmailReviews',()=>new EmailReviewStore(),['propose','decide','audit','recordPolicy','recordArtifact','saveDraft']);
   const mailTaskStore=journal.register('pymesMailTasks',()=>new MailTaskStore(),['bind','bindRevision']);
   const cancellations=journal.register('pymesMailCancellations',()=>new MailCancellationStore(tenantId),['record']);
@@ -45,6 +48,7 @@ export async function openWorkspaceRuntime(path:string,tenantId:string,options:{
   ownEmail=options.fakeEmail&&!options.emailProvider&&!options.gmail?new FakeEmailProvider(path+'.fake-email.db'):null;
   const emailProvider=options.gmail?.provider??options.emailProvider??ownEmail;
   const crm=new CrmService(crmStore,journal,tenantId,options.gmailInbox);
+  const telegramIdentities=options.telegram?new TelegramIdentityService(telegramIdentityStore,journal,crm,options.telegram,options.telegramIdentityHooks):undefined;
   crm.setMailTrace(createCrmMailTrace(tenantId,emailReviews,mailTaskStore,domain,options.gmailInbox?.store));
   const mailAiKind=process.env.PYMES_MAIL_AI_PROVIDER??'ollama';
   if(options.gmailInbox&&!['ollama','llama.cpp'].includes(mailAiKind))throw new Error('MAIL_AI_PROVIDER_INVALID');
@@ -59,7 +63,7 @@ export async function openWorkspaceRuntime(path:string,tenantId:string,options:{
    return domain.effects.list().filter(e=>e.action==='email.send').map(e=>({taskId:e.taskId,status:e.status,effective:resolveEffectiveEffectOutcome(e,decisions).effectiveOutcome}));
   },emailProvider?.id==='gmail-email'?'gmail':emailProvider?'test':'unconfigured',(owner,id)=>crmStore.contact(owner,id)?.name??null);
   const planning=new Set<string>();
-  const source:WorkspaceRuntimeSource={telegram:options.telegram,capsules,reviews,mailTasks,mailAssistance,crm,email,gmail:options.gmail,gmailInbox:options.gmailInbox,planTask:async(tenant,owner,input,mayCommit)=>{
+  const source:WorkspaceRuntimeSource={telegramIdentities,telegram:options.telegram,capsules,reviews,mailTasks,mailAssistance,crm,email,gmail:options.gmail,gmailInbox:options.gmailInbox,planTask:async(tenant,owner,input,mayCommit)=>{
    if(closed||!journal.isHealthy())throw new Error('RUNTIME_CLOSED');
    if(tenant!==tenantId)throw new Error('RUNTIME_TENANT_SCOPE_DENIED');
    if(input.workflow!==EMAIL_LEAD_WORKFLOW)throw new Error('INVALID_WORKFLOW');
@@ -115,7 +119,7 @@ export async function openWorkspaceRuntime(path:string,tenantId:string,options:{
     successCriteria:[{id:'professional-review',kind:'human-approval',approver:owner}]},state.revision);
    return {created:true};
   }};
-  return {source,kernel,close:()=>{if(!closed){closed=true;mailAssistance?.close();crm.close();capsules?.close();ownEmail?.close();database.close();}}};
+  return {source,kernel,close:()=>{if(!closed){closed=true;telegramIdentities?.close();mailAssistance?.close();crm.close();capsules?.close();ownEmail?.close();database.close();}}};
  } catch(error) {capsules?.close();ownEmail?.close();database.close();throw error;}
 }
 

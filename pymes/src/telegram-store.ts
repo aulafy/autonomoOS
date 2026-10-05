@@ -51,6 +51,13 @@ export class TelegramStore {
   return {tenantId:this.tenant,ownerId:this.owner,revision:c.revision,enabled:c.enabled,bot:c.bot,allowedChatIds:c.allowedChatIds,running,lastSyncAt:a?.last_sync==null?null:Number(a.last_sync),retryAt:a?.retry_at==null?null:Number(a.retry_at),problem:(a?.problem??null) as TelegramProblem,messageCount:count('accepted'),ignoredCount:count('ignored_chat')+count('unsupported')};
  }
  offset(botId:string):number|null{const r=this.db.prepare('SELECT next_offset FROM telegram_accounts WHERE bot=?').get(botId);return r?.next_offset==null?null:Number(r.next_offset);}
+ /** Hold the account/policy snapshot while recording a journal decision. No sidecar writes. */
+ readContext<T>(botId:string|null,revision:number|null,read:()=>T):T{return this.tx(()=>{const c=this.connection();if(botId!==null&&c.bot?.id!==botId||revision!==null&&c.revision!==revision)throw new TelegramError('TELEGRAM_IDENTITY_CONNECTION_CHANGED');return read();},false);}
+ message(updateId:number):TelegramMessage|null{
+  tgInt(updateId);const c=this.connection();if(!c.bot)return null;
+  const row=this.db.prepare('SELECT value FROM telegram_updates WHERE bot=? AND update_id=? AND disposition=\'accepted\'').get(c.bot.id,updateId);
+  const m=row?JSON.parse(String(row.value)) as TelegramMessage:null;return m&&c.allowedChatIds.includes(m.chatId)?m:null;
+ }
  acquire(revision:number):string|null{
   return this.tx(()=>{const c=this.connection();if(!c.enabled||c.revision!==revision)throw new TelegramError('TELEGRAM_CONTEXT_CHANGED');
    const old=this.db.prepare('SELECT expires FROM telegram_lease').get();if(old&&Number(old.expires)>this.now())return null;
