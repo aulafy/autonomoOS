@@ -1,3 +1,6 @@
+import {TelegramService} from './telegram-service.js';
+import {TelegramStore} from './telegram-store.js';
+import {MacKeychainVault} from './gmail-keychain.js';
 import {openLocalGmail} from "./gmail-local-connector.js";
 import {createP01ResponseLoss,loadP01Arm} from "./gmail-fault-injection.js";
 import {InboxStore} from "./inbox-store.js";
@@ -49,6 +52,9 @@ const enterprisePolicy = {
   signingSecret: ingressSigningSecret
 };
 const runtimePath=process.env.PYMES_RUNTIME_DB_PATH??"./data/pymes-task-runtime.db";
+const telegramEnabled=process.env.PYMES_TELEGRAM_ENABLED==='1';
+if(telegramEnabled&&host!=='127.0.0.1')throw new Error('TELEGRAM_LOCAL_ONLY_REQUIRED');
+const telegram=telegramEnabled?new TelegramService(new TelegramStore(runtimePath+'.telegram-inbox.db',tenantId,userId),new MacKeychainVault(resolve(process.env.PYMES_TELEGRAM_KEYCHAIN_HELPER?.trim()||'./data/bin/gmail-keychain'))):undefined;
 const gmailEnabled=process.env.PYMES_GMAIL_ENABLED==='1';
 if(gmailEnabled&&(host!=='127.0.0.1'||process.env.PYMES_FAKE_EMAIL_ENABLED==='1'))throw new Error('GMAIL_LOCAL_EXCLUSIVE_PROVIDER_REQUIRED');
 // P01 pilot-only: response-loss injection for M3 test C. Off unless an arm file is given.
@@ -60,8 +66,8 @@ const gmail=gmailEnabled?await openLocalGmail(userId,tenantId,runtimePath+'.gmai
 // P04a: read-only inbox sync in its own SQLite file; GET-only transport, no send capability.
 const inboxStore=gmail?new InboxStore(runtimePath+'.gmail-inbox.db'):undefined;
 const gmailInbox=gmail&&inboxStore?new InboxService(gmail.oauth,inboxStore,{tenant:tenantId,owner:userId},fetch):undefined;
-const runtime = await openWorkspaceRuntime(runtimePath, tenantId,{fakeEmail:process.env.PYMES_FAKE_EMAIL_ENABLED==='1',gmail,gmailInbox});
-gmailInbox?.start();
+const runtime = await openWorkspaceRuntime(runtimePath, tenantId,{fakeEmail:process.env.PYMES_FAKE_EMAIL_ENABLED==='1',gmail,gmailInbox,telegram});
+gmailInbox?.start();telegram?.start();
 const api = new WorkspaceApi(repository, ingressToken ? { token: ingressToken, policy: enterprisePolicy } : undefined, runtime.source);
 const whatsappWebhook = whatsappVerifyToken && whatsappAppSecret
   ? { verifyToken: whatsappVerifyToken, appSecret: whatsappAppSecret,
@@ -76,7 +82,7 @@ let repositoryClosing: Promise<void> | null = null;
 function closeRepository(): Promise<void> {
   if (repositoryClosing) return repositoryClosing;
   repositoryClosing = (async () => {
-    try { await gmailInbox?.close(); }
+    try { await Promise.all([gmailInbox?.close(),telegram?.close()]); }
     finally { inboxStore?.close(); runtime.close(); gmail?.close(); repository.close(); }
   })();
   return repositoryClosing;

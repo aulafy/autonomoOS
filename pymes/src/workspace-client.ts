@@ -1,3 +1,4 @@
+import {parseTelegramStatus,parseTelegramPage,parseTelegramConfig,parseTelegramDecision,type TelegramConfigInput,type TelegramDecisionInput} from './telegram-contract.js';
 import { parseSpaceCommand, parseSpaceView, parseSpaceReceipt, type SpaceCommand } from './space-contract.js';
 import {parseMailCancelInput} from './mail-cancellation-contract.js';
 import {parseCapsuleCatalog,parseCapsuleCommand,parseCapsuleReceipt,parseClientSummary,capsuleId,type CapsuleCommand} from './capsule-sdk.js';
@@ -194,6 +195,15 @@ export class WorkspaceClient {
     const raw=operation?await this.request(path+'/'+operation,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accountRef,gmailId,...(review??{})})}):await this.request(path+'?'+new URLSearchParams({accountRef,gmailId}));
     return parseMailAssistanceView(raw,this.config.tenantId,accountRef,gmailId);
   }
+  async telegramStatus(){return parseTelegramStatus(await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/telegram`),this.config.tenantId);}
+  async telegramMessages(query='',cursor:string|null=null){const q=new URLSearchParams({q:query,limit:'20'});if(cursor)q.set('cursor',cursor);return parseTelegramPage(await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/telegram/messages?${q}`),this.config.tenantId);}
+  async telegramSync(){return parseTelegramStatus(await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/telegram/sync`,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'},[202]),this.config.tenantId);}
+  private async telegramDecision(path:string,input:TelegramConfigInput|TelegramDecisionInput){
+    const r=await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/telegram/${path}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(input)});
+    if(r.decisionRevision!==input.expectedRevision+1)throw new Error('TELEGRAM_INVALID_RESPONSE');const {decisionRevision,...status}=r;return parseTelegramStatus(status,this.config.tenantId);
+  }
+  async connectTelegram(raw:TelegramConfigInput){return this.telegramDecision('connect',parseTelegramConfig(raw));}
+  async disconnectTelegram(raw:TelegramDecisionInput){return this.telegramDecision('disconnect',parseTelegramDecision(raw));}
   async space() {
     return parseSpaceView(await this.request(`/v1/workspaces/${encodeURIComponent(this.config.tenantId)}/space`), this.config.tenantId);
   }

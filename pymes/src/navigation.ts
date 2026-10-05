@@ -1,5 +1,6 @@
 const screenTitles: Record<string, string> = {
   "#home-screen": "Mi jornada",
+  "#telegram-screen": "Telegram",
   "#space-screen": "Organizar mi espacio",
   "#capsules-screen": "Mi Autónomo OS",
   "#gmail-inbox": "Correo Gmail",
@@ -23,6 +24,7 @@ function navigate(focus = false): void {
   const title = screenTitles[hash] ?? (capsuleDetail ? 'Cápsula' : "Inicio");
   document.body.classList.toggle("morning-view", hash === "#morning");
   document.body.classList.toggle('home-view', hash === '#home-screen' || (!screenTitles[hash] && !capsuleDetail));
+  document.body.classList.toggle('telegram-view', hash === '#telegram-screen');
   document.body.classList.toggle('space-view', hash === '#space-screen');
   document.body.classList.toggle('capsules-view', hash === '#capsules-screen');
   document.body.classList.toggle('capsule-detail-view', capsuleDetail);
@@ -135,6 +137,7 @@ window.addEventListener("keydown", event => {
 
 const navPaths: Record<string, string> = {
   "#home-screen": "M3 10 12 3l9 7v10h-6v-7H9v7H3z",
+  "#telegram-screen": "m3 11 18-7-5 16-6-6z M10 14l5-6",
   "#space-screen": "M4 7h16 M4 17h16 M8 4v6 M16 14v6",
   "#capsules-screen": "M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z",
   "#gmail-inbox": "M3 5h18v14H3z m0 0 9 7 9-7",

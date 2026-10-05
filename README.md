@@ -48,8 +48,16 @@ clientes que reutiliza el CRM local. Las decisiones son durables por propietario
 El kit descargable aporta los contratos reales para crear variantes con
 Claude/Codex. Véanse [entrega, pruebas y límites](docs/handoff/AVANCE_CAPSULAS_FUNDACION_2026-10-05.md)
 y [ejemplo reutilizable](pymes/examples/capsules/README.md).
-El SDK v1 admite vistas de lectura; los conectores nuevos y la instalación de
-código externo siguen pendientes.
+El SDK v1 admite vistas de lectura; la instalación de código externo sigue pendiente.
+
+## Telegram compartido
+
+El módulo opcional **Telegram** recibe texto del bot en conversaciones autorizadas,
+con historial local, búsqueda, ediciones conservadas y recuperación tras SIGKILL.
+La credencial se guarda en Keychain; la recepción y el cursor se confirman juntos
+en un SQLite separado. La prueba actual usa un proveedor sintético: queda pendiente
+la aceptación con un bot real y la vinculación al CRM. No incluye envío de respuestas.
+Véanse [implementación y puesta en marcha](docs/handoff/AVANCE_TELEGRAM_RECEPCION_2026-10-05.md).
 
 ## Install and verify
 

@@ -1,3 +1,4 @@
+import {handleTelegramRequest} from './telegram-api.js';
 import {handleReviewQueue} from './review-api.js';
 import {handleMailAssistance} from './mail-assistance-api.js';
 import {handleMailTask} from './mail-task-api.js';
@@ -169,6 +170,7 @@ function validIngressSignature(body: unknown, signature: string | undefined, sec
  * response shaping; persistence can be replaced without changing callers.
  */
 export interface WorkspaceRuntimeSource {
+  telegram?:import('./telegram-service.js').TelegramService;
   capsules?:import('./capsule-store.js').CapsuleStore;
   reviews?:import('./review-service.js').ReviewService;
   mailTasks?:import('./mail-task-service.js').MailTaskService;
@@ -269,6 +271,7 @@ export class WorkspaceApi {
   /** Async planning route; existing synchronous contracts remain unchanged. */
   async handleAsync(request:WorkspaceApiRequest):Promise<WorkspaceApiResponse> {
     const parts=pathParts(request.path);
+    if(parts?.[0]==='v1'&&parts[1]==='workspaces'&&parts[3]==='telegram')return handleTelegramRequest(request,parts,this.repository,this.runtime);
     if(parts?.[0]==='v1'&&parts[1]==='workspaces'&&parts[3]==='space')return handleSpaceRequest(request,parts,this.repository,this.runtime);
     if(parts?.[0]==='v1'&&parts[1]==='workspaces'&&parts[3]==='capsules')return handleCapsuleRequest(request,parts,this.repository,this.runtime);
     if(parts?.[0]==='v1'&&parts[1]==='workspaces'&&parts[3]==='review-queue')return handleReviewQueue(request,parts,this.repository,this.runtime);

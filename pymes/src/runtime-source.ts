@@ -19,7 +19,7 @@ import {RuntimeDatabase,JournalKernel,ReplayClock,createDurableTaskRuntime,creat
 import type {WorkspaceRuntimeSource} from './workspace-api.js';
 /** One tenant per authoritative journal. Startup fails on tenant mismatch or replay
  * drift; no empty/demo replacement is returned when persistence fails. */
-export async function openWorkspaceRuntime(path:string,tenantId:string,options:{mailProposalProvider?:JsonProposalProvider;provider?:InferenceProvider;planningTimeoutMs?:number;fakeEmail?:boolean;emailProvider?:EmailProvider;gmail?:import('./gmail-local-connector.js').GmailLocalConnector;gmailInbox?:import('./inbox-service.js').InboxService;cancellationHooks?:{beforePersist?:()=>void;afterTransition?:()=>void;afterPersist?:()=>void};emailHooks?:{beforeDispatch?:()=>void;afterDispatchMarker?:()=>void}}={}) {
+export async function openWorkspaceRuntime(path:string,tenantId:string,options:{telegram?:import('./telegram-service.js').TelegramService;mailProposalProvider?:JsonProposalProvider;provider?:InferenceProvider;planningTimeoutMs?:number;fakeEmail?:boolean;emailProvider?:EmailProvider;gmail?:import('./gmail-local-connector.js').GmailLocalConnector;gmailInbox?:import('./inbox-service.js').InboxService;cancellationHooks?:{beforePersist?:()=>void;afterTransition?:()=>void;afterPersist?:()=>void};emailHooks?:{beforeDispatch?:()=>void;afterDispatchMarker?:()=>void}}={}) {
  if(!tenantId.trim()) throw new Error('RUNTIME_TENANT_REQUIRED');
  const database=new RuntimeDatabase(path);let ownEmail:FakeEmailProvider|null=null;let capsules:CapsuleStore|null=null;
  try {
@@ -59,7 +59,7 @@ export async function openWorkspaceRuntime(path:string,tenantId:string,options:{
    return domain.effects.list().filter(e=>e.action==='email.send').map(e=>({taskId:e.taskId,status:e.status,effective:resolveEffectiveEffectOutcome(e,decisions).effectiveOutcome}));
   },emailProvider?.id==='gmail-email'?'gmail':emailProvider?'test':'unconfigured',(owner,id)=>crmStore.contact(owner,id)?.name??null);
   const planning=new Set<string>();
-  const source:WorkspaceRuntimeSource={capsules,reviews,mailTasks,mailAssistance,crm,email,gmail:options.gmail,gmailInbox:options.gmailInbox,planTask:async(tenant,owner,input,mayCommit)=>{
+  const source:WorkspaceRuntimeSource={telegram:options.telegram,capsules,reviews,mailTasks,mailAssistance,crm,email,gmail:options.gmail,gmailInbox:options.gmailInbox,planTask:async(tenant,owner,input,mayCommit)=>{
    if(closed||!journal.isHealthy())throw new Error('RUNTIME_CLOSED');
    if(tenant!==tenantId)throw new Error('RUNTIME_TENANT_SCOPE_DENIED');
    if(input.workflow!==EMAIL_LEAD_WORKFLOW)throw new Error('INVALID_WORKFLOW');

@@ -1,12 +1,13 @@
 import { capsuleRecord, capsuleText, capsuleRevision, CapsuleError } from './capsule-sdk.js';
 
-export type SpaceModuleId = 'gmail' | 'crm' | 'followups';
+export type SpaceModuleId = 'gmail' | 'crm' | 'followups' | 'telegram';
 export type SpaceTemplateId = 'general' | 'consulting' | 'insurance' | 'custom';
 export interface SpaceModule {
   id: SpaceModuleId; name: string; description: string; route: string;
   dependencies: SpaceModuleId[]; icon: string;
 }
 export const spaceModules: readonly SpaceModule[] = [
+  { id: 'telegram', name: 'Telegram', description: 'Recepción local de texto de tu bot, en conversaciones autorizadas.', route: '#telegram-screen', dependencies: [], icon: 'mail' },
   { id: 'gmail', name: 'Correo Gmail', description: 'Tu bandeja local, preparación de respuestas y revisión antes de enviar.', route: '#gmail-inbox', dependencies: [], icon: 'mail' },
   { id: 'crm', name: 'Clientes', description: 'Contactos, oportunidades y contexto de las conversaciones.', route: '#clients-screen', dependencies: [], icon: 'users' },
   { id: 'followups', name: 'Seguimientos', description: 'Próximos pasos y tareas pendientes del CRM local.', route: '#tasks-screen', dependencies: ['crm'], icon: 'check' }

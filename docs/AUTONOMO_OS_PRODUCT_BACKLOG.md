@@ -10,7 +10,8 @@ Mac mini 16 GB y MacBook 24 GB. La aplicación completa todavía no está termin
 | Área | Evidencia y alcance |
 | --- | --- |
 | Espacio modular | Jornada real, organización durable, tres plantillas, módulos ordenables e importación/exportación de preferencias; conversión completa a cápsulas pendiente |
-| Cápsulas v1 | Registro revisado, configuración durable, UI, primera lectura CRM y kit Claude/Codex; extracción de módulos y conectores nuevos pendientes |
+| Cápsulas v1 | Registro revisado, configuración durable, UI, primera lectura CRM y kit Claude/Codex; extracción de módulos pendiente |
+| Telegram inbound | Bot API, Keychain, SQLite separado, recepción y cursor atómicos, historial de ediciones, UI y SIGKILL sintético; bot real, identidad CRM y envío pendientes |
 | Kernel C1–C12 | Contratos y runtime integrado; preservar invariantes y tests |
 | M1/M2 | Planificación, aprobación exacta durable y ejecución gobernada |
 | M3 Gmail | A/B/C real, autorización Keychain, reinicio y reconciliación sin reenvío |
@@ -32,7 +33,7 @@ Fundamento de cápsulas v1 y organización del espacio implementados. Tres
 plantillas iniciales ordenan módulos existentes; aún no aportan workflows
 específicos nuevos. Siguientes pasos: extraer módulos existentes a cápsulas
 y añadir conectores
-compartidos (Telegram en lectura como primer candidato, después WhatsApp,
+compartidos (Telegram inbound implementado y pendiente de aceptación real, después WhatsApp,
 Odoo y WordPress). El SDK actual solo admite el renderer de lectura del CRM.
 Ampliaciones de acciones deben reutilizar los contratos y gates del runtime.
 El plan de producto anterior conserva sus pendientes de aceptación real:
@@ -82,6 +83,7 @@ aprobación exacta, journal durable, estados UNKNOWN y reconciliación sin reenv
 
 ## Documentos de estado
 
+- `docs/handoff/AVANCE_TELEGRAM_RECEPCION_2026-10-05.md`
 - `docs/handoff/AVANCE_ESPACIO_MODULAR_2026-10-05.md`
 - `docs/handoff/AVANCE_CAPSULAS_FUNDACION_2026-10-05.md`
 

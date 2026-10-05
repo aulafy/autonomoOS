@@ -1,6 +1,7 @@
 # Canales e integraciones: punto de partida
 
-La bandeja del prototipo usa datos ficticios. La presencia de un canal en la
+La bandeja de ejemplo usa datos ficticios. Correo Gmail y Telegram son pantallas
+separadas que consultan sus conectores locales. La presencia de un canal en la
 interfaz no implica que podamos leer una cuenta personal existente. Cada piloto
 debe comprobar producto, titularidad de la cuenta, permisos y modalidad de
 integración antes de incorporar conversaciones reales.
@@ -8,9 +9,9 @@ integración antes de incorporar conversaciones reales.
 | Canal | Vía documentada | Decisión para el piloto |
 | --- | --- | --- |
 | WhatsApp | [WhatsApp Business Platform](https://whatsappbusiness.com/developers/developer-hub/) ofrece números de prueba y webhooks. | Evaluar una cuenta empresarial autorizada; no asumir acceso a WhatsApp personal. |
-| Telegram | [Bot API](https://core.telegram.org/bots/api) recibe actualizaciones del bot mediante webhook o `getUpdates`. | Probar un bot o conexión empresarial consentida; no asumir lectura de todos los chats personales. |
+| Telegram | [Bot API](https://core.telegram.org/bots/api) recibe actualizaciones del bot mediante webhook o `getUpdates`. | Recepción local implementada con `getUpdates`, consentimiento por chat y Keychain. Tests sintéticos; aceptación real pendiente. No lee chats personales ni envía respuestas. |
 | iMessage | [Messages framework](https://developer.apple.com/documentation/messages) documenta extensiones y aplicaciones dentro de Messages; [Messages for Business](https://support.apple.com/en-gb/guide/security/sec1c603aab4/web) es un servicio distinto para conversaciones con empresas. | Tratar la bandeja iMessage personal como requisito sin conector confirmado. Estudiar Messages for Business o un proveedor autorizado si el caso lo permite. |
-| Correo | Depende del proveedor concreto de la agencia. | Elegir una cuenta de prueba autorizada antes de integrarlo. |
+| Correo | Gmail API y OAuth Desktop. | M3 aceptado con cuenta dedicada; el workflow M4 completo conserva sus pendientes de aceptación real. |
 | Google Calendar | [Calendar API](https://developers.google.com/workspace/calendar/api/auth) documenta OAuth y el alcance `calendar.events.readonly`. | Integrar primero citas en solo lectura, con autorización de la cuenta. La agenda actual es ficticia. |
 | Holded | [API de contactos](https://developers.holded.com/reference/list-contacts-1) y [API de CRM](https://developers.holded.com/reference/create-lead-1). | Preparar lectura de contactos y vinculación de identidades. No escribir leads o expedientes todavía. |
 

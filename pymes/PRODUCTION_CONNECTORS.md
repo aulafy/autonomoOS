@@ -1,6 +1,15 @@
 # Conexiones reales: guía de puesta en marcha
 
-Esta guía convierte el prototipo PYMES en una instalación conectable. Las credenciales se leen únicamente en el servidor o el worker; nunca se incluyen en la interfaz.
+Esta guía describe los adaptadores disponibles y su activación. Las credenciales de proveedor se conservan en el servidor o el llavero. El formulario local de Telegram permite introducir el token de forma transitoria; no lo persiste en almacenamiento del navegador ni lo devuelve en la API.
+
+## Telegram Bot API local
+
+Recepción de texto implementada; aceptación con Telegram real pendiente.
+Requiere `PYMES_TELEGRAM_ENABLED=1`, `PYMES_API_HOST=127.0.0.1` y el helper
+Keychain compilado para Mac. El token se introduce en **Telegram → Configurar
+recepción**, con IDs numéricos de chats consentidos. No pongas el token en variables
+de entorno. El servicio rechaza bots con webhook activo, sin modificar el webhook.
+Consulta el [runbook y límites](../docs/handoff/AVANCE_TELEGRAM_RECEPCION_2026-10-05.md).
 
 ## 1. Variables base
 

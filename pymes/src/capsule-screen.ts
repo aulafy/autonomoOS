@@ -137,8 +137,8 @@ function render() {
     card.append(actions); grid.append(card);
   }
   root.append(grid);
-  const next = el('div', '', 'capsule-roadmap'); next.append(el('span', 'PRÓXIMAS CONEXIONES', 'eyebrow'), el('h3', 'Las mismas cápsulas, conectadas a tus herramientas'), el('p', 'WhatsApp, Telegram, Odoo y WordPress se incorporarán mediante conectores compartidos. Su integración todavía está pendiente.'));
-  for (const label of ['WhatsApp', 'Telegram', 'Odoo', 'WordPress']) next.append(badge(`${label} · En preparación`)); root.append(next);
+  const next = el('div', '', 'capsule-roadmap'); next.append(el('span', 'PRÓXIMAS CONEXIONES', 'eyebrow'), el('h3', 'Las mismas cápsulas, conectadas a tus herramientas'), el('p', 'Telegram dispone de recepción Bot API en instalaciones habilitadas. WhatsApp, Odoo y WordPress siguen pendientes.'));
+  for (const label of ['WhatsApp', 'Odoo', 'WordPress']) next.append(badge(`${label} · En preparación`)); const telegram = el('a', 'Configurar Telegram →', 'ui-button secondary'); telegram.href = '#telegram-screen'; next.append(telegram); root.append(next);
   const history = el('section', '', 'capsule-history'); history.append(el('h3', 'Cambios de mi espacio'));
   for (const audit of catalog?.audit ?? []) history.append(el('p', `${audit.enabled ? 'Activada / configurada' : 'Desactivada'} · ${audit.capsuleId} · revisión ${audit.revision} · ${new Date(audit.at).toLocaleString('es-ES')}`));
   if (!catalog?.audit.length) history.append(el('p', 'Todavía no hay cambios guardados.')); root.append(history);
