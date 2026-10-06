@@ -416,7 +416,7 @@ export class GmailOAuth {
           error: null,
         };
         res.end(
-          '<!doctype html><script>history.replaceState(null,"","/")</script><p>Gmail conectado. Cierra esta ventana y vuelve a Autónomo OS.</p>',
+          '<!doctype html><script>history.replaceState(null,"","/")</script><p>Gmail conectado. Cierra esta ventana y vuelve a Pyme_1.</p>',
         );
       } catch (error) {
         if (epoch === this.epoch) {
@@ -427,7 +427,7 @@ export class GmailOAuth {
               : "GMAIL_AUTHORIZATION_REQUIRED";
         }
         res.end(
-          '<!doctype html><script>history.replaceState(null,"","/")</script><p>Conexión no confirmada. Vuelve a Autónomo OS.</p>',
+          '<!doctype html><script>history.replaceState(null,"","/")</script><p>Conexión no confirmada. Vuelve a Pyme_1.</p>',
         );
       } finally {
         if (this.pending?.generation === epoch) {

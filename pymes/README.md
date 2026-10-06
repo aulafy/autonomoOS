@@ -1,4 +1,4 @@
-# Autónomo OS · espacio de trabajo para profesionales
+# Pyme_1 · espacio de trabajo para profesionales
 
 ## Espacio modular · 5 de octubre de 2026
 

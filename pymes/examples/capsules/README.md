@@ -22,11 +22,11 @@ npm run build
 git diff --check
 ```
 
-4. Reinicia el servicio y activa la nueva cápsula desde **Mi Autónomo OS**.
+4. Reinicia el servicio y activa la nueva cápsula desde **Mi Pyme_1**.
    Su configuración pertenece al propietario autenticado y tiene historial
    independiente. El ejemplo no viene activado ni registrado en producción.
 
-La pantalla permite descargar `KIT_CAPSULA_AUTONOMO_OS.md`, con los contratos
+La pantalla permite descargar `KIT_CAPSULA_PYME_1.md`, con los contratos
 reales completos para el programador. El navegador no instala ni evalúa código.
 
 ## Límites de esta versión

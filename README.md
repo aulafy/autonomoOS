@@ -1,4 +1,4 @@
-# Autónomo OS
+# Pyme_1
 
 Producto local para profesionales, construido sobre Agent World OS.
 
@@ -18,7 +18,7 @@ and limitations.
 The supported Node.js version is recorded in [`.nvmrc`](.nvmrc) and enforced by
 the project manifests.
 
-## Autónomo OS · correo y CRM
+## Pyme_1 · correo y CRM
 
 La interfaz PYMES permite preparar una respuesta desde un correo entrante:
 propuesta de IA local revisada, cliente y dirección confirmados, borrador

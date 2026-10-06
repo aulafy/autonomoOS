@@ -2,7 +2,7 @@ const screenTitles: Record<string, string> = {
   "#home-screen": "Mi jornada",
   "#telegram-screen": "Telegram",
   "#space-screen": "Organizar mi espacio",
-  "#capsules-screen": "Mi Autónomo OS",
+  "#capsules-screen": "Mi Pyme_1",
   "#gmail-inbox": "Correo Gmail",
   "#runtime-screen": "Centro de agentes",
   "#morning": "Vista de demostración",
@@ -43,7 +43,7 @@ function navigate(focus = false): void {
   document.body.classList.toggle("review-view", hash === "#review-queue");
   const breadcrumb = document.querySelector("#current-screen-title");
   if (breadcrumb) breadcrumb.textContent = title;
-  document.title = `${title} · Autónomo OS`;
+  document.title = `${title} · Pyme_1`;
   document.querySelectorAll<HTMLAnchorElement>(".sidebar nav a").forEach(link => {
     const active = link.hash === hash || (hash === "#detail" && link.hash === "#inbox") || (!screenTitles[hash] && !capsuleDetail && link.hash === "#home-screen");
     link.classList.toggle("active", active);

@@ -12,7 +12,7 @@ const el = <K extends keyof HTMLElementTagNameMap>(tag: K, text = '', cls = '') 
 function link(label: string, route: string, cls = 'ui-button secondary') { const a = el('a', label, cls); a.href = route; return a; }
 function button(label: string, fn: () => void) { const b = el('button', label, 'ui-button secondary'); b.type = 'button'; b.addEventListener('click', fn); return b; }
 function heading(root: HTMLElement, title: string, text: string) {
-  const h = el('header', '', 'space-heading'), copy = el('div'); copy.append(el('span', 'TU OFICINA · AUTÓNOMO OS', 'eyebrow'), el('h2', title), el('p', text)); h.append(copy); root.append(h); return h;
+  const h = el('header', '', 'space-heading'), copy = el('div'); copy.append(el('span', 'TU OFICINA · PYME_1', 'eyebrow'), el('h2', title), el('p', text)); h.append(copy); root.append(h); return h;
 }
 function updateNavigation() {
   const target = document.getElementById('space-module-nav')!; target.replaceChildren();
@@ -42,7 +42,7 @@ function renderEditor() {
   header.append(button('Exportar organización guardada', () => {
     if (!view) return;
     const url = URL.createObjectURL(new Blob([exportSpaceRecipe(view.settings)], { type: 'application/json' }));
-    const a = el('a'); a.href = url; a.download = 'AUTONOMO_OS_ORGANIZACION.json'; a.click();
+    const a = el('a'); a.href = url; a.download = 'PYME_1_ORGANIZACION.json'; a.click();
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   }));
   let draft = structuredClone(view.settings); const revision = view.revision, ticket = generation, session = client;

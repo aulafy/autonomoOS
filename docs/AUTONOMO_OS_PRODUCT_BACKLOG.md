@@ -1,4 +1,4 @@
-# Autónomo OS · desarrollo del producto
+# Pyme_1 · desarrollo del producto
 
 Actualizado: 5 de octubre de 2026. Objetivo: producto profesional instalado en
 Mac para autónomos en España, con cápsulas reutilizables y plantillas de profesión.

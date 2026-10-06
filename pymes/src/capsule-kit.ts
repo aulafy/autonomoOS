@@ -2,7 +2,7 @@ import type { CapsuleManifest } from './capsule-sdk.js';
 /** Export only reviewed code contracts and a declarative example; never workspace data. */
 export function capsuleDevelopmentKit(manifest: CapsuleManifest, sdkSource: string, crmContracts: string): string {
   const example = { ...manifest, id: 'custom.client-summary', name: 'Mi resumen de clientes', author: 'Mi organización' };
-  return `# Kit de cápsulas · Autónomo OS\n\nSDK declarativo v1 · licencia MIT.\n\n` +
+  return `# Kit de cápsulas · Pyme_1\n\nSDK declarativo v1 · licencia MIT.\n\n` +
     `## Instrucción para Claude/Codex\n\nCrea o adapta una cápsula usando estos contratos reales. ` +
     `El host ya tiene CRM, aprobación, journal y recuperación. Conserva esas rutas. ` +
     `En esta versión puedes configurar vistas de contactos: título, límite y relación. ` +

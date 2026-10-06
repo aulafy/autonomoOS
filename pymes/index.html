@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Autónomo OS · Mi jornada</title>
+  <title>Pyme_1 · Mi jornada</title>
   <link rel="stylesheet" href="/src/style.css" />
 </head>
 <body>
   <div class="shell" id="app">
     <a class="skip-link" href="#main-content">Saltar al contenido</a>
     <aside class="sidebar" id="app-sidebar">
-      <a class="brand" href="#home-screen" aria-label="Autónomo OS, inicio"><span class="brand-icon">a</span><span>autónomo<span class="brand-accent">os</span></span></a><div class="workspace-identity"><span class="workspace-avatar" aria-hidden="true">OS</span><div><strong id="space-name">Mi espacio</strong><small id="space-profession">Autónomo OS · Local</small></div></div>
+      <a class="brand" href="#home-screen" aria-label="Pyme_1, inicio"><span class="brand-icon">P</span><span>Pyme<span class="brand-accent">_1</span></span></a><div class="workspace-identity"><span class="workspace-avatar" aria-hidden="true">P1</span><div><strong id="space-name">Mi espacio</strong><small id="space-profession">Pyme_1 · Local</small></div></div>
       <div class="side-caption">MI JORNADA</div>
       <nav aria-label="Navegación principal">
         <a href="#home-screen">▦ <span>Mi jornada</span></a>
@@ -32,7 +32,7 @@
       <div class="sidebar-note"><span class="local-indicator"></span><strong>Trabaja desde tu Mac</strong><p>Revisa y aprueba cada acción.</p><a href="#help-screen">Centro de ayuda ↗</a></div>
     </aside>
     <main id="main-content" tabindex="-1">
-      <header class="topbar"><div class="topbar-location"><button class="menu-toggle" id="menu-toggle" type="button" aria-label="Abrir navegación" aria-expanded="false" aria-controls="app-sidebar">☰</button><span class="breadcrumb-home">Mi espacio</span><span aria-hidden="true">/</span><strong id="current-screen-title">Mi jornada</strong></div><div class="topbar-right"><button type="button" id="navigation-search-open" class="navigation-search-open" aria-haspopup="dialog">Buscar una sección… <kbd>⌘K</kbd></button><span id="workspace-status" class="demo-pill" aria-live="polite" role="status">● DEMOSTRACIÓN</span><span id="today"></span><a class="profile-link" href="#settings-screen" aria-label="Configuración de mi espacio">OS</a></div></header>
+      <header class="topbar"><div class="topbar-location"><button class="menu-toggle" id="menu-toggle" type="button" aria-label="Abrir navegación" aria-expanded="false" aria-controls="app-sidebar">☰</button><span class="breadcrumb-home">Mi espacio</span><span aria-hidden="true">/</span><strong id="current-screen-title">Mi jornada</strong></div><div class="topbar-right"><button type="button" id="navigation-search-open" class="navigation-search-open" aria-haspopup="dialog">Buscar una sección… <kbd>⌘K</kbd></button><span id="workspace-status" class="demo-pill" aria-live="polite" role="status">● DEMOSTRACIÓN</span><span id="today"></span><a class="profile-link" href="#settings-screen" aria-label="Configuración de mi espacio">P1</a></div></header>
       <div class="content">
         <div class="pilot-context" id="pilot-context"></div>
         <section id="home-screen" aria-label="Mi jornada"></section>
@@ -89,7 +89,7 @@
           <div class="display-settings"><div><h3>Lectura cómoda</h3><p>Elige el tamaño de texto para este navegador.</p></div><label for="display-text-size">Tamaño de texto<select id="display-text-size"><option value="standard">Estándar</option><option value="large">Grande</option></select></label><span id="display-feedback" role="status" aria-live="polite"></span></div>
           <div class="appliance-boundary"><strong>Local con conexiones externas</strong><span>La IA puede ejecutarse en tu Mac. WhatsApp, Holded y Google Calendar necesitan Internet y sus propias cuentas.</span></div>
         </section>
-        <section id="capsules-screen" aria-label="Mi Autónomo OS"></section>
+        <section id="capsules-screen" aria-label="Mi Pyme_1"></section>
         <section id="capsule-view-screen" aria-label="Vista de cápsula"></section>
         <dialog id="capsule-dialog" aria-label="Configuración y vista previa de cápsula"></dialog>
         <section id="runtime-screen" class="runtime-screen" aria-label="Centro de agentes"></section>
@@ -135,7 +135,7 @@
           <article id="gmail-connection" class="workspace-login" aria-label="Conexión Gmail"></article>
           <div class="connection-grid"><article><div class="connection-heading"><h3>WhatsApp Business</h3><span>Sin verificar</span></div><p>Recepción mediante webhook firmado y respuestas mediante operaciones confirmadas.</p><details><summary>Requisitos de instalación</summary><p>Cuenta Business, número autorizado, token y configuración del webhook en Meta. El instalador configura estos datos en el servidor.</p></details></article><article><div class="connection-heading"><h3>Holded</h3><span>Lectura preparada</span></div><p>Contexto del cliente para preparar el trabajo del agente.</p><details><summary>Requisitos de instalación</summary><p>Acceso autorizado a la cuenta y clave del proveedor. La pantalla de Clientes actual sigue usando contactos ficticios.</p></details></article><article><div class="connection-heading"><h3>Google Calendar</h3><span>Lectura preparada</span></div><p>Agenda y creación de citas mediante operaciones revisadas.</p><details><summary>Requisitos de instalación</summary><p>Autorización de Google y selección del calendario. Las citas actuales son de demostración.</p></details></article><article><div class="connection-heading"><h3>Asistente local</h3><span>Sin verificar</span></div><p>Clasificación de mensajes en el Mac mediante el modelo local configurado.</p><details><summary>Requisitos de instalación</summary><p>Servicio Ollama y modelo instalado. El consumo y la velocidad deben verificarse en el Mac mini de 24 GB.</p></details></article><article><div class="connection-heading"><h3>Otros canales</h3><p>Telegram ya dispone de recepción Bot API. <a href="#telegram-screen">Configurar Telegram →</a></p><span>Gateway previsto</span></div><p>iMessage y otros canales requieren una integración compatible y autorizada.</p><details><summary>Requisitos de instalación</summary><p>Cada canal necesita su propio proveedor y permisos. No hay una conexión directa verificada con la bandeja personal de iMessage.</p></details></article><article><div class="connection-heading"><h3>Copia de seguridad</h3><span>Revisión manual</span></div><p>La recuperación debe comprobarse durante la entrega del equipo.</p><a href="#installation">Revisar puesta en marcha →</a></article></div>
         </section>
-        <footer>Autónomo OS <span>·</span> Tu oficina en el Mac <span>·</span> Piloto local</footer>
+        <footer>Pyme_1 <span>·</span> Tu oficina en el Mac <span>·</span> Piloto local</footer>
       </div>
     </main>
   </div>

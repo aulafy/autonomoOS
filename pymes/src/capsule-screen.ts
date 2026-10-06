@@ -34,7 +34,7 @@ function heading(target: HTMLElement, eyebrow: string, title: string, descriptio
 function kit() {
   const text = capsuleDevelopmentKit(clientSummaryCapsule, sdkSource, crmContracts);
   const url = URL.createObjectURL(new Blob([text], { type: 'text/markdown;charset=utf-8' }));
-  const a = el('a'); a.href = url; a.download = 'KIT_CAPSULA_AUTONOMO_OS.md'; a.click();
+  const a = el('a'); a.href = url; a.download = 'KIT_CAPSULA_PYME_1.md'; a.click();
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 function summary(target: HTMLElement, view: ClientSummary, synthetic = false) {
@@ -112,7 +112,7 @@ function configure(id: string, disable = false) {
 }
 function render() {
   root.replaceChildren();
-  const header = heading(root, 'MI ESPACIO · CÁPSULAS', 'Tu Autónomo OS, a tu medida', 'Añade funciones a tu espacio y adapta cada una a tu forma de trabajar.');
+  const header = heading(root, 'MI ESPACIO · CÁPSULAS', 'Tu Pyme_1, a tu medida', 'Añade funciones a tu espacio y adapta cada una a tu forma de trabajar.');
   const compose = el('a', 'Organizar mi espacio', 'ui-button secondary'); compose.href = '#space-screen';
   header.append(compose, action('Crear con Claude / Codex ↗', kit));
   if (failure || !client) {
@@ -156,7 +156,7 @@ async function loadView() {
   const ticket = epoch, hash = location.hash, current = client;
   page.replaceChildren(); const item = catalog?.items.find(i => capsuleRoute(i.manifest.id) === hash);
   heading(page, 'CÁPSULA · CRM LOCAL', item?.installation?.config.title ?? 'Resumen de clientes', 'Una vista de lectura configurada para tu espacio.');
-  const controls = el('div', '', 'capsule-actions'), back = el('a', '← Mi Autónomo OS', 'ui-button secondary'); back.href = '#capsules-screen'; controls.append(back); page.append(controls);
+  const controls = el('div', '', 'capsule-actions'), back = el('a', '← Mi Pyme_1', 'ui-button secondary'); back.href = '#capsules-screen'; controls.append(back); page.append(controls);
   if (!current || !item?.installation?.enabled || item.installation.version !== item.manifest.version) {
     page.append(el('p', 'Esta cápsula no está disponible en tu sesión. Revisa la conexión y su activación.', 'capsule-notice')); return;
   }
